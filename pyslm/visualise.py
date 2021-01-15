@@ -8,7 +8,6 @@ import numpy as np
 
 from .core import Part
 from .geometry import Layer
-from .support import getSupportAngles
 
 
 def plotPolygon(polygons, zPos=0.0,
@@ -257,29 +256,3 @@ def plotHeatMap(part: Part, z: float, exposurePoints: np.ndarray, resolution:flo
     ax.imshow(slice, origin='lower', cmap='hot', interpolation='nearest')
 
     return fig, ax
-
-
-def visualiseOverhang(part: Part, overhangAngle: Optional[float] = 60, bounds : Tuple[float, float] = (0,60)):
-    """
-`   Visualises the overhang of a part by extracting overhang the faces are less than the overhangAngle.
-
-    :param part: The part
-    :param overhangAngle: The overhang angle that determines the support face
-    :param bounds: The range used for the colour legend for the angle of the overhangAngles
-    """
-    theta = getSupportAngles(part)
-    colors = matplotlib.cm.jet((theta - bounds[0]) / (bounds[1] - bounds[0]))
-
-    supportFaceIds = np.argwhere(theta < overhangAngle)
-
-    #colors = part.geometry.colors.copy()
-    colors[:, 3] = 0.1
-    colors[supportFaceIds, 3] = 1.0
-
-    geomCopy = part.geometry.copy()
-    geomCopy.visual.face_colors = colors  # [0.7, 0.7, 0.7, 0.2]
-
-    geomCopy.show()
-    #overhangMesh = trimesh.Trimesh(vertices=myPart.geometry.vertices,
-    #                              faces=myPart.geometry.faces[supportFaceIds])
-
