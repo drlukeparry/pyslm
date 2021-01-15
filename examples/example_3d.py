@@ -42,7 +42,6 @@ for z in np.arange(0, solidPart.boundingBox[5], layerThickness):
 
     # Typically the hatch angle is globally rotated per layer by usually 66.7 degrees per layer
     myHatcher.hatchAngle += 66.7
-
     # Slice the boundary
     geomSlice = solidPart.getVectorSlice(z)
 

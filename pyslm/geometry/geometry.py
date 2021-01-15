@@ -21,18 +21,22 @@ class BuildStyle:
     """
     A :class:`BuildStyle` represents a collection of laser parameters used for scanning across a single
     :class:`LayerGeometry`. This consists of essential laser parameters including :attr:`~BuildStyle.laserPower`,
-    :attr:`~BuildStyle.laserSpeed`and for pulsed mode lasers -  :attr:`~BuildStyle.pointDistance` and
+    :attr:`~BuildStyle.laserSpeed`and for pulsed mode lasers - :attr:`~BuildStyle.pointDistance` and
     :attr:`~BuildStyle.pointExposureTime`. A unique buildstyle id (:attr:`~BuildStyle.bid`) must be within each
-    :class:`Model` group that it is stored in and later used for each LayerGeometry group.
+    :class:`Model` group that it is stored in and later used for each :class:`LayerGeometry` group.
     """
 
     def __init__(self):
+        self._name = ""
+        self._description = ""
         self._bid = 0
         self._laserPower = 0.0
         self._laserSpeed = 0.0
         self._laserFocus = 0.0
+        self._laserId = 1
+        self._laserMode = 1
         self._pointDistance = 0
-        self._pointExposureTime = 0.0
+        self._pointExposureTime = 0
 
     @property
     def bid(self) -> int:
@@ -44,10 +48,43 @@ class BuildStyle:
         self._bid = bid
 
     @property
+    def name(self) -> str:
+        """ The name of the BuildStyle"""
+        return self._name
+
+    @name.setter
+    def name(self, name: str):
+        self._name = name
+
+    @property
+    def description(self) -> str:
+        """ The description of the BuildStyle """
+        return self._description
+
+    @description.setter
+    def description(self, desc: str):
+        self._description = desc
+
+    @property
+    def laserId(self) -> int:
+        """ The ID of the laser beam used for the exposure """
+        return self._laserId
+
+    @laserId.setter
+    def laserId(self, value: int):
+        self._laserId = value
+
+    @property
+    def laserMode(self) -> int:
+        return self._laserMode
+
+    @laserMode.setter
+    def laserMode(self, value):
+        self._laserMode = value
+
+    @property
     def laserPower(self) -> float:
-        """
-        The average laser power used
-        """
+        """ The average laser power of the exposure point """
         return self._laserPower
 
     @laserPower.setter
@@ -56,9 +93,7 @@ class BuildStyle:
 
     @property
     def laserFocus(self) -> int:
-        """
-        The laser focus position used, typically given as increment position
-        """
+        """ The laser focus position used, typically given as increment position """
         return self._laserFocus
 
     @laserFocus.setter
@@ -67,9 +102,7 @@ class BuildStyle:
 
     @property
     def laserSpeed(self) -> float:
-        """
-        The laser speed used
-        """
+        """ The laser speed typically expresses as :math:`mm/s` """
         return self._laserSpeed
 
     @laserSpeed.setter
@@ -89,17 +122,17 @@ class BuildStyle:
 
     @property
     def pointDistance(self) -> int:
-        """
-        The point exposure distance (usually expressed as an integer :math:`\\mu m`).
-        """
-        return self._pointExposureTime
+        """ The point exposure distance (usually expressed as an integer :math:`\\mu m`). """
+        return self._pointDistance
 
     @pointDistance.setter
     def pointDistance(self, pointDistance: int):
         self._pointDistance = pointDistance
 
     def setStyle(self, bid: int, focus: int, power: float,
-                 pointExposureTime: int, pointExposureDistance: int, laserSpeed: float = 0.0):
+                 pointExposureTime: int, pointExposureDistance: int, laserSpeed: Optional[float] = 0.0,
+                 laserId: Optional[int] = 1, laserMode: Optional[int] = 1,
+                 name: Optional[str] = "", description: Optional[str] = ""):
 
         self._bid = bid
         self._laserFocus = focus
@@ -107,17 +140,23 @@ class BuildStyle:
         self._pointExposureTime = pointExposureTime
         self._pointDistance = pointExposureDistance
         self._laserSpeed = laserSpeed
+        self._name = name
+        self._description = description
+        self._laserId = laserId
+        self._laserMode = laserMode
 
 
 class Model:
     """
     A Model represents a parametric group or in practice a part which contains a set of :class:`BuildStyle` used across
-    the :class:`LayerGeometry.`
+    the :class:`LayerGeometry`.
     """
     def __init__(self, mid: Optional[int] = 0):
         self._mid = mid
-        self.topLayerId = 0
-        self.name = ""
+        self._topLayerId = 0
+        self._name = ""
+        self._buildStyleDescription = ""
+        self._buildStyleName = ""
         self._buildStyles = []
 
     def __len__(self):
@@ -125,7 +164,7 @@ class Model:
 
     @property
     def buildStyles(self) -> List[BuildStyle]:
-        """ The build styles associated with this model """
+        """ The BuildStyles associated with this model """
         return self._buildStyles
 
     @buildStyles.setter
@@ -140,6 +179,42 @@ class Model:
     @mid.setter
     def mid(self, mid: int):
         self._mid = mid
+
+    @property
+    def name(self) -> str:
+        """ The name described by the model"""
+        return self._name
+
+    @name.setter
+    def name(self, name: str):
+        self._name = name
+
+    @property
+    def topLayerId(self) -> int:
+        """ The Top Layer of all Layer Geometries using this model"""
+        return self._topLayerId
+
+    @topLayerId.setter
+    def topLayerId(self, topLayer: int):
+        self._topLayerId = topLayer
+
+    @property
+    def buildStyleDescription(self):
+        """ The description of the BuildStyles applied to the Model """
+        return self._buildStyleDescription
+
+    @buildStyleDescription.setter
+    def buildStyleDescription(self, description: str):
+        self._buildStyleDescription = description
+
+    @property
+    def buildStyleName(self) -> str:
+        """ The BuildStyle applied to the Model"""
+        return self._buildStyleName
+
+    @buildStyleName.setter
+    def buildStyleName(self, name):
+        self._buildStyleName = name
 
 class LayerGeometryType(Enum):
     Invalid = 0
@@ -276,15 +351,15 @@ class PointsGeometry(LayerGeometry):
     """
      PointsGeometry represents a :class:`LayerGeometry` consisting of a series of discrete or disconnected exposure points
      :math:`[(x_0,y_0), ..., (x_{n-1},x_{n-1})]` . This allows the user to prescribe very specific exposures to the bed,
-     for very controlled and articulated scan styles. Typically, the exposure points are used either lattice structures,
-     or support structures. It is impracticable and inefficient to use these for generated very large aerial regions..
+     for very controlled and articulated scan styles. Typically, the exposure points are used either for lattice structures,
+     or support structures. It is impracticable and inefficient to use these for generated very large aerial regions.
      """
     def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0,
                  coords: Optional[np.ndarray] = None):
 
         super().__init__(modelId, buildStyleId, coords)
 
-    def numPoints(self):
+    def numPoints(self) -> int:
         """ Number of individual point exposures within the geometry group"""
         return self.pnts.shape[0]
 
@@ -314,7 +389,7 @@ class Layer:
     derivatives including: :class:`ContourGeometry`, :class:`HatchGeometry`, :class:`PointsGeometry` types stored in
     :attr:`~Layer.geometry` and also the current slice or layer position in :attr:`~Layer.z`.
 
-    The layer z position is  stored in an integer format to remove any specific rounding - typically this is the number
+    The layer z position is stored in an integer format to remove any specific rounding - typically this is the number
     of microns.
     """
 
@@ -347,9 +422,10 @@ class Layer:
     @property
     def z(self) -> int:
         """
-        The Z Position of the Layer is given as an integer to ensure that no rounding errors are given to the
+        The Z Position of the :class:`Layer` is given as an integer to ensure that no rounding errors are given to the
         slm systen. Under most situations this should correspond as the product of the layer id (:attr:`Layer.layerId`)
-        and the zUnit - layer thickness (:attr:`Header.zUnit`). """
+        and the zUnit - layer thickness (:attr:`Header.zUnit`).
+        """
         return self._z
 
     @z.setter
@@ -404,7 +480,9 @@ class Layer:
         self._geometry = geoms
 
     def getContourGeometry(self) -> List[HatchGeometry]:
-        """ Returns a list of all :class:`ContourGeometry` stored in the layer. """
+        """
+        Returns a list of all :class:`ContourGeometry` stored in the layer.
+        """
 
         geoms = []
         for geom in self._geometry:
@@ -414,7 +492,9 @@ class Layer:
         return geoms
 
     def getHatchGeometry(self) -> List[HatchGeometry]:
-        """ Returns a list of all :class:`HatchGeometry` stored in the layer. """
+        """
+        Returns a list of all :class:`HatchGeometry` stored in the layer.
+        """
 
         geoms = []
         for geom in self._geometry:
@@ -424,7 +504,9 @@ class Layer:
         return geoms
 
     def getPointsGeometry(self) -> List[PointsGeometry]:
-        """ Returns a list of all :class:`PointsGeometry` stored in the layer. """
+        """
+        Returns a list of all :class:`PointsGeometry` stored in the layer.
+        """
         geoms = []
         for geom in self._geometry:
             if isinstance(geom, PointsGeometry):

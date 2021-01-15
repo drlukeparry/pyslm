@@ -1,5 +1,5 @@
-PySLM Python Library for Selective Laser Melting
-==================================================
+PySLM Python Library for Selective Laser Melting and Additive Manufacturing
+=============================================================================
 
 .. image:: https://github.com/drlukeparry/pyslm/workflows/Python%20application/badge.svg
     :target: https://github.com/drlukeparry/pyslm/actions
@@ -13,11 +13,14 @@ PySLM Python Library for Selective Laser Melting
     :alt: Chat on Gitter
 
 
-PySLM is a python library for processing the input files used on Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS)
-platform typically used in both academia and industry for Additive Manufacturing. The core capabilities aim to include
-slicing, hatching and support generation and providing  an interface to the binary build file formats available for platforms.
-The library is built of core classes which may provide the basic functionality to generate the scan vectors used on systems
-and also be used as building blocks to prototype and develop new algorithms.
+PySLM is a python library for supporting development of  input files used in Additive Manufacturing, in particular
+Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS) platforms typically used in both academia and industry.
+The core capabilities aim to include slicing, hatching and support generation and providing  an interface to the binary
+build file formats available for platforms. The library is built of core classes which may provide the basic functionality to
+generate the scan vectors used on systems and also be used as building blocks to prototype and develop new algorithms.
+
+This library provides design tools for use in Additive Manufacturing including the slicing, hatching, support generation
+and  related analysis tools (e.g. overhang analysis, build-time estimation).
 
 PySLM is built-upon python libraries `Trimesh <https://github.com/mikedh/trimesh>`_ and based on some custom modifications
 to the `PyClipper <https://pypi.org/project/pyclipper/>`_ libraries which are leveraged to provide the  slicing and
@@ -61,6 +64,14 @@ The following scan strategies have been implemented as reference on platforms:
 The laser scan vectors can be visualised using ``Matplotlib``. The order of the scan vectors can be shown to aid development
 of the scan strategies.
 
+* Scan vector plots
+* Exposure point visualisation
+* Exposure map generation
+* Overhang visualisation
+
+**Analysis:**
+* Build time estimation tools (based on scan strategy)
+
 **Export to Machine Files:**
 
 Currently the capability to enable translation to commercial machine build platforms is being providing through a
@@ -70,7 +81,10 @@ If you would like to support implementing a custom format, please raise a `reque
 
 * Renishaw MTT (**.mtt**),
 * DMG Mori Realizer (**.rea**),
-* EOS SLI formats (**.sli**).
+* EOS SLI formats (**.sli**) - WIP,
+* SLM Solutions (**.slm**) - WIP .
+
+For further information, see the latest `release notes <https://github.com/drlukeparry/pyslm/blob/dev/CHANGELOG.md>`_.
 
 Installation
 *************

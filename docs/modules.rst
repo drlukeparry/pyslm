@@ -8,13 +8,13 @@
     :no-inherited-members:
     :toctree: api
 
-.. automodapi:: pyslm.hatching
+.. automodapi:: pyslm.geometry
+    :allowed-package-names: ContourGeometry, HatchGeometry, PointsGeometry, LayerGeometry, Layer, Header, BuildStyle, Model
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
 
-.. automodapi:: pyslm.geometry
-    :allowed-package-names: ContourGeometry, HatchGeometry, PointsGeometry, LayerGeometry, Layer, Header, BuildStyle, Model
+.. automodapi:: pyslm.hatching
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api

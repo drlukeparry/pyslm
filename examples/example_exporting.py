@@ -88,3 +88,24 @@ layer = slm.Layer(id = 0, z = 0)
 
 # Added the Layer Geometry in sequential order
 layer.geometry.append(contourGeom)
+
+models = [model]
+layers = [layer]
+
+"""
+Import the MTT (Renishaw SLM) Exporter
+"""
+from libSLM import mtt
+
+"Create the initial object"
+mttWriter = mtt.Writer()
+mttWriter.setFilePath("build.mtt")
+mttWriter.write(header, models, layers)
+
+from libSLM import slmsol
+
+"Create the initial object"
+slmSolWriter = slmsol.Writer()
+slmSolWriter.setFilePath("build.slm")
+slmSolWriter.write(header, models, layers)
+
