@@ -1,0 +1,14 @@
+sphinx
+sphinx-automodapi
+sphinx-autodoc-typehints
+sphinx-paramlinks
+autodocsumm
+pypandoc
+numpy
+scipy
+shapely
+networkx
+trimesh
+pyclipper
+scikit-image
+cython
