@@ -6,6 +6,13 @@ import abc
 from typing import Any, List, Optional, Tuple
 
 
+class LaserMode(Enum):
+    CW = 0
+    """ Continious Wave """
+
+    PULSE = 1
+    """ Pulsed mode (Default option) """
+
 class Header:
     """
     The Header provides basic information about the machine build file, such as the name of the file
@@ -37,6 +44,8 @@ class BuildStyle:
         self._laserMode = 1
         self._pointDistance = 0
         self._pointExposureTime = 0
+        self._jumpDelay = 0
+        self._jumpSpeed = 0
 
     @property
     def bid(self) -> int:
@@ -76,6 +85,10 @@ class BuildStyle:
 
     @property
     def laserMode(self) -> int:
+        """
+        Determines the laser mode to use via :class:`LaserMode` which is either continious wave (CW) or
+        pulsed (Pulsed) laser operation
+        """
         return self._laserMode
 
     @laserMode.setter
@@ -128,6 +141,31 @@ class BuildStyle:
     @pointDistance.setter
     def pointDistance(self, pointDistance: int):
         self._pointDistance = pointDistance
+
+    @property
+    def jumpDelay(self) ->int:
+        """ The jump delay time (usually expressed as an integer :math:`\\mu m`) """
+        return self._jumpDelay
+
+    @jumpDelay.setter
+    def jumpDelay(self, delay: int):
+        """
+        The jump speed between scan vectors (usually expressed as an integer :math:`mm/s`). This must be set to
+        zero (default) if it is not explicitly used.
+        """
+        self._jumpDelay = delay
+
+    @property
+    def jumpSpeed(self) -> int:
+        """
+        The jump speed between scan vectors (usually expressed as an integer :math:`mm/s`). This must be set to
+        zero (default) if it is not explicitly used.
+        """
+        return self._jumpSpeed
+
+    @jumpSpeed.setter
+    def jumpSpeed(self, speed: int):
+        self._jumpSpeed = speed
 
     def setStyle(self, bid: int, focus: int, power: float,
                  pointExposureTime: int, pointExposureDistance: int, laserSpeed: Optional[float] = 0.0,
@@ -209,7 +247,7 @@ class Model:
 
     @property
     def buildStyleName(self) -> str:
-        """ The BuildStyle applied to the Model"""
+        """ The BuildStyle name applied to the Model"""
         return self._buildStyleName
 
     @buildStyleName.setter
@@ -398,6 +436,15 @@ class Layer:
         self._id = id
         self._geometry = []
         self._name = ""
+        self._layerFilePosition = 0
+
+    @property
+    def layerFilePosition(self):
+        """ The position of the layer in the build file, when available. """
+        return self._layerFilePosition
+
+    def isLoaded(self) -> bool:
+        return True
 
     @property
     def name(self) -> str:
