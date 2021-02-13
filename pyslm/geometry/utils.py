@@ -144,8 +144,8 @@ class ModelValidator:
 
         """ Check to see if all models were assigned to a layer geometry"""
         for model in models:
-            if modelTopLayerIdx.get(model.mid, False):
-                warn("Warning: Model({:s} was not used in any layer)".format(model.name))
+            if not modelTopLayerIdx.get(model.mid, False):
+                warn("Warning: Model({:s}) was not used in any layer)".format(model.name))
 
             if model.topLayerId != modelTopLayerIdx[model.mid]:
                 raise Exception("Top Layer Id of Model ({:d}) differs in the layers used ({:d})".format(model.topLayerId,
