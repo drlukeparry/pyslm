@@ -23,7 +23,7 @@ header = slm.Header()
 header.filename = "MachineBuildFile"
 
 # Depending on the file format the version should be provided as a tuple
-header.version = (1,0)
+header.version = (1,2)
 
 # The zUnit is the uniform layer thickness as an integer unit in microns
 header.zUnit = 1000 # μm
