@@ -11,6 +11,7 @@ from shapely.geometry import LinearRing, MultiPolygon, Polygon
 from shapely.geometry import MultiPolygon
 
 import pyslm
+import pyslm.visualise
 from pyslm import hatching as hatching
 
 

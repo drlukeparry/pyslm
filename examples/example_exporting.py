@@ -37,11 +37,11 @@ contourBuildStyle = slm.BuildStyle()
 contourBuildStyle.bid = 1
 
 # Set the laser parameters for the Contour Build Style
-contourBuildStyle.laserPower = 200  # W
-contourBuildStyle.laserSpeed = 500  # mm/s - Note this is used on some systems but should be set
+contourBuildStyle.laserPower = 200.0  # W
+contourBuildStyle.laserSpeed = 500.0  # mm/s - Note this is used on some systems but should be set
 contourBuildStyle.laserFocus = 0.0  # mm - (Optional) Some new systems can modify the focus position real-time.
 contourBuildStyle.laserId = 1 # Set for multi-laser systems
-contourBuildStyle.laserMode = slm.LaserMode.Pulse # (Pulsed) mode is the default but can be cahnged on some systems.
+contourBuildStyle.laserMode = slm.LaserMode.PULSE # (Pulsed) mode is the default but can be cahnged on some systems.
 
 # The point exposure parameters are specified for some systems (typically Q-Switch Pulse Lasers)
 # Note: the laser speed v = pointDistance / pointExposureTime

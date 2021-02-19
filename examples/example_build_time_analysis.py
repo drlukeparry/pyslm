@@ -98,8 +98,9 @@ def main():
     totalPerimeter = np.sum([layer.length for layer in layers]) * numCountourOffsets
     totalArea = np.sum([layer.area for layer in layers])
     print('\nStatistics:')
-    print('\tDiscretised volume [cm3]', totalArea * layerThickness / 1e3)
-    print("\tNum Layers {:d}, Height: {:.3f}, Volume: {:.3f} cm3, Area: {:.3f}mm2, Contour Perimeter: {:.3f}mm".format(numLayers, totalHeight, totalVolume/1000, totalArea,totalPerimeter))
+    print('\tDiscretised volume {.2f} cm3'.format(totalArea * layerThickness / 1e3))
+    print("\tNum Layers {:d} Height: {:.2f}".format(numLayers, totalHeight))
+    print("\tVolume: {:.2f} cm3, Area: {:.2f} mm2, Contour Perimeter: {:.2f} mm".format(totalVolume/1000, totalArea,totalPerimeter))
 
     """
     Calculate the time estimates:
@@ -111,8 +112,8 @@ def main():
     recoaterTimeEstimate = numLayers * layerRecoatTime
 
     totalTime = hatchTimeEstimate + boundaryTimeEstimate + recoaterTimeEstimate
-    print('\nLayer Approach')
-    print("\tScan Time: {:.3f}hr, Recoat Time: {:.3f} hr, Total time: {:.3f} hr".format(scanTime / 3600, recoaterTimeEstimate/3600, totalTime/3600))
+    print('\nLayer Approach:')
+    print("\tScan Time: {:.2f} hr, Recoat Time: {:.2f} hr, Total time: {:.3f} hr".format(scanTime / 3600, recoaterTimeEstimate/3600, totalTime/3600))
 
     """ 
     Calculate using a simplified approach
@@ -125,15 +126,16 @@ def main():
     v1 = solidPart.geometry.face_normals
 
     sin_theta = np.sqrt((1-np.dot(v0, v1.T)**2))
-    triAreas = solidPart.geometry.area_faces *sin_theta
+    triAreas = solidPart.geometry.area_faces * sin_theta
     projectedArea = np.sum(triAreas)
-    print('\tProjected area', projectedArea, 'surface area', solidPart.area)
+    print('\tProjected area: {:.3f}'.format(projectedArea))
+    print('\tSurface area: {:.3f}'.format(solidPart.area))
 
     approxScanTime = solidPart.volume/(hatchDistance * hatchLaserScanSpeed * layerThickness) + solidPart.area / (contourLaserScanSpeed*layerThickness)
     approxProjectedScanTime = solidPart.volume / (hatchDistance * hatchLaserScanSpeed * layerThickness) + projectedArea / (
                 contourLaserScanSpeed * layerThickness)
-    print('\tApprox scan time *surface) {:.3f} hr'.format(approxScanTime/3600))
-    print('\tApprox scan time (using projected area):  {:.3f} he'.format(approxProjectedScanTime/3600))
+    print('\tApprox scan time *surface) {:.2f} hr'.format(approxScanTime/3600))
+    print('\tApprox scan time (using projected area):  {:.2f} hr'.format(approxProjectedScanTime/3600))
 
 
 if __name__ == '__main__':

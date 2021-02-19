@@ -10,6 +10,7 @@ from shapely.geometry.polygon import LineString, LinearRing, Polygon
 from shapely.geometry import MultiPolygon
 
 import pyslm
+import pyslm.visualise
 from pyslm import hatching as hatching
 
 # Imports the part and sets the geometry to  an STL file (frameGuide.stl)

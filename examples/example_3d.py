@@ -1,7 +1,8 @@
 """
-A simple example showing how to use PySLM for generating 3D vmodel
+A simple example showing how to use PySLM for generating slices across a 3D model
 """
 import pyslm
+import pyslm.visualise
 from pyslm import hatching as hatching
 import numpy as np
 
@@ -14,7 +15,6 @@ solidPart.origin[1] = 2.5
 solidPart.scaleFactor = 1.0
 solidPart.rotation = [0, 0.0, 45]
 solidPart.dropToPlatform()
-print(solidPart.boundingBox)
 
 # Create a StripeHatcher object for performing any hatching operations
 myHatcher = hatching.Hatcher()

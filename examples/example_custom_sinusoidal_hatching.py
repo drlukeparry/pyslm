@@ -4,9 +4,11 @@ A simple example showing how to use PySLM for generating a sinusoidal scanning s
 
 import numpy as np
 import pyslm
+
+import pyslm.visualise
 import pyslm.analysis.utils as analysis
 from pyslm import hatching as hatching
-from pyslm import Layer, LayerGeometry, ContourGeometry, HatchGeometry
+from pyslm.geometry import Layer, LayerGeometry, ContourGeometry, HatchGeometry
 from pyslm.hatching import BaseHatcher
 from typing import Optional
 
