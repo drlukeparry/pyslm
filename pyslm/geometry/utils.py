@@ -64,11 +64,11 @@ class ModelValidator:
         if bstyle.bid < 1 or not isinstance(bstyle.bid, int):
             raise Exception("BuildStyle ({:d}) should have a positive integer id".format(bstyle.bid))
 
-        if bstyle.laserPower < 0 or not isinstance(bstyle.laserPower, float):
+        if bstyle.laserPower < 0 :
             raise Exception("BuildStyle({:d}).laserPower must be a positive integer".format(bstyle.bid))
 
-        if bstyle.laserSpeed < 0 or not isinstance(bstyle.laserSpeed, float):
-            raise Exception("BuildStyle({:d}).laserPower must be a positive integer".format(bstyle.bid))
+        if bstyle.laserSpeed < 0:
+            raise Exception("BuildStyle({:d}).laserSpeed must be a positive integer".format(bstyle.bid))
 
         if bstyle.pointDistance < 1 or not isinstance(bstyle.pointDistance, int):
             raise Exception("BuildStyle({:d}).pointDistance must be a positive integer (>0)".format(bstyle.bid))
