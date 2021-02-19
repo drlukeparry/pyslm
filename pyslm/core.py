@@ -355,12 +355,10 @@ class Part(DocumentObject):
 
         return self._partType
 
-    def getVectorSlice(self, z: float, returnCoordPaths: bool = True,
-                       simplificationFactor:bool = None, simplificationPreserveTopology: Optional[bool] = True) -> Any:
+    def getTrimeshSlice(self, z: float) -> trimesh.path.Path2D:
         """
-        The vector slice is created by using `trimesh` to slice the mesh into a polygon
+        The vector slice is created by using `trimesh` to slice the mesh into a polygon - returns a shapely polygon.
 
-        :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise Shapely Polygons
         :param z: The slice's z-position
         :return: The vector slice at the given z level
 
@@ -391,13 +389,32 @@ class Part(DocumentObject):
             # Repairs the polygon boundary using a merge function built into Trimesh
             planarSection.fill_gaps(planarSection.scale / 100)
 
+        return planarSection
+
+    def getVectorSlice(self, z: float, returnCoordPaths: bool = True,
+                       simplificationFactor:bool = None, simplificationPreserveTopology: Optional[bool] = True) -> Any:
+        """
+        The vector slice is created by using `trimesh` to slice the mesh into a polygon
+
+        :param z: The slice's z-position
+        :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise Shapely Polygons
+        :param simplificationFactor:  Simplification factor used for the boundary
+        :param simplificationPreserveTopology:  Preserves the slice's topology when using simplification algorithm
+
+        :return: The vector slice at the given z level
+        """
+        planarSection = self.getTrimeshSlice(z)
+
+        if not planarSection:
+            return []
+
         # Obtain a closed list of shapely polygons
         polygons = planarSection.polygons_full
 
         if simplificationFactor:
             simpPolys = []
 
-            for polygon in  polygons:
+            for polygon in polygons:
                 simpPolys.append(polygon.simplify(simplificationFactor, preserve_topology=simplificationPreserveTopology))
 
             polygons = simpPolys
@@ -440,7 +457,7 @@ class Part(DocumentObject):
         :return: A bitmap image for the current slice at position
         """
 
-        vectorSlice = self.getVectorSlice(z, False)
+        vectorSlice = self.getShapelySlice(z)
 
         bitmapOrigin =  self.boundingBox[:2] if origin is None else origin
 

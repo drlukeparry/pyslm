@@ -35,7 +35,7 @@ dpi = 300.0
 resolution = 25.4 / dpi
 
 # Return the Path2D object from Trimesh by setting second argument to False
-slice = solidPart.getVectorSlice(14.0, False)
+slice = solidPart.getTrimeshSlice(14.0)
 
 # Rasterise and cast to a numpy array
 # The origin is set based on the minium XY bounding box of the part. Depending on the platform the user may
