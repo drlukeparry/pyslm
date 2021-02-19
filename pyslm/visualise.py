@@ -127,8 +127,6 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
 
     plotNormalize = matplotlib.colors.Normalize()
 
-
-
     if plotHatches:
         hatchGeoms = layer.getHatchGeometry()
 
@@ -213,8 +211,29 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                         linewidth=lineWidth)
 
     if plotPoints:
-        for pointsGeom in layer.getPointsGeometry():
-            ax.scatter(pointsGeom.coords[:, 0], pointsGeom.coords[:, 1], 'x')
+
+        pointGeoms = layer.getPointsGeometry()
+
+        if len(pointGeoms) > 0:
+
+            scatterPoints = np.vstack([pointsGeom.coords for pointsGeom in layer.getPointsGeometry()])
+
+            pointrGeoms =  layer.getPointsGeometry()
+
+            pntColors = None
+            if callable(index):
+                values = np.vstack([index(pointGeom) for pointGeom in pointrGeoms])
+                pntColors = values.ravel()
+
+            else:
+                # Plot the sequential index of the hatch vector
+                pntColors =  np.arange(len(scatterPoints))
+
+            scaterObj = ax.scatter(scatterPoints[:, 0], scatterPoints[:, 1], c=pntColors)
+            axcb = fig.colorbar(scaterObj)
+
+            #for pointsGeom in layer.getPointsGeometry():
+            #   ax.scatter(pointsGeom.coords[:, 0], pointsGeom.coords[:, 1], 'x')
 
     return fig, ax
 
