@@ -176,7 +176,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                 ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
 
             ax.add_collection(lc)
-            axcb = fig.colorbar(lc)
+            #axcb = fig.colorbar(lc)
 
     if plotContours:
 
@@ -230,7 +230,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                 pntColors =  np.arange(len(scatterPoints))
 
             scaterObj = ax.scatter(scatterPoints[:, 0], scatterPoints[:, 1], c=pntColors)
-            axcb = fig.colorbar(scaterObj)
+            #axcb = fig.colorbar(scaterObj)
 
             #for pointsGeom in layer.getPointsGeometry():
             #   ax.scatter(pointsGeom.coords[:, 0], pointsGeom.coords[:, 1], 'x')
