@@ -6,12 +6,13 @@ import abc
 from typing import Any, List, Optional, Tuple
 
 
-class LaserMode(Enum):
+class LaserMode:
     CW = 0
     """ Continious Wave """
 
     PULSE = 1
     """ Pulsed mode (Default option) """
+
 
 class Header:
     """
@@ -105,7 +106,7 @@ class BuildStyle:
         self._laserPower = laserPower
 
     @property
-    def laserFocus(self) -> int:
+    def laserFocus(self) -> float:
         """ The laser focus position used, typically given as increment position """
         return self._laserFocus
 
@@ -169,7 +170,7 @@ class BuildStyle:
 
     def setStyle(self, bid: int, focus: int, power: float,
                  pointExposureTime: int, pointExposureDistance: int, laserSpeed: Optional[float] = 0.0,
-                 laserId: Optional[int] = 1, laserMode: Optional[int] = 1,
+                 laserId: Optional[int] = 1, laserMode: Optional[LaserMode] = 1,
                  name: Optional[str] = "", description: Optional[str] = ""):
 
         self._bid = bid
@@ -254,6 +255,7 @@ class Model:
     def buildStyleName(self, name):
         self._buildStyleName = name
 
+
 class LayerGeometryType(Enum):
     Invalid = 0
     Polygon = 1
@@ -268,9 +270,9 @@ class LayerGeometry(abc.ABC):
     available via :attr:`~LayerGeometry.coords`.
     """
 
-    def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0, coords: Optional[np.ndarray] = None):
-        self._bid = buildStyleId
-        self._mid = modelId
+    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0, coords: Optional[np.ndarray] = None):
+        self._bid = bid
+        self._mid = mid
 
         self._coords = np.array([])
 
@@ -278,7 +280,7 @@ class LayerGeometry(abc.ABC):
             self._coords = coords
 
     def boundingBox(self) -> np.ndarray:
-        return np.hstack(np.min(self.coords, axis=0), np.max(self.coords, axis=0))
+        return np.hstack([np.min(self.coords, axis=0), np.max(self.coords, axis=0)])
 
     @property
     def coords(self) -> np.ndarray:
@@ -333,10 +335,10 @@ class HatchGeometry(LayerGeometry):
     unlike :class:`ContourGeometry`. Typically, the scan vectors are used for infilling large internal regions and
     are arranged parallel at a set distance from each other.
     """
-    def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0,
+    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0,
                        coords: Optional[np.ndarray] = None):
 
-        super().__init__(modelId, buildStyleId, coords)
+        super().__init__(mid, bid, coords)
         # print('Constructed Hatch Geometry')
 
     def __str__(self):
@@ -352,7 +354,7 @@ class HatchGeometry(LayerGeometry):
         """
         Number of hatches within this LayerGeometry
         """
-        return self.pnts.shape[0] / 2
+        return self.coords.shape[0] / 2
 
 
 class ContourGeometry(LayerGeometry):
@@ -362,18 +364,18 @@ class ContourGeometry(LayerGeometry):
      efficiently follow a path without jumping,  unlike :class:`HatchGeometry`. Typically, the scan vectors are used for
      generated the boundaries of a part across a layer.
      """
-    def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0,
+    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0,
                        coords: Optional[np.ndarray] = None):
 
-        super().__init__(modelId, buildStyleId, coords)
+        super().__init__(mid, bid, coords)
 
     # print('Constructed Contour Geometry')
 
     def numContours(self) -> int:
         """
-        Number of contour vectos in the geometry group.
+        Number of contour vectors in the geometry group.
         """
-        return self.pnts.shape[0] - 1
+        return self.coords.shape[0] - 1
 
     def __len__(self):
         return self.numContours()
@@ -392,14 +394,14 @@ class PointsGeometry(LayerGeometry):
      for very controlled and articulated scan styles. Typically, the exposure points are used either for lattice structures,
      or support structures. It is impracticable and inefficient to use these for generated very large aerial regions.
      """
-    def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0,
+    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0,
                  coords: Optional[np.ndarray] = None):
 
-        super().__init__(modelId, buildStyleId, coords)
+        super().__init__(mid, bid, coords)
 
     def numPoints(self) -> int:
         """ Number of individual point exposures within the geometry group"""
-        return self.pnts.shape[0]
+        return self.coords.shape[0]
 
     def __len__(self):
         return self.numPoints()
@@ -411,7 +413,7 @@ class PointsGeometry(LayerGeometry):
         return LayerGeometryType.Pnts
 
 
-class ScanMode(Enum):
+class ScanMode:
     """
     The scan mode is an enumeration class used to re-order all :class:`LayerGeometry` when accessing the entire collection
     from the :class:`Layer`.
