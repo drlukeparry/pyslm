@@ -12,13 +12,14 @@ from .utils import pathsToClosedPolygons
 
 class Island(InnerHatchRegion):
     """
-    Island represents a square sub-region containing a series of orthogonal hatches which represents a checkerboard pattern
+    Island represents a square sub-region containing a series of orthogonal hatches which represents a typically a
+    checkerboard scan strategy.
     """
 
     _boundary = None
     """ Private class attribute which is used to cache the boundary generated"""
 
-    def __init__(self, origin:np.ndarray = np.array([[0.0,0.0]]), orientation: Optional[float] = 0.0,
+    def __init__(self, origin: np.ndarray = np.array([[0.0,0.0]]), orientation: Optional[float] = 0.0,
                        islandWidth: Optional[float] = 0.0, islandOverlap: Optional[float] = 0.0,
                        hatchDistance: Optional[float] = 0.1):
 
@@ -33,11 +34,11 @@ class Island(InnerHatchRegion):
         self._hatchDistance = hatchDistance
 
     def __str__(self):
-        return 'IslandRegion <{:s}>'
+        return 'IslandRegion'
 
     @property
     def hatchDistance(self) -> float:
-        """ The distance between adjacent hatch vectors. """
+        """ The distance between adjacent hatch vectors """
         return self._hatchDistance
 
     @hatchDistance.setter
@@ -45,17 +46,17 @@ class Island(InnerHatchRegion):
         self._hatchDistance = distance
 
     @property
-    def islandWidth(self):
-        """ The square island width. """
+    def islandWidth(self) -> float:
+        """ The square island width """
         return self._islandWidth
 
     @islandWidth.setter
-    def islandWidth(self, width):
+    def islandWidth(self, width: float):
         self._islandWidth = width
 
     @property
     def islandOverlap(self) -> float:
-        """ The length of overlap between adjacent islands in both directions :math:`(x\\prime, y\\prime)`"""
+        """ The length of overlap between adjacent islands in both directions :math:`(x', y')`"""
         return self._islandOverlap
 
     @islandOverlap.setter
@@ -64,13 +65,13 @@ class Island(InnerHatchRegion):
 
     def localBoundary(self) -> np.ndarray:
         """
-        Returns the local square boundary based on the island width (:attr:`~Island.islandWidth`) and also the
-        island overlap (:attr:`~Island.islandOverlap`. The island overlap provides an offset from the original boundary,
+        Returns the local square boundary based on the island width (:attr:`~Island.islandWidth`) and  the
+        island overlap (:attr:`~Island.islandOverlap`). The island overlap provides an offset from the original boundary,
         so the user must compensate the actual overlap by a factor of a half. The boundary is cached into a static class
         attribute :attr:Island._boundary` since this remains constant typically across the entire hatching process.
         If the user desires to change this the user should re-implement the class and this method.
 
-        :return: Coordinates representing the boundary
+        :return: Coordinates representing the local boundary
         """
 
         if Island._boundary is None:
@@ -100,9 +101,9 @@ class Island(InnerHatchRegion):
         coords = self.localBoundary()
         return Polygon(self.transformCoordinates2D(coords))
 
-    def generateInternalHatch(self, isOdd: bool=True) -> np.ndarray:
+    def generateInternalHatch(self, isOdd: bool = True) -> np.ndarray:
         """
-        Generates a set of hatches orthogonal to the island's coordinate system :math:`(x\\prime, y\\prime)`.
+        Generates a set of hatches orthogonal to the island's coordinate system :math:`(x', y')`.
 
         :param isOdd: The chosen orientation of the hatching
         :return: (nx3) Set of sorted hatch coordinates
@@ -131,7 +132,7 @@ class Island(InnerHatchRegion):
 
     def hatch(self) -> np.ndarray:
         """
-        Generates a set of hatches orthogonal to the island's coordinate system depending if the the sum of
+        Generates a set of hatches orthogonal to the island's coordinate system depending on if the sum of
         :attr:`~Island.posId` is even or odd. The returned hatch vectors are transformed and sorted depending on the
         direction.
 
@@ -213,10 +214,11 @@ class IslandHatcher(Hatcher):
 
         return self.scaleFromClipper(output)
 
-    def generateIslands(self, paths, hatchAngle: float = 90.0) -> List[Island]:
+    def generateIslands(self, paths, hatchAngle: Optional[float] = 90.0) -> List[Island]:
         """
         Generates un-clipped islands which is guaranteed to cover the entire polygon region base on the maximum extent
-        of the polygon bounding box.
+        of the polygon bounding box. This method can be re-implement in a derived class to specify a different Island
+        type to be used and also its placement of the islands to fill the polygon region.
 
         :param paths: The boundaries that the hatches should fill entirely
         :param hatchAngle: The hatch angle (degrees) to rotate the scan vectors
@@ -340,7 +342,7 @@ class IslandHatcher(Hatcher):
         # Generate the square island sub regions
         islands = self.generateIslands(curBoundary, self._hatchAngle)
 
-        # All Island subregions need to have an intersection test
+        # All Island sub-regions need to have an intersection test
         self.intersectIslands(curBoundary, islands)
 
         # Sort the islands using a basic sort
@@ -367,7 +369,8 @@ class IslandHatcher(Hatcher):
                     unclippedCoords.append(coords)
 
             # Update the index by incremented by the number of hatches
-            idx += len(coords) / 2
+            # ISSUE - the max coordinate id should be used to update this but it adds additional computiatonal complexity
+            idx += coords.shape[0] / 2
 
         clippedCoords = np.vstack(clippedCoords)
         unclippedCoords = np.vstack(unclippedCoords).reshape(-1,2,3)
@@ -382,7 +385,6 @@ class IslandHatcher(Hatcher):
 
         # Merge the lines together
         if len(clippedPaths) > 0:
-
 
             # Extract only x-y coordinates and sort based on the pseudo-order stored in the z component.
             clippedLines = clippedLines[:, :, :3]

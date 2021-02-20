@@ -5,8 +5,10 @@ lattice structures.
 
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage import measure
 
 import pyslm
+import pyslm.visualise
 import pyslm.analysis.utils as analysis
 from pyslm import hatching as hatching
 
@@ -46,7 +48,6 @@ sphere = np.sqrt((x-Lx/2)**2 + (y-Ly/2)**2  + (z-Lz/2)**2) < sphere_rad
 #sphere = sphere * np.logical_and(sphere > sphere_rad -3, sphere < sphere_rad +3)
 #sphere = (sphere - sphere_rad) / 3
 
-
 """ Note plotting the image"""
 plt.figure()
 plt.imshow(sphere[int(nz/2)])
@@ -62,7 +63,6 @@ the implicit field. The boundary extracted is simply the marching squares algori
 the 3D numpy array.
 """
 
-from skimage import measure
 
 """
 Note we are simply extracting a 2D XY slice from the array, which is dependent on the resolution chosen. This can be 
@@ -133,8 +133,8 @@ for layerGeom in layer.geometry:
 
 bstyle = pyslm.geometry.BuildStyle()
 bstyle.bid = 1
-bstyle.laserSpeed = 200 # [mm/s]
-bstyle.laserPower = 200 # [W]
+bstyle.laserSpeed = 200.0 # [mm/s]
+bstyle.laserPower = 200.0 # [W]
 
 model = pyslm.geometry.Model()
 model.mid = 1
@@ -146,5 +146,5 @@ predicted.
 """
 print('Total Path Distance: {:.1f} mm'.format(analysis.getLayerPathLength(layer)))
 print('Total jump distance {:.1f} mm'.format(analysis.getLayerJumpLength(layer)))
-print('Time taken {:.1f} s'.format(analysis.getLayerTime(layer, model)))
+print('Time taken {:.1f} s'.format(analysis.getLayerTime(layer, [model])))
 

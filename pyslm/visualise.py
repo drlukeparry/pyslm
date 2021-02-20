@@ -66,7 +66,7 @@ def plotPolygon(polygons, zPos=0.0,
 
 def plotLayers(layers: List[Layer],
                plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
-               plotOrderLine: Optional[bool] = False, handle=None) -> Tuple[plt.Figure, plt.Axes]:
+               handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots a list of :class:`Layer`, specifically the scan vectors (contours and hatches) and point exposures for each
     :class:`LayerGeometry` using `Matplotlib`. The Layer may be plotted in 3D by setting the plot3D parameter.
@@ -93,6 +93,7 @@ def plotLayers(layers: List[Layer],
 def plot(layer: Layer, zPos:Optional[float] = 0,
          plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
          plot3D: Optional[bool] = True, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
+         index: Optional[str] = '',
          handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots the all the scan vectors (contours and hatches) and point exposures for each Layer Geometry in a Layer
@@ -107,6 +108,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
     :param plotArrows: Plot the direction of each scan vector. This reduces the plotting performance due to use of
                        matplotlib annotations, should be disabled for large datasets
     :param plotOrderLine: Plots an additional line showing the order of vector scanning
+    :param index: A string defining the property to plot the scan vector geometry colours against
     :param handle: Matplotlib handle to re-use
     """
 
@@ -126,14 +128,34 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
     plotNormalize = matplotlib.colors.Normalize()
 
     if plotHatches:
-        hatches = layer.getHatchGeometry()
+        hatchGeoms = layer.getHatchGeometry()
 
-        if len(hatches) > 0:
+        if len(hatchGeoms) > 0:
 
-            hatches = np.vstack([hatchGeom.coords.reshape(-1, 2, 2) for hatchGeom in layer.getHatchGeometry()])
+            hatches = np.vstack([hatchGeom.coords.reshape(-1, 2, 2) for hatchGeom in hatchGeoms])
 
-            lc = mc.LineCollection(hatches, colors=plt.cm.rainbow(plotNormalize(np.arange(len(hatches)))),
-                                            linewidths=0.5)
+            lc = mc.LineCollection(hatches, cmap=plt.cm.rainbow, linewidths=0.5)
+
+            """ Plot """
+            if type(index) is str and str and hasattr(hatchGeoms[0], index):
+
+                values = np.vstack([np.tile(getattr(hatchGeom, index), [int(len(hatchGeom.coords)/2),1]) for hatchGeom in hatchGeoms])
+                lc.set_array(values.ravel())
+
+            elif type(index) is str and index == 'length':
+
+                delta = hatches[:,1,:] - hatches[:,0,:]
+                dist = np.sqrt(delta[:,0]*delta[:,0] + delta[:,1]*delta[:,1])
+                lc.set_array(dist.ravel())
+
+            elif callable(index):
+
+                values = np.vstack([index(hatchGeom) for hatchGeom in hatchGeoms])
+                lc.set_array(values.ravel())
+
+            else:
+                # Plot the sequential index of the hatch vector
+                lc.set_array(np.arange(len(hatches)))
 
             if plotArrows and not plot3D:
                 for hatch in hatches:
@@ -154,17 +176,19 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                 ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
 
             ax.add_collection(lc)
+            #axcb = fig.colorbar(lc)
 
     if plotContours:
 
         for contourGeom in layer.getContourGeometry():
 
-            if contourGeom.subType == 'inner':
-                lineColor = '#f57900'
-                lineWidth = 1
-            elif contourGeom.subType == 'outer':
-                lineColor = '#204a87'
-                lineWidth = 1.4
+            if hasattr(contourGeom, 'subType'):
+                if contourGeom.subType == 'inner':
+                    lineColor = '#f57900'
+                    lineWidth = 1
+                elif contourGeom.subType == 'outer':
+                    lineColor = '#204a87'
+                    lineWidth = 1.4
             else:
                 lineColor = 'k'
                 lineWidth = 0.7
@@ -187,8 +211,29 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                         linewidth=lineWidth)
 
     if plotPoints:
-        for pointsGeom in layer.getPointsGeometry():
-            ax.scatter(pointsGeom.coords[:, 0], pointsGeom.coords[:, 1], 'x')
+
+        pointGeoms = layer.getPointsGeometry()
+
+        if len(pointGeoms) > 0:
+
+            scatterPoints = np.vstack([pointsGeom.coords for pointsGeom in layer.getPointsGeometry()])
+
+            pointrGeoms =  layer.getPointsGeometry()
+
+            pntColors = None
+            if callable(index):
+                values = np.vstack([index(pointGeom) for pointGeom in pointrGeoms])
+                pntColors = values.ravel()
+
+            else:
+                # Plot the sequential index of the hatch vector
+                pntColors =  np.arange(len(scatterPoints))
+
+            scaterObj = ax.scatter(scatterPoints[:, 0], scatterPoints[:, 1], c=pntColors)
+            #axcb = fig.colorbar(scaterObj)
+
+            #for pointsGeom in layer.getPointsGeometry():
+            #   ax.scatter(pointsGeom.coords[:, 0], pointsGeom.coords[:, 1], 'x')
 
     return fig, ax
 
