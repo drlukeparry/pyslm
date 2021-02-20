@@ -13,18 +13,20 @@ PySLM Python Library for Selective Laser Melting and Additive Manufacturing
     :alt: Chat on Gitter
 
 
-PySLM is a python library for supporting development of  input files used in Additive Manufacturing, in particular
-Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS) platforms typically used in both academia and industry.
-The core capabilities aim to include slicing, hatching and support generation and providing  an interface to the binary
-build file formats available for platforms. The library is built of core classes which may provide the basic functionality to
-generate the scan vectors used on systems and also be used as building blocks to prototype and develop new algorithms.
+PySLM is a Python library for supporting development of input files used in Additive Manufacturing or 3D Printing,
+in particular Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS) platforms typically used in both
+academia and industry. The core capabilities aim to include slicing, hatching and support generation and providing
+an interface to the binary build file formats available for platforms. The library is built of core classes which
+may provide the basic functionality to generate the scan vectors used on systems and also be used as building blocks
+to prototype and develop new algorithms.
 
 This library provides design tools for use in Additive Manufacturing including the slicing, hatching, support generation
 and  related analysis tools (e.g. overhang analysis, build-time estimation).
 
 PySLM is built-upon python libraries `Trimesh <https://github.com/mikedh/trimesh>`_ and based on some custom modifications
-to the `PyClipper <https://pypi.org/project/pyclipper/>`_ libraries which are leveraged to provide the  slicing and
-manipulation of polygons, such as offsetting and clipping of lines. Additional functionality will be added to provide basic capabilities.
+to the `PyClipper <https://pypi.org/project/pyclipper/>`_ libraries, which are leveraged to provide the slicing and
+manipulation of polygons, such as offsetting and clipping of lines. Additional functionality will be added to provide
+basic capabilities.
 
 The aims is this library provides especially for an academic environment, a useful set of tools for prototyping and used
 in-conjunction with simulation and analytic studies.
@@ -34,8 +36,8 @@ Current Features
 ******************
 
 PySLM is building up a core feature set aiming to provide the basic blocks for primarily generating the scan paths and
-additional design features used for AM systems typically (SLM/SLS/SLA) systems which consolidate material using
-a single/multi point exposure by generating a series of scan vectors in a region.
+additional design features used for AM and 3D printing systems typically (SLM/SLS/SLA) systems which consolidate material
+using a single/multi point exposure by generating a series of scan vectors in a region.
 
 **Support Structure Generation**
 
@@ -61,16 +63,17 @@ The following scan strategies have been implemented as reference on platforms:
 
 **Visualisation:**
 
-The laser scan vectors can be visualised using ``Matplotlib``. The order of the scan vectors can be shown to aid development
-of the scan strategies.
+The laser scan vectors can be visualised using ``Matplotlib``. The order of the scan vectors can be shown to aid
+development of the scan strategies, but additional information such length, laser parameter information associated
+with each scan vector can be shown.
 
-* Scan vector plots
+* Scan vector plots (including underlying BuildStyle information and properties)
 * Exposure point visualisation
-* Exposure map generation
+* Exposure (effective heat) map generation
 * Overhang visualisation
 
 **Analysis:**
-* Build time estimation tools (based on scan strategy)
+* Build time estimation tools (based on scan strategy and geometry)
 
 **Export to Machine Files:**
 
@@ -82,7 +85,7 @@ If you would like to support implementing a custom format, please raise a `reque
 * Renishaw MTT (**.mtt**),
 * DMG Mori Realizer (**.rea**),
 * EOS SLI formats (**.sli**) - WIP,
-* SLM Solutions (**.slm**) - WIP .
+* SLM Solutions (**.slm**) - WIP.
 
 For further information, see the latest `release notes <https://github.com/drlukeparry/pyslm/blob/dev/CHANGELOG.md>`_.
 
@@ -96,9 +99,10 @@ via PyPi and/or Anaconda distribution.
     conda install -c conda-forge shapely, Rtree, networkx, scikit-image
     conda install trimesh
 
-Installation of pySLM can then be performed using pre-built python packages using the PyPi repository. Additionally to
+Installation of PySLM can then be performed using pre-built python packages using the PyPi repository. Additionally to
 interface with commercial systems, the user can choose to install libSLM. Note, the user should contact the author to
-request machine build file translators.
+request machine build file translators, as this cannot be installed currently without having the machine build file
+translators available.
 
 .. code:: bash
 
@@ -122,6 +126,7 @@ length generated in a region.
 .. code:: python
 
     import pyslm
+    import pyslm.visualise
     from pyslm import hatching as hatching
 
     # Imports the part and sets the geometry to  an STL file (frameGuide.stl)
