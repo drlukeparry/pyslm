@@ -23,7 +23,7 @@ jobs:
     - name: Install APT On Linux
       run: |
         sudo apt-get update -qq -y
-        sudo apt-get install -qq -y libglu1-mesa libspatialindex-c4v5 build-essential
+        sudo apt-get install -qq -y libglu1-mesa llibspatialindex6 dcd build-essential
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
