@@ -457,7 +457,7 @@ class Part(DocumentObject):
         :return: A bitmap image for the current slice at position
         """
 
-        vectorSlice = self.getShapelySlice(z)
+        vectorSlice = self.getTrimeshSlice(z)
 
         bitmapOrigin =  self.boundingBox[:2] if origin is None else origin
 
