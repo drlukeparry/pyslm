@@ -9,6 +9,8 @@ imported to visualise the layer.
 """
 
 import pyslm
+import pyslm.analysis
+import pyslm.visualise
 from pyslm import hatching as hatching
 import numpy as np
 
@@ -126,7 +128,7 @@ mttReader = mtt.Reader()
 mttReader.setFilePath("build.mtt")
 mttReader.parse()
 
-layers = mttReader.layers
+readLayers = mttReader.layers
 modelRead = mttReader.models
 
 """ 
@@ -137,7 +139,7 @@ def plotLaserId(models, hatchGeom):
     return np.tile(buildStyle.laserId, [int(len(hatchGeom.coords)/2),1])
 
 
-(fig, ax) = pyslm.visualise.plot(layers[0], plot3D=False, plotOrderLine=True, plotArrows=False,
+(fig, ax) = pyslm.visualise.plot(readLayers[0], plot3D=False, plotOrderLine=True, plotArrows=False,
                                             index=lambda hatchGeom :plotLaserId([model], hatchGeom) )
 
 
