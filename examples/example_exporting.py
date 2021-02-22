@@ -5,9 +5,11 @@ create these structures manually.
 
 The following example demonstrate the overall structure required for creating the border of a square region.
 """
+import numpy as np
 
 import pyslm
-import numpy as np
+import pyslm.visualise
+import pyslm.analysis
 
 """
 The structures necessary for creating a machine build file should be imported from the geometry submodule. 
@@ -41,7 +43,7 @@ contourBuildStyle.laserPower = 200.0  # W
 contourBuildStyle.laserSpeed = 500.0  # mm/s - Note this is used on some systems but should be set
 contourBuildStyle.laserFocus = 0.0  # mm - (Optional) Some new systems can modify the focus position real-time.
 contourBuildStyle.laserId = 1 # Set for multi-laser systems
-contourBuildStyle.laserMode = slm.LaserMode.PULSE # (Pulsed) mode is the default but can be cahnged on some systems.
+contourBuildStyle.laserMode = slm.LaserMode.Pulse # (Pulsed) mode is the default but can be changed on some systems.
 
 # The point exposure parameters are specified for some systems (typically Q-Switch Pulse Lasers)
 # Note: the laser speed v = pointDistance / pointExposureTime

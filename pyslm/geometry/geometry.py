@@ -10,7 +10,7 @@ class LaserMode:
     CW = 0
     """ Continious Wave """
 
-    PULSE = 1
+    Pulse = 1
     """ Pulsed mode (Default option) """
 
 
