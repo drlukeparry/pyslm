@@ -15,21 +15,22 @@ All notable changes to this project will be documented in this file.
 - Added BaseHatcher.boundaryBoundingBox() to obtain the bounding box of a collection of polygons - returned internally from PyClipper
 - Added a `simplifyBoundaries()` in [hatching/utils.py](pyslm/hatching/utils.py) to simplify polygons (shapely and raw coordinate boundaries using scikit image)
 -` hatching.generateExposurePoints()` now generates for `ContourGeometry`
-- Added [example_exporting_multilayer.py](examples/example_exporting_multilayer.py) showing how to export a multi-layer build using libSLM - 52090085fd52336e2cc2181ff886a8aebbdca1ef
+- Added `ModelValidator` class in `pyslm.geometry.utils` to verify the input of build files generated prior to exporting in libSLM - [e75b486c090b4ead712d2ddb950577e058c419e6](https://github.com/drlukeparry/pyslm/commit/e75b486c090b4ead712d2ddb950577e058c419e6)
+- Added [example_exporting_multilayer.py](examples/example_exporting_multilayer.py) showing how to export a multi-layer build using libSLM - [52090085fd52336e2cc2181ff886a8aebbdca1ef](https://github.com/drlukeparry/pyslm/commit/52090085fd52336e2cc2181ff886a8aebbdca1ef)
 - Added [example_custom_island_hatcher.py](examples/example_custom_island_hatcher.py) showing a method to create customised island scan
 - Added [example_custom_island_hatcher.py](examples/example_custom_island_hatcher.py) showing a method to create customised island scan
 - Added a `HexagonIsland` Class to demonstrate custom implementation of island regions
 - Added [example_build_time_analysis.py](examples/example_build_time_analysis.py) to show the processes of estimating build-time
-- Added [example_custom_sinusoidal_hatching.py](examples/example_custom_sinusoidal_hatching.py) for showing custom hatch-infills - c7c1a4304dd4f2a4cdf0286385ccb68d3968ba5e
+- Added [example_custom_sinusoidal_hatching.py](examples/example_custom_sinusoidal_hatching.py) for showing custom hatch-infills - [c7c1a4304dd4f2a4cdf0286385ccb68d3968ba5e](https://github.com/drlukeparry/pyslm/commit/c7c1a4304dd4f2a4cdf0286385ccb68d3968ba5e)
 - Added a method `BaseHatcher.clipContourLines` for clipping open scan paths to fill a region
 - Added an analysis method utility `getBuildStyleById` to find the `BuildStyle` given a model id and build style id
 - Added a method in plotLayer to visualise the scan vector properties (e.g. length)
 - Added properties for geometry class to be compatible with [libSLM](https://github.com/drlukeparry/libSLM) 0.2.2 - providing multi-laser compatibility
-- Added the method `Part.getTrimeshSlice` to get a `trimesh.Path2D` slice from the geometry - bb2ebb9c4514a05cc1728c810deef7fc6c3239e4
+- Added the method `Part.getTrimeshSlice` to get a `trimesh.Path2D` slice from the geometry - [bb2ebb9c4514a05cc1728c810deef7fc6c3239e4](https://github.com/drlukeparry/pyslm/commit/bb2ebb9c4514a05cc1728c810deef7fc6c3239e4)
 - Added a method to find the 'inverse' projection of support faces
 - Added `visualise.visualiseOverhang` for showing overhang regions
 - Added `geometry.utils.ModelValidator` for validting the build inputs (layers, models) when exporting to a machine build file
-- Added a `.gitignore` file - 498d9116dd9d91698695669d5d1309a7941e0dd9
+- Added a `.gitignore` file - [498d9116dd9d91698695669d5d1309a7941e0dd9](https://github.com/drlukeparry/pyslm/commit/498d9116dd9d91698695669d5d1309a7941e0dd9)
 
 ### Changed
 - Internally generateHatching() and hatch() in subclasses of `BaseHatcher` to generate the internal hatch geometry to use multiple boundaries
@@ -41,11 +42,12 @@ to ensure that the subregion generation sorting covers the global region.
 - Analysis method `analysis.getLayerTime` requires a `Model` list
 - Analysis methods use point exposure time and distance using `analysis.getLayerTime` 
 - Removed debug messages when visualising layers
-- Fixed import of submodules in PySLM - 66f48fd9929d244b836583f24c087602cdc31a96
+- Fixed import of submodules in PySLM - [66f48fd9929d244b836583f24c087602cdc31a96](https://github.com/drlukeparry/pyslm/commit/66f48fd9929d244b836583f24c087602cdc31a96)
 
 ### Fixed
-- Fixed `LaserMode`, `LaserType` Enums to be compatible with libSLM - 52090085fd52336e2cc2181ff886a8aebbdca1ef
+- Fixed `LaserMode`, `LaserType` Enums to be compatible with libSLM - [52090085fd52336e2cc2181ff886a8aebbdca1ef](https://github.com/drlukeparry/pyslm/commit/52090085fd52336e2cc2181ff886a8aebbdca1ef)
 - Jump distance between `LayerGeometry` is accounted for in the [Analysis Submodule](pyslm/analysis)
+- Fixed visualisation of PointGeometry exposures - [135bed81bb57b867f2499311bacd7ad2d7aa67d9](https://github.com/drlukeparry/pyslm/commit/135bed81bb57b867f2499311bacd7ad2d7aa67d9)
 - Updated Documentation across the project
 
 ## [0.2.1] - 2020-06-19
