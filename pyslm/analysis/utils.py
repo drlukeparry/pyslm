@@ -1,28 +1,7 @@
 from typing import List, Union
 import numpy as np
 
-from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model
-
-
-def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildStyle, None]:
-    """
-    Returns the Buildstyle found from a list of :class:`Model`  given a model id and build id.
-
-    :param models: A list of models
-    :param mid: The selected model id
-    :param bid:  The selected buildstyle id
-
-    :return: The BuildStyle if found or `None`
-    """
-    model = next(x for x in models if x.mid == mid)
-
-    if model:
-        bstyle = next(x for x in model.buildStyles if x.bid == bid)
-
-        return bstyle
-
-    return None
-
+from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model, utils
 
 def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
     """
@@ -150,7 +129,7 @@ def getLayerGeometryTime(layerGeometry: LayerGeometry, models: List[Model]) -> f
     """
     # Find the build style
 
-    bstyle = getBuildStyleById(models, layerGeometry.mid, layerGeometry.bid)
+    bstyle = utils.getBuildStyleById(models, layerGeometry.mid, layerGeometry.bid)
     return getLayerGeometryPathLength(layerGeometry) / getEffectiveLaserSpeed(bstyle)
 
 
