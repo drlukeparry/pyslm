@@ -711,6 +711,7 @@ class Hatcher(BaseHatcher):
         super().__init__()
 
         # Contour private attributes
+        self._scanContourFirst = False
         self._numInnerContours = 1
         self._numOuterContours = 1
         self._spotCompensation = 0.08  # mm
@@ -759,11 +760,23 @@ class Hatcher(BaseHatcher):
         return self._hatchSortMethod
 
     @hatchSortMethod.setter
-    def hatchSortMethod(self, sortObj):
+    def hatchSortMethod(self, sortObj: Any):
         if not isinstance(sortObj, BaseSort):
             raise TypeError("The Hatch Sort Method should be derived from the BaseSort class")
 
         self._hatchSortMethod = sortObj
+
+    @property
+    def scanContourFirst(self) -> bool:
+        """
+        Determines if the contour/border vectors :class:`LayerGeometry` are scanned first before the hatch vectors. By
+        default this is set to `False`.
+        """
+        return self._scanContourFirst
+
+    @scanContourFirst.setter
+    def scanContourFirst(self, value: bool):
+        self._scanContourFirst = value
 
     @property
     def numInnerContours(self) -> int:
@@ -818,13 +831,17 @@ class Hatcher(BaseHatcher):
         :return: A :class:`Layer` object containing a list of :class:`LayerGeometry` objects generated
         """
         if len(boundaryFeature) == 0:
-            return
+            return None
 
         layer = Layer(0, 0)
         # First generate a boundary with the spot compensation applied
 
         offsetDelta = 0.0
         offsetDelta -= self._spotCompensation
+
+        # Store all contour layer geometries to before adding at the end of each layer
+        contourLayerGeometries = []
+        hatchLayerGeometries = []
 
         for i in range(self._numOuterContours):
             offsetDelta -= self._contourOffset
@@ -835,7 +852,7 @@ class Hatcher(BaseHatcher):
                     contourGeometry = ContourGeometry()
                     contourGeometry.coords = np.array(path)[:, :2]
                     contourGeometry.subType = "outer"
-                    layer.geometry.append(contourGeometry)  # Append to the layer
+                    contourLayerGeometries.append(contourGeometry)  # Append to the layer
 
         # Repeat for inner contours
         for i in range(self._numInnerContours):
@@ -848,7 +865,7 @@ class Hatcher(BaseHatcher):
                     contourGeometry = ContourGeometry()
                     contourGeometry.coords = np.array(path)[:, :2]
                     contourGeometry.subType = "inner"
-                    layer.geometry.append(contourGeometry)  # Append to the layer
+                    contourLayerGeometries.append(contourGeometry)  # Append to the layer
 
         # The final offset is applied to the boundary
 
@@ -920,7 +937,6 @@ class Hatcher(BaseHatcher):
 
                 scanVectors.append(clippedLines)
 
-
         if len(clippedLines) > 0:
             # Scan vectors have been created for the hatched region
 
@@ -929,16 +945,21 @@ class Hatcher(BaseHatcher):
 
             # Only copy the (x,y) points from the coordinate array.
             hatchVectors = np.vstack(scanVectors)
-            hatchVectors  = hatchVectors[:, :, :2].reshape(-1, 2)
+            hatchVectors = hatchVectors[:, :, :2].reshape(-1, 2)
 
             # Note the does not require positional sorting
             if self.hatchSortMethod:
                 hatchVectors = self.hatchSortMethod.sort(hatchVectors)
 
             hatchGeom.coords = hatchVectors
+            hatchLayerGeometries.append(hatchGeom)
 
-            layer.geometry.append(hatchGeom)
+        if self._scanContourFirst:
+            layer.geometry.extend(contourLayerGeometries + hatchLayerGeometries)
+        else:
+            layer.geometry.extend(hatchLayerGeometries + contourLayerGeometries)
 
+        # Append the contours hatch vecotrs
         return layer
 
 
