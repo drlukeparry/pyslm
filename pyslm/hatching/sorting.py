@@ -22,6 +22,21 @@ class BaseSort(abc.ABC):
         """
         raise NotImplementedError('Sort method must be implemented')
 
+
+class UnidirectionalSort(BaseSort):
+    """
+    Method simply passes the hatch vectors in their current form.
+    """
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return 'Unidrectional Hatch Sort'
+
+    def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        """ This approach simply flips the odd pair of hatches"""
+
+
 class AlternateSort(BaseSort):
     """
     Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
