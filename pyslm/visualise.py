@@ -1,4 +1,5 @@
 from typing import Any, List, Tuple, Optional
+from collections.abc import Iterable
 
 import matplotlib.pyplot as plt
 import matplotlib.colors
@@ -6,18 +7,37 @@ import matplotlib.collections as mc
 
 import numpy as np
 
+from shapely.geometry import Polygon, MultiPolygon
+
 from .core import Part
 from .geometry import Layer
 
+def getContoursFromShapelyPolygon(poly, mergeRings:bool =True) -> List[np.ndarray]:
 
-def plotPolygon(polygons, zPos=0.0,
+    outerRings = []
+    innerRings = []
+
+    outerRings += [np.array(tuple(poly.exterior.coords))]
+
+    for ring in poly.interiors:
+        innerRings += [np.array(tuple(ring.coords))]
+
+    if mergeRings:
+        return outerRings + innerRings
+    else:
+        return outerRings, innerRings
+
+def plotPolygon(polygons: List[Any], zPos=0.0,
                 lineColor: Optional[Any] = 'k', lineWidth: Optional[float] = 0.7, fillColor: Optional[Any] = 'r',
                 plot3D: Optional[bool] = False, plotFilled: Optional[bool] = False,
                 handle: Tuple[plt.Figure, plt.Axes] = None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Helper method for plotting polygons (numpy coordinates) and those composed of Python lists.
 
-    :param polygons:  A list of polygons
+    :note:
+        Method cannot deal with complex polygon i.e. those with interiors due to limitation with Matplotlib
+
+    :param polygons: A list of polygons
     :param zPos: The z position of the polygons if plot3D is enabled
     :param lineColor: Line color used for matplotlib (optional)
     :param lineWidth: Line width used for matplotlib (optional)
@@ -46,20 +66,36 @@ def plotPolygon(polygons, zPos=0.0,
 
     patchList = []
 
-    for contour in polygons:
+    contourCoords = []
+
+    if not isinstance(polygons, Iterable):
+        polygons = [polygons]
+
+    for poly in polygons:
+        if isinstance(poly, Polygon):
+            contourCoords += getContoursFromShapelyPolygon(poly)
+        elif isinstance(poly, MultiPolygon):
+            contourCoords += [getContoursFromShapelyPolygon(p) for p in list(poly)]
+        else:
+            contourCoords.append(poly)
+
+    print(contourCoords)
+    for contour in contourCoords:
+
         if plot3D:
             ax.plot(contour[:, 0], contour[:, 1], zs=zPos, color=lineColor, linewidth=lineWidth)
         else:
             if plotFilled:
                 polygon = matplotlib.patches.Polygon(contour, fill=True, linewidth=lineWidth, edgecolor=lineColor, color=fillColor, facecolor=fillColor)
-                ax.add_patch(polygon)
+                #ax.add_patch(polygon)
                 patchList.append(polygon)
 
             else:
                 ax.plot(contour[:, 0], contour[:, 1], color=lineColor, linewidth=lineWidth)
 
-    #p = mc.PatchCollection(patchList, alpha=1)
-    #ax.add_collection(p)
+    if plotFilled:
+        p = mc.PatchCollection(patchList, alpha=1)
+        ax.add_collection(p)
 
     return fig, ax
 
