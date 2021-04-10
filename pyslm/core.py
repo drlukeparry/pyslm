@@ -6,6 +6,9 @@ from abc import ABC
 from typing import Any, List, Optional, Tuple
 
 from shapely.geometry import Polygon
+from shapely.ops import unary_union
+
+from scipy.spatial.qhull import ConvexHull
 
 
 class DocumentObject(ABC):
@@ -41,6 +44,8 @@ class DocumentObject(ABC):
     def boundingBox(self):  # const
         raise NotImplementedError('Abstract  method should be implemented in derived class')
 
+    def extents(self):
+        raise NotImplementedError('Abstract  method should be implemented in derived class')
 
 class Document:
 
@@ -267,7 +272,7 @@ class Part(DocumentObject):
         (:attr:`~Part.origin`), a :attr:`~Part.rotation` and a :attr:`~Part.scaleFactor`
         """
 
-        Sx = trimesh.transformations.scale_matrix(factor = self._scaleFactor[0], direction=[1,0,0])
+        Sx = trimesh.transformations.scale_matrix(factor=self._scaleFactor[0], direction=[1,0,0])
         Sy = trimesh.transformations.scale_matrix(factor=self._scaleFactor[1] , direction=[0,1,0])
         Sz = trimesh.transformations.scale_matrix(factor=self._scaleFactor[2], direction=[0,0,1])
         S = Sx*Sy*Sz
@@ -305,32 +310,44 @@ class Part(DocumentObject):
         self._geometry = mesh
         self._dirty = True
 
-    @property
-    def volume(self) -> float:
-        if not self.geometry.is_volume:
-            raise ValueError('Part is not a valid volume')
-
-        return self.geometry.volume
-
-    @property
-    def area(self) -> float:  # const
-        return self.geometry.area
-
-    @property
-    def geometry(self) -> trimesh.Trimesh:
+    def getProjectedHull(self, returnPoly: bool = False):
         """
-        The geometry of the part with all transformations applied.
+        The convex hull of the part projected in the Z-direction. This is for convenience when trying to find the
+        approximate boundary of the part when used for optimising the layout of parts.
+
+        :return: The convex hull of the part
         """
-        if not self._geometry:
-            return None
 
-        if self.isDirty():
-            print('Updating {:s} Geometry Representation'.format(self.label))
-            self._geometryCache = self._geometry.copy()
-            self._geometryCache.apply_transform(self.getTransform())
-            self._dirty = False
+        coords = self.geometry.vertices[:,:2]
 
-        return self._geometryCache
+        chull = ConvexHull(coords)
+
+        hullCoords = coords[chull.vertices]
+
+        if returnPoly:
+            hullCoords = np.append(hullCoords, hullCoords[0,:].reshape(-1,2), axis=0)
+            return Polygon(hullCoords)
+        else:
+            return hullCoords
+
+    def getProjectedArea(self) :
+        """
+        The resultant projected area of the part projected on the z-axis.
+
+        :return: A Shapely Polygon representing the projected area of the part
+        """
+
+        facesCpy = self.geometry.faces
+
+        shapes = self.geometry.vertices[facesCpy, :2]
+
+        triPolys = []
+
+        for face in shapes:
+            faceCpy= np.append(face, face[0,:].reshape(-1,2), axis=0)
+            triPolys.append(Polygon(faceCpy))
+
+        return unary_union(triPolys)
 
     @property
     def boundingBox(self) -> np.ndarray:  # const
@@ -346,14 +363,66 @@ class Part(DocumentObject):
             return  self.geometry.bounds.flatten()
 
     @property
+    def extents(self) -> np.ndarray:  # const
+        """
+        The extents the geometry transformed in the global coordinate frame :math:`(X,Y,Z)`. The extents is a 1x3 array
+        consisting of the linear dimensions of the part.
+        """
+
+        if not self.geometry:
+            raise ValueError('Geometry was not set')
+
+        bbox = self.boundingBox
+
+        return np.array([bbox[3] - bbox[0],
+                         bbox[4] - bbox[1],
+                         bbox[5] - bbox[2]])
+
+
+    @property
+    def volume(self) -> float:
+        if not self.geometry.is_volume:
+            raise ValueError('Part is not a valid volume')
+
+        return self.geometry.volume
+
+
+    @property
+    def surfaceArea(self) -> float:  # const
+        """ Surface area of the part geometry"""
+        return self.geometry.area
+
+    @property
+    def geometry(self) -> trimesh.Trimesh:
+        """
+        The geometry of the part with all transformations applied.
+        """
+        if not self._geometry:
+            return None
+
+        if self.isDirty():
+            self.regenerate()
+
+        return self._geometryCache
+
+    def regenerate(self):
+        """
+        Regenerate the geometry
+        """
+        print('Updating {:s} Geometry Representation'.format(self.label))
+        self._geometryCache = self._geometry.copy()
+        self._geometryCache.apply_transform(self.getTransform())
+        self._dirty = False
+
+
+    @property
     def partType(self) -> str:
         """
-        Returns the Part type. This will be used in future for the document tree.
-
-        :return: The part type
+        The Part type. This will be used in future for the document tree.
         """
 
         return self._partType
+
 
     def getTrimeshSlice(self, z: float) -> trimesh.path.Path2D:
         """
