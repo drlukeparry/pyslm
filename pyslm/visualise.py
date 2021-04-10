@@ -129,6 +129,7 @@ def plotLayers(layers: List[Layer],
 def plot(layer: Layer, zPos:Optional[float] = 0,
          plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
          plot3D: Optional[bool] = True, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
+         plotColorbar: Optional[bool] = False,
          index: Optional[str] = '',
          handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
@@ -144,6 +145,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
     :param plotArrows: Plot the direction of each scan vector. This reduces the plotting performance due to use of
                        matplotlib annotations, should be disabled for large datasets
     :param plotOrderLine: Plots an additional line showing the order of vector scanning
+    :param plotColorbar: Plots a colorbar for the hatch section
     :param index: A string defining the property to plot the scan vector geometry colours against
     :param handle: Matplotlib handle to re-use
     """
@@ -154,9 +156,9 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
 
     else:
         if plot3D:
-            from mpl_toolkits.mplot3d import Axes3D
             fig = plt.figure()
-            ax = plt.axes(projection='3d', aspect='equal')
+            ax = plt.axes(projection='3d')
+
         else:
             fig, ax = plt.subplots()
             ax.axis('equal')
@@ -212,7 +214,9 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                 ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
 
             ax.add_collection(lc)
-            #axcb = fig.colorbar(lc)
+
+            if plotColorbar:
+                axcb = fig.colorbar(lc)
 
     if plotContours:
 
@@ -271,6 +275,10 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
             #for pointsGeom in layer.getPointsGeometry():
             #   ax.scatter(pointsGeom.coords[:, 0], pointsGeom.coords[:, 1], 'x')
 
+    if False:
+        world_limits = ax.get_w_lims()
+        ax.set_box_aspect((world_limits[1] - world_limits[0], world_limits[3] - world_limits[2],
+                           world_limits[5] - world_limits[4]))
     return fig, ax
 
 
