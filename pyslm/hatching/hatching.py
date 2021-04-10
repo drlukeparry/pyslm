@@ -1,6 +1,6 @@
 import abc
 import time
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -14,9 +14,9 @@ from ..geometry import Layer, Model, LayerGeometry, ContourGeometry, HatchGeomet
 def getExposurePoints(layer: Layer, models: List[Model], includePowerDeposited: bool = True):
     """
     A utility method to return a list of exposure points given a :class:`~pyslm.geometry.Layer` with an associated
-    :class:`~pyslm.geometry.Model` which contains the :class:`~pyslm.geometry.BuildStyle` that provides the point exposure distance
-    or an effective laser speed to spatially discretise the scan vectors into a series of points. If the optional
-    parameter `includePowerDeposited` is set to True, the laser power deposited in included.
+    :class:`Model` which contains the :class:`BuildStyle` that provides the point
+    exposure distance or an effective laser speed to spatially discretise the scan vectors into a series of points.
+    If the optional parameter `includePowerDeposited` is set to True, the laser power deposited in included.
 
     .. note::
         The :attr:`BuildStyle.pointDistance` parameter must be set or this method will fail.
@@ -371,7 +371,7 @@ class BaseHatcher(abc.ABC):
 
 
         lineList =  lines.reshape([-1, 2, 3])
-        print(lineList.shape)
+
         i = 0
 
         results = []
@@ -380,7 +380,6 @@ class BaseHatcher(abc.ABC):
         for i in np.arange(0,lineList.shape[0]):
             #i += 1
             point = lineList[i]
-            print(point)
 
             edge = Contour([Point(point[0,0], point[0,1]),
                             Point(point[1,0], point[1,1])], [], True)
@@ -400,7 +399,6 @@ class BaseHatcher(abc.ABC):
 
             plt.plot(points[:,0], points[:,1])
 
-        print(result)
         print('completed result')
         return results
 
@@ -432,8 +430,6 @@ class BaseHatcher(abc.ABC):
         lineList = tuple(map(tuple, lineList))
         lineList = BaseHatcher.scaleToClipper(lineList)
 
-        print('len of lines', len(lineList))
-
         pc.AddPaths(lineList, pyclipper.PT_SUBJECT, False)
 
         # Note open paths (lines) have to used PyClipper::Execute2 in order to perform trimming
@@ -460,8 +456,6 @@ class BaseHatcher(abc.ABC):
         """
 
         pc = pyclipper.Pyclipper()
-
-        print('len paths', len(contourPaths))
 
         for path in paths:
             for boundary in path:
@@ -533,7 +527,7 @@ class BaseHatcher(abc.ABC):
         return coords
 
     @abc.abstractmethod
-    def hatch(self, boundaryFeature) -> Layer:
+    def hatch(self, boundaryFeature) -> Union[Layer, None]:
         """
         The hatch method should be re-implemented by a child class to generate a :class:`Layer` containing the scan
         vectors used for manufacturing the layer.
@@ -726,7 +720,7 @@ class Hatcher(BaseHatcher):
 
     @property
     def hatchDistance(self) -> float:
-        """ The distance between adjacent hatch scan vectors. """
+        """ The distance between adjacent hatch scan vectors """
         return self._hatchDistance
 
     @hatchDistance.setter
@@ -735,7 +729,9 @@ class Hatcher(BaseHatcher):
 
     @property
     def hatchAngle(self) -> float:
-        """ The base hatch angle used for hatching the region expressed in degrees :math:`[-180,180]`"""
+        """
+        The base hatch angle used for hatching the region expressed in degrees :math:`[-180,180]`
+        """
         return self._hatchAngle
 
     @hatchAngle.setter
@@ -815,7 +811,8 @@ class Hatcher(BaseHatcher):
     @property
     def volumeOffsetHatch(self) -> float:
         """
-        An additional offset may be added (positive or negative) between the contour and the internal hatching.
+        An additional offset may be added (positive or negative) between the contour/border scans and the
+        internal hatching for the bulk volume.
         """
         return self._volOffsetHatch
 
@@ -823,7 +820,7 @@ class Hatcher(BaseHatcher):
     def volumeOffsetHatch(self, value: float):
         self._volOffsetHatch = value
 
-    def hatch(self, boundaryFeature):
+    def hatch(self, boundaryFeature) -> Union[Layer, None]:
         """
         Generates a series of contour or boundary offsets along with a basic full region internal hatch.
 
@@ -987,7 +984,7 @@ class StripeHatcher(Hatcher):
         return self._stripeWidth
 
     @stripeWidth.setter
-    def stripeWidth(self, width):
+    def stripeWidth(self, width: float):
         self._stripeWidth = width
 
     @property
@@ -1001,7 +998,9 @@ class StripeHatcher(Hatcher):
 
     @property
     def stripeOffset(self) -> float:
-        """ The stripe offset is the relative distance (hatch spacing) to move the scan vectors between adjacent stripes"""
+        """
+        The stripe offset is the relative distance (hatch spacing) to move the scan vectors between adjacent stripes
+        """
         return self._stripeOffset
 
     @stripeOffset.setter
@@ -1018,8 +1017,8 @@ class StripeHatcher(Hatcher):
         :param hatchAngle: Hatch angle (degrees) to rotate the scan vectors
 
         :return: Returns the list of unclipped scan vectors
-
         """
+
         # Hatch angle
         theta_h = np.radians(hatchAngle)  # 'rad'
 

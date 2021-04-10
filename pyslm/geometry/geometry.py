@@ -1,4 +1,5 @@
 import numpy as np
+import numpy as np
 
 from enum import Enum
 import abc
@@ -8,11 +9,10 @@ from typing import Any, List, Optional, Tuple
 
 class LaserMode:
     CW = 0
-    """ Continious Wave """
+    """ Continuous Wave """
 
     Pulse = 1
     """ Pulsed mode (Default option) """
-
 
 class Header:
     """
@@ -50,7 +50,10 @@ class BuildStyle:
 
     @property
     def bid(self) -> int:
-        """ A unique id used for each BuildStyle object within each Model that can be referenced by a :class:`LayerGeometry` """
+        """
+        A unique id used for each BuildStyle object within each Model that can be referenced by
+        a :class:`LayerGeometry`
+        """
         return self._bid
 
     @bid.setter
@@ -59,7 +62,7 @@ class BuildStyle:
 
     @property
     def name(self) -> str:
-        """ The name of the BuildStyle"""
+        """ The name of the :class:`BuildStyle`"""
         return self._name
 
     @name.setter
@@ -68,7 +71,7 @@ class BuildStyle:
 
     @property
     def description(self) -> str:
-        """ The description of the BuildStyle """
+        """ The description of the :class:`BuildStyle`"""
         return self._description
 
     @description.setter
@@ -77,7 +80,7 @@ class BuildStyle:
 
     @property
     def laserId(self) -> int:
-        """ The ID of the laser beam used for the exposure """
+        """ The ID of the laser beam used for the exposure. Typically set to `1` for single laser systems """
         return self._laserId
 
     @laserId.setter
@@ -87,7 +90,7 @@ class BuildStyle:
     @property
     def laserMode(self) -> int:
         """
-        Determines the laser mode to use via :class:`LaserMode` which is either continious wave (CW) or
+        Determines the laser mode to use via :class:`LaserMode` which is either continuous wave (CW) or
         pulsed (Pulsed) laser operation
         """
         return self._laserMode
@@ -102,7 +105,7 @@ class BuildStyle:
         return self._laserPower
 
     @laserPower.setter
-    def laserPower(self, laserPower:float):
+    def laserPower(self, laserPower: float):
         self._laserPower = laserPower
 
     @property
@@ -289,7 +292,6 @@ class LayerGeometry(abc.ABC):
 
     @coords.setter
     def coords(self, coordValues: np.ndarray):
-        print(coordValues.shape)
         if coordValues.shape[-1] != 2:
             raise ValueError('Coordinates provided to layer geometry must have (X,Y) values only')
 
@@ -339,7 +341,7 @@ class HatchGeometry(LayerGeometry):
                        coords: Optional[np.ndarray] = None):
 
         super().__init__(mid, bid, coords)
-        # print('Constructed Hatch Geometry')
+
 
     def __str__(self):
         return 'Hatch Geometry <bid, {:d}, mid, {:d}>'.format(self._bid, self._mid)
