@@ -23,6 +23,19 @@ def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildSty
 
     return None
 
+def getLayerById(layers: List[Layer], layerId: int) -> Layer:
+    """
+    Finds the `Layer` within a list given an id
+
+    :param layers: The list of layers to search
+    :param layerId: The layer id to find
+
+    :return: If found the layer or `None`
+    """
+    layer = next(x for x in layers if x.layerId == layerId)
+
+    return layer
+
 
 def getModel(models: List[Model], mid: int) -> Union[BuildStyle, None]:
     """
