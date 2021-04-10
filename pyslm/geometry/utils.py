@@ -143,7 +143,7 @@ class ModelValidator:
                 warn("Warning: Layer ({:d}) does not contain any layer geometry. It is advised to check this is valid".format(layer.layerId))
 
             for layerGeom in layer.geometry:
-                model = modelIdx.get(model.mid, None)
+                model = modelIdx.get(layerGeom.mid, None)
 
                 if not model:
                     raise Exception("Layer Geometry in layer ({:d} @ {:.3f}) has not been assigned a model".format(layer.layerId, layer.z))
