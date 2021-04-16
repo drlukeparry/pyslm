@@ -289,7 +289,7 @@ class LayerGeometry(abc.ABC):
 
     @coords.setter
     def coords(self, coordValues: np.ndarray):
-        print(coordValues.shape)
+        # print(coordValues.shape)
         if coordValues.shape[-1] != 2:
             raise ValueError('Coordinates provided to layer geometry must have (X,Y) values only')
 

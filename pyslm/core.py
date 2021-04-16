@@ -45,7 +45,7 @@ class DocumentObject(ABC):
 class Document:
 
     def __init__(self):
-        print('Initialising the Document Graph')
+        # print('Initialising the Document Graph')
 
         # Create a direct acyclic graph using NetworkX
         self._graph = nx.DiGraph()
@@ -290,9 +290,9 @@ class Part(DocumentObject):
         """
         self._geometry = trimesh.load_mesh(filename, use_embree=False, process=True, Validate_faces=False)
 
-        print('Geometry information <{:s}> - [{:s}]'.format(self.name, filename))
-        print('\t bounds', self._geometry.bounds)
-        print('\t extent', self._geometry.extents)
+        # print('Geometry information <{:s}> - [{:s}]'.format(self.name, filename))
+        # print('\t bounds', self._geometry.bounds)
+        # print('\t extent', self._geometry.extents)
 
         self._dirty = True
 
@@ -325,7 +325,7 @@ class Part(DocumentObject):
             return None
 
         if self.isDirty():
-            print('Updating {:s} Geometry Representation'.format(self.label))
+            # print('Updating {:s} Geometry Representation'.format(self.label))
             self._geometryCache = self._geometry.copy()
             self._geometryCache.apply_transform(self.getTransform())
             self._dirty = False
