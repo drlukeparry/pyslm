@@ -371,7 +371,7 @@ class BaseHatcher(abc.ABC):
 
 
         lineList =  lines.reshape([-1, 2, 3])
-        print(lineList.shape)
+        # print(lineList.shape)
         i = 0
 
         results = []
@@ -380,7 +380,7 @@ class BaseHatcher(abc.ABC):
         for i in np.arange(0,lineList.shape[0]):
             #i += 1
             point = lineList[i]
-            print(point)
+            # print(point)
 
             edge = Contour([Point(point[0,0], point[0,1]),
                             Point(point[1,0], point[1,1])], [], True)
@@ -400,8 +400,8 @@ class BaseHatcher(abc.ABC):
 
             plt.plot(points[:,0], points[:,1])
 
-        print(result)
-        print('completed result')
+        # print(result)
+        # print('completed result')
         return results
 
 
@@ -432,7 +432,7 @@ class BaseHatcher(abc.ABC):
         lineList = tuple(map(tuple, lineList))
         lineList = BaseHatcher.scaleToClipper(lineList)
 
-        print('len of lines', len(lineList))
+        # print('len of lines', len(lineList))
 
         pc.AddPaths(lineList, pyclipper.PT_SUBJECT, False)
 
@@ -461,7 +461,7 @@ class BaseHatcher(abc.ABC):
 
         pc = pyclipper.Pyclipper()
 
-        print('len paths', len(contourPaths))
+        # 'len paths', len(contourPaths))
 
         for path in paths:
             for boundary in path:
@@ -1005,7 +1005,7 @@ class StripeHatcher(Hatcher):
         # Get the bounding box of the paths
         bbox = self.boundaryBoundingBox(paths)
 
-        print('bounding box bbox', bbox)
+        # print('bounding box bbox', bbox)
         # Expand the bounding box
         bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
 
@@ -1125,7 +1125,7 @@ class BasicIslandHatcher(Hatcher):
         # Get the bounding box of the paths
         bbox = self.boundaryBoundingBox(paths)
 
-        print('bounding box bbox', bbox)
+        # print('bounding box bbox', bbox)
         # Expand the bounding box
         bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
 
