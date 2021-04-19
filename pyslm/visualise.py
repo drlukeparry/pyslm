@@ -12,7 +12,8 @@ from shapely.geometry import Polygon, MultiPolygon
 from .core import Part
 from .geometry import Layer
 
-def getContoursFromShapelyPolygon(poly, mergeRings:bool =True) -> List[np.ndarray]:
+
+def getContoursFromShapelyPolygon(poly, mergeRings:bool = True) -> Tuple[np.ndarray, np.ndarray]:
 
     outerRings = []
     innerRings = []
@@ -26,6 +27,7 @@ def getContoursFromShapelyPolygon(poly, mergeRings:bool =True) -> List[np.ndarra
         return outerRings + innerRings
     else:
         return outerRings, innerRings
+
 
 def plotPolygon(polygons: List[Any], zPos=0.0,
                 lineColor: Optional[Any] = 'k', lineWidth: Optional[float] = 0.7, fillColor: Optional[Any] = 'r',
@@ -79,7 +81,6 @@ def plotPolygon(polygons: List[Any], zPos=0.0,
         else:
             contourCoords.append(poly)
 
-    print(contourCoords)
     for contour in contourCoords:
 
         if plot3D:
@@ -101,7 +102,8 @@ def plotPolygon(polygons: List[Any], zPos=0.0,
 
 
 def plotLayers(layers: List[Layer],
-               plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
+               plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True,
+               plotPoints: Optional[bool] = True,
                handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots a list of :class:`Layer`, specifically the scan vectors (contours and hatches) and point exposures for each
@@ -111,7 +113,6 @@ def plotLayers(layers: List[Layer],
     :param plotContours: Plots the inner hatch scan vectors. Defaults to `True`
     :param plotHatches: Plots the hatch scan vectors
     :param plotPoints: Plots point exposures
-    :param plotOrderLine: Plots an additional line showing the order of vector scanning
     :param handle: Matplotlib handle to re-use
     """
     if handle:
@@ -124,7 +125,10 @@ def plotLayers(layers: List[Layer],
     for layer in layers:
         fig, ax = plot(layer, layer.z/1000,
                        plot3D=True, plotContours=plotContours, plotHatches=plotHatches, plotPoints=plotPoints,
-                       handle=(fig,ax))
+                       handle=(fig, ax))
+
+    return fig, ax
+
 
 def plot(layer: Layer, zPos:Optional[float] = 0,
          plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
