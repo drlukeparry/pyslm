@@ -758,7 +758,10 @@ class Hatcher(BaseHatcher):
 
     @hatchSortMethod.setter
     def hatchSortMethod(self, sortObj: Any):
-        if not isinstance(sortObj, BaseSort):
+
+        if sortObj is None:
+            pass
+        elif not isinstance(sortObj, BaseSort):
             raise TypeError("The Hatch Sort Method should be derived from the BaseSort class")
 
         self._hatchSortMethod = sortObj
