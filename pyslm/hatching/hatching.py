@@ -1,6 +1,7 @@
 import abc
 import time
 from typing import Any, List, Optional, Tuple, Union
+import logging
 
 import numpy as np
 
@@ -809,6 +810,17 @@ class Hatcher(BaseHatcher):
         self._spotCompensation = value
 
     @property
+    def contourOffset(self) -> float:
+        """
+        The contour offset is the distance between the contour or border scans
+        """
+        return self._contourOffset
+
+    @contourOffset.setter
+    def contourOffset(self, offset: float):
+        self._contourOffset = offset
+
+    @property
     def volumeOffsetHatch(self) -> float:
         """
         An additional offset may be added (positive or negative) between the contour/border scans and the
@@ -833,7 +845,7 @@ class Hatcher(BaseHatcher):
         layer = Layer(0, 0)
         # First generate a boundary with the spot compensation applied
 
-        offsetDelta = 0.0
+        offsetDelta = 1e-6
         offsetDelta -= self._spotCompensation
 
         # Store all contour layer geometries to before adding at the end of each layer
@@ -853,7 +865,6 @@ class Hatcher(BaseHatcher):
 
         # Repeat for inner contours
         for i in range(self._numInnerContours):
-
             offsetDelta -= self._contourOffset
             offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
@@ -864,9 +875,9 @@ class Hatcher(BaseHatcher):
                     contourGeometry.subType = "inner"
                     contourLayerGeometries.append(contourGeometry)  # Append to the layer
 
-        # The final offset is applied to the boundary
-
-        offsetDelta -= self._volOffsetHatch
+        # The final offset is applied to the boundary if there has been existing contour offsets applied
+        if self._numInnerContours + self._numOuterContours > 0:
+            offsetDelta -= self._volOffsetHatch
 
         curBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
