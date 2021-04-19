@@ -368,8 +368,6 @@ class BaseHatcher(abc.ABC):
 
 
         edges = []
-        #print(lines)
-
 
         lineList =  lines.reshape([-1, 2, 3])
 
@@ -400,7 +398,6 @@ class BaseHatcher(abc.ABC):
 
             plt.plot(points[:,0], points[:,1])
 
-        print('completed result')
         return results
 
 
@@ -1159,7 +1156,6 @@ class BasicIslandHatcher(Hatcher):
         # Get the bounding box of the paths
         bbox = self.boundaryBoundingBox(paths)
 
-        print('bounding box bbox', bbox)
         # Expand the bounding box
         bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
 

@@ -1,9 +1,11 @@
+from abc import ABC
+from typing import Any, List, Optional, Tuple
+import logging
+
 import numpy as np
 import networkx as nx
 import trimesh
 
-from abc import ABC
-from typing import Any, List, Optional, Tuple
 
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
@@ -50,7 +52,7 @@ class DocumentObject(ABC):
 class Document:
 
     def __init__(self):
-        print('Initialising the Document Graph')
+        logging.info('Initialising the Document Graph')
 
         # Create a direct acyclic graph using NetworkX
         self._graph = nx.DiGraph()
@@ -409,11 +411,10 @@ class Part(DocumentObject):
         """
         Regenerate the geometry
         """
-        print('Updating {:s} Geometry Representation'.format(self.label))
+        logging.debug('Updating {:s} Geometry Representation'.format(self.label))
         self._geometryCache = self._geometry.copy()
         self._geometryCache.apply_transform(self.getTransform())
         self._dirty = False
-
 
     @property
     def partType(self) -> str:
@@ -422,7 +423,6 @@ class Part(DocumentObject):
         """
 
         return self._partType
-
 
     def getTrimeshSlice(self, z: float) -> trimesh.path.Path2D:
         """
