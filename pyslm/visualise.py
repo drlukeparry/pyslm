@@ -206,14 +206,15 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
 
             if plot3D:
                 ax.add_collection3d(lc, zs=zPos)
+            else:
+                ax.add_collection(lc)
+                ax.plot()
 
             if not plot3D and plotOrderLine:
-                ax.add_collection(lc)
+
                 midPoints = np.mean(hatches, axis=1)
                 idx6 = np.arange(len(hatches))
                 ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
-
-            ax.add_collection(lc)
 
             if plotColorbar:
                 axcb = fig.colorbar(lc)
