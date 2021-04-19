@@ -1036,7 +1036,6 @@ class StripeHatcher(Hatcher):
         # Get the bounding box of the paths
         bbox = self.boundaryBoundingBox(paths)
 
-        print('bounding box bbox', bbox)
         # Expand the bounding box
         bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
 
