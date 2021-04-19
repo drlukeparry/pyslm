@@ -297,9 +297,11 @@ class Part(DocumentObject):
         """
         self._geometry = trimesh.load_mesh(filename, use_embree=False, process=True, Validate_faces=False)
 
-        print('Geometry information <{:s}> - [{:s}]'.format(self.name, filename))
-        print('\t bounds', self._geometry.bounds)
-        print('\t extent', self._geometry.extents)
+        if fixGeometry:
+
+        logging.info('Geometry information <{:s}> - [{:s}]'.format(self.name, filename))
+        logging.info('\t Bounds: [{:.3f},{:.3f},{:.3f}], [{:.3f},{:.3f},{:.3f}]'.format(*self._geometry.bounds.ravel()))
+        logging.info('\t Extent: [{:.3f},{:.3f},{:.3f}]'.format(*self._geometry.extents))
 
         self._dirty = True
 
