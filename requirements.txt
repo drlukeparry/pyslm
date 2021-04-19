@@ -1,5 +1,6 @@
 sphinx
 numpy
+matplotlib
 scipy
 shapely
 networkx
