@@ -288,23 +288,30 @@ class Part(DocumentObject):
 
         return M
 
-    def setGeometry(self, filename: str) -> None:
+    def setGeometry(self, filename: str,
+                    fixGeometry: bool = True) -> None:
         """
         Sets the Part geometry based on a mesh filename. The mesh must have a compatible file that can be
-        imported via `trimesh`.
+        imported via `trimesh` - see .
 
         :param filename: The mesh filename
         """
-        self._geometry = trimesh.load_mesh(filename, use_embree=False, process=True, Validate_faces=False)
+        self._geometry = trimesh.load_mesh(filename, process=False, use_embree=False, Validate_faces=False)
 
         if fixGeometry:
+            self.geometry.process(validate=True)
 
         logging.info('Geometry information <{:s}> - [{:s}]'.format(self.name, filename))
         logging.info('\t Bounds: [{:.3f},{:.3f},{:.3f}], [{:.3f},{:.3f},{:.3f}]'.format(*self._geometry.bounds.ravel()))
         logging.info('\t Extent: [{:.3f},{:.3f},{:.3f}]'.format(*self._geometry.extents))
 
+        self.checkGeometry()
         self._dirty = True
 
+    def checkGeometry(self) -> bool:
+
+        if not self.geometry.is_watertight:
+            raise Exception('The geometry for {:s} is not watertight'.format(self.name))
     def setGeometryByMesh(self, mesh: trimesh.Trimesh) -> None:
         """
          Sets the Part geometry based on an existing Trimesh object.
