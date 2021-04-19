@@ -196,7 +196,8 @@ class ModelValidator:
                 warn("Warning: Model({:s}) was not used in any layer)".format(model.name))
 
             if model.topLayerId != modelTopLayerIdx[model.mid]:
-                raise Exception("Top Layer Id of Model ({:d}) differs in the layers used ({:d})".format(model.topLayerId,
-                                                                                                        modelTopLayerIdx[model.mid]))
+                raise Exception("Top Layer Id {:d} of Model ({:d}) differs in the layers used ({:d})".format(model.topLayerId,
+                                                                                                             model.mid,
+                                                                                                             modelTopLayerIdx[model.mid]))
 
         return True
