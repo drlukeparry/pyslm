@@ -38,6 +38,23 @@ class UnidirectionalSort(BaseSort):
         """ This approach simply flips the odd pair of hatches"""
 
 
+class FlipSort(BaseSort):
+    """
+    Sort method flips all pairs of scan vectors so that their direction alternates across the input
+    """
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return 'Alternating Hatch Sort'
+
+    def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        """ This approach simply flips the odd pair of hatches"""
+        sv = to3DHatchArray(scanVectors)
+        sv = np.flip(sv, 1)
+        return from3DHatchArray(sv)
+
+
 class AlternateSort(BaseSort):
     """
     Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
