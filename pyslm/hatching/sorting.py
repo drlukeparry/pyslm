@@ -68,11 +68,7 @@ class AlternateSort(BaseSort):
     def sort(self, scanVectors: np.ndarray) -> np.ndarray:
         """ This approach simply flips the odd pair of hatches"""
         sv = to3DHatchArray(scanVectors)
-        sv[1:-1:2] = np.flip(sv[1:-1:2], 1)
-
-        #vectorCopy = scanVectors.copy()
-        # return vectorCopy
-
+        sv[1::2] = np.flip(sv[1::2], 1)
         return from3DHatchArray(sv)
 
 
