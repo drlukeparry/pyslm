@@ -5,6 +5,7 @@ import abc
 
 from .utils import *
 
+
 class BaseSort(abc.ABC):
     def __init__(self):
         pass
@@ -28,7 +29,7 @@ class UnidirectionalSort(BaseSort):
     Method simply passes the hatch vectors in their current form.
     """
     def __init__(self):
-        pass
+        super().__init__()
 
     def __str__(self):
         return 'Unidrectional Hatch Sort'
@@ -42,7 +43,7 @@ class AlternateSort(BaseSort):
     Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
     """
     def __init__(self):
-        pass
+        super().__init__()
 
     def __str__(self):
         return 'Alternating Hatch Sort'
@@ -66,6 +67,7 @@ class LinearSort(BaseSort):
     """
 
     def __init__(self):
+        super().__init__()
         self._hatchAngle = 0.0
 
     @property
@@ -107,6 +109,8 @@ class GreedySort(BaseSort):
     The approach finds clusters of scan vectors based on their connectivity based on a threshold
     """
     def __init__(self, hatchAngle = 0.0, hatchTol = None):
+
+        super().__init__()
 
         self._hatchAngle = hatchAngle
         self._sortY = False
