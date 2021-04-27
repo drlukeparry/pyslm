@@ -93,6 +93,7 @@ def plotLayers(layers: List[Layer],
 def plot(layer: Layer, zPos:Optional[float] = 0,
          plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
          plot3D: Optional[bool] = True, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
+         plotJumps: Optional[bool] = False,
          index: Optional[str] = '',
          handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
@@ -108,6 +109,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
     :param plotArrows: Plot the direction of each scan vector. This reduces the plotting performance due to use of
                        matplotlib annotations, should be disabled for large datasets
     :param plotOrderLine: Plots an additional line showing the order of vector scanning
+    :param plotJumps: Plots the jump vectors of the layer in gray (rgb (128, 128, 128)).
     :param index: A string defining the property to plot the scan vector geometry colours against
     :param handle: Matplotlib handle to re-use
     """
@@ -174,6 +176,17 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                 midPoints = np.mean(hatches, axis=1)
                 idx6 = np.arange(len(hatches))
                 ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
+
+            # Jump vectors
+            if plotJumps:
+                jumps = np.empty((len(hatches) - 1, 2, 2))
+                for i in range(len(hatches) - 1):
+                    currentHatch = hatches[i]
+                    nextHatch = hatches[i + 1]
+                    jumps[i] = np.array([currentHatch[1], nextHatch[0]])                
+                colors = np.array([.5, .5, .5, 1] * len(jumps)).reshape(-1, 4) # likely more optimal to use np.full(), but was unable to get it working with arrays
+                jumps_lc = mc.LineCollection(jumps, colors=colors, linewidths=.55)
+                ax.add_collection(jumps_lc)
 
             ax.add_collection(lc)
             #axcb = fig.colorbar(lc)
