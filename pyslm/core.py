@@ -470,7 +470,8 @@ class Part(DocumentObject):
         return planarSection
 
     def getVectorSlice(self, z: float, returnCoordPaths: bool = True,
-                       simplificationFactor:bool = None, simplificationPreserveTopology: Optional[bool] = True) -> Any:
+                       simplificationFactor:bool = None, simplificationPreserveTopology: Optional[bool] = True,
+                       simplificationFactorAbsolute = False) -> Any:
         """
         The vector slice is created by using `trimesh` to slice the mesh into a polygon
 
@@ -478,6 +479,7 @@ class Part(DocumentObject):
         :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise Shapely Polygons
         :param simplificationFactor:  Simplification factor used for the boundary
         :param simplificationPreserveTopology:  Preserves the slice's topology when using simplification algorithm
+        :param simplificationFactorAbsolute: Set `True` to use absolute simplification distance
 
         :return: The vector slice at the given z level
         """
@@ -490,10 +492,17 @@ class Part(DocumentObject):
         polygons = planarSection.polygons_full
 
         if simplificationFactor:
+
+            if simplificationFactorAbsolute:
+                simpFactor = simplificationFactor
+            else:
+                maxLen = np.max(planarSection.extents)
+                simpFactor = simplificationFactor * maxLen
+
             simpPolys = []
 
             for polygon in polygons:
-                simpPolys.append(polygon.simplify(simplificationFactor, preserve_topology=simplificationPreserveTopology))
+                simpPolys.append(polygon.simplify(simpFactor, preserve_topology=simplificationPreserveTopology))
 
             polygons = simpPolys
 
