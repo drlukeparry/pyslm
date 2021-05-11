@@ -10,7 +10,7 @@ import numpy as np
 from shapely.geometry import Polygon, MultiPolygon
 
 from .core import Part
-from .geometry import Layer
+from .geometry import Layer, HatchGeometry, ContourGeometry
 
 
 def getContoursFromShapelyPolygon(poly, mergeRings:bool = True) -> Tuple[np.ndarray, np.ndarray]:
@@ -129,6 +129,80 @@ def plotLayers(layers: List[Layer],
 
     return fig, ax
 
+
+def plotSequential(layer: Layer, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
+                   handle=None) -> Tuple[plt.Figure, plt.Axes]:
+    """
+    Plots sequentially the all the scan vectors (contours and hatches) for all Layer Geometry in a Layer
+    using `Matplotlib`. The :class:`Layer` may be only plotted across a single 2D layer.
+
+    :param layer: A single :class:`Layer` containing a set of various  :class:`LayerGeometry` objects
+    :param plotArrows: Plot the direction of each scan vector. This reduces the plotting performance due to use of
+                       matplotlib annotations, should be disabled for large datasets
+    :param plotOrderLine: Plots an additional line showing the order of vector scanning
+    :param handle: Matplotlib handle to re-use
+    """
+
+    if handle:
+        fig = handle[0]
+        ax = handle[1]
+
+    else:
+        fig, ax = plt.subplots()
+        ax.axis('equal')
+
+    plotNormalize = matplotlib.colors.Normalize()
+
+    scanVectors = []
+    for geom in layer.geometry:
+
+        if isinstance(geom, HatchGeometry):
+            coords = geom.coords.reshape(-1, 2, 2)
+        elif isinstance(geom, ContourGeometry):
+            coords = np.hstack([geom.coords, np.roll(geom.coords, -1, axis=0)]).reshape(-1,2,2)
+
+        scanVectors.append(coords)
+
+    scanVectors = np.vstack(scanVectors)
+
+    svTmp = scanVectors.copy().reshape(-1,2)
+    svTmp = np.roll(svTmp,-1,axis=0)[0:-2]
+    svTmp = svTmp.reshape(-1,2,2)
+
+    #scanVectors = np.vstack([scanVectors, svTmp])
+
+    lc = mc.LineCollection(scanVectors, cmap=plt.cm.rainbow, linewidths=1.0)
+    lc2 = mc.LineCollection(svTmp, cmap=plt.cm.get_cmap('Greys'), linewidths=0.3, linestyles="--", lw=0.7)
+
+    if plotOrderLine:
+        midPoints = np.mean(scanVectors, axis=1)
+        idx6 = np.arange(len(scanVectors))
+        ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
+
+    """
+    Plot the sequential index of the hatch vector and generating the colourmap by using the cumulative distance
+    across all the scan vectors in order to normalise the length based effectively on the distance
+    """
+    delta = scanVectors[:, 1, :] - scanVectors[:, 0, :]
+    dist = np.sqrt(delta[:, 0] * delta[:, 0] + delta[:, 1] * delta[:, 1])
+    cumDist = np.cumsum(dist)
+    lc.set_array(cumDist.ravel())
+
+    # Add all the line collections to the figure
+    ax.add_collection(lc)
+    ax.add_collection(lc2)
+    ax.plot()
+
+    if plotArrows:
+        for hatch in scanVectors:
+            midPoint = np.mean(hatch, axis=0)
+            delta = hatch[1, :] - hatch[0, :]
+
+            plt.annotate('', xytext=midPoint - delta * 1e-4,
+                         xy=midPoint,
+                         arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
+
+    return fig, ax
 
 def plot(layer: Layer, zPos:Optional[float] = 0,
          plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
