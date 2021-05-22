@@ -285,6 +285,7 @@ class BaseHatcher(abc.ABC):
         for polyChild in boundaryOffsetPolys.Childs:
             offsetContours += BaseHatcher._getChildPaths(polyChild)
 
+
         return offsetContours
 
     @staticmethod
@@ -420,6 +421,9 @@ class BaseHatcher(abc.ABC):
         """
         #clipLines = BaseHatcher.clipLines2(paths, lines)
 
+        if len(lines) == 0:
+            # Input from generateHatching is empty so return empty
+            return None
 
         pc = pyclipper.Pyclipper()
 
@@ -714,11 +718,13 @@ class Hatcher(BaseHatcher):
         self._contourOffset = 1.0 * self._spotCompensation
         self._volOffsetHatch = self._spotCompensation
 
+
         # Hatch private attributes
         self._layerAngleIncrement = 0  # 66 + 2 / 3
         self._hatchDistance = 0.08  # mm
         self._hatchAngle = 45
         self._hatchSortMethod = None
+        self._hatchingEnabled = True
 
     @property
     def hatchDistance(self) -> float:
@@ -836,6 +842,15 @@ class Hatcher(BaseHatcher):
     def volumeOffsetHatch(self, value: float):
         self._volOffsetHatch = value
 
+    @property
+    def hatchingEnabled(self) -> bool:
+        """ If the internal hatch region should be processed (default: True)"""
+        return self._hatchingEnabled
+
+    @hatchingEnabled.setter
+    def hatchingEnabled(self, value):
+        self._hatchingEnabled = value
+
     def hatch(self, boundaryFeature) -> Union[Layer, None]:
         """
         Generates a series of contour or boundary offsets along with a basic full region internal hatch.
@@ -887,12 +902,14 @@ class Hatcher(BaseHatcher):
 
         scanVectors = []
 
-        if True:
+        if self.hatchingEnabled and len(curBoundary) > 0:
             paths = curBoundary
 
             # Hatch angle will change per layer
             # TODO change the layer angle increment
             layerHatchAngle = np.mod(self._hatchAngle + self._layerAngleIncrement, 180)
+            #layerHatchAngle = float(self._hatchAngle + self._layerAngleIncrement)
+            #layerHatchAngle -= np.floor(layerHatchAngle / 360. + 0.5) * 360.
 
             # The layer hatch angle needs to be bound by +ve X vector (i.e. -90 < theta_h < 90 )
             if layerHatchAngle > 90:
@@ -903,6 +920,7 @@ class Hatcher(BaseHatcher):
 
             # Clip the hatch fill to the boundary
             clippedPaths = self.clipLines(paths, hatches)
+            clippedLines = []
 
             # Merge the lines together
             if len(clippedPaths) > 0:
@@ -915,7 +933,23 @@ class Hatcher(BaseHatcher):
                 clippedLines = clippedLines[id, :, :]
 
                 scanVectors.append(clippedLines)
-        else:
+
+                # Scan vectors have been created for the hatched region
+
+                # Construct a HatchGeometry containing the list of points
+                hatchGeom = HatchGeometry()
+
+                # Only copy the (x,y) points from the coordinate array.
+                hatchVectors = np.vstack(scanVectors)
+                hatchVectors = hatchVectors[:, :, :2].reshape(-1, 2)
+
+                # Note the does not require positional sorting
+                if self.hatchSortMethod:
+                    hatchVectors = self.hatchSortMethod.sort(hatchVectors)
+
+                hatchGeom.coords = hatchVectors
+                hatchLayerGeometries.append(hatchGeom)
+        if False:
             # Iterate through each closed polygon region in the slice. The currently individually sliced.
             for contour in curBoundary:
                 # print('{:=^60} \n'.format(' Generating hatches '))
@@ -949,22 +983,7 @@ class Hatcher(BaseHatcher):
 
                 scanVectors.append(clippedLines)
 
-        if len(clippedLines) > 0:
-            # Scan vectors have been created for the hatched region
 
-            # Construct a HatchGeometry containing the list of points
-            hatchGeom = HatchGeometry()
-
-            # Only copy the (x,y) points from the coordinate array.
-            hatchVectors = np.vstack(scanVectors)
-            hatchVectors = hatchVectors[:, :, :2].reshape(-1, 2)
-
-            # Note the does not require positional sorting
-            if self.hatchSortMethod:
-                hatchVectors = self.hatchSortMethod.sort(hatchVectors)
-
-            hatchGeom.coords = hatchVectors
-            hatchLayerGeometries.append(hatchGeom)
 
         if self._scanContourFirst:
             layer.geometry.extend(contourLayerGeometries + hatchLayerGeometries)
