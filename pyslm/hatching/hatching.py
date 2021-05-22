@@ -161,12 +161,16 @@ class BaseHatcher(abc.ABC):
     """
 
 
-    PYCLIPPER_SCALEFACTOR = 1e4
+    PYCLIPPER_SCALEFACTOR = 1e5
     """ 
     The scaling factor used for polygon clipping and offsetting in `PyClipper <https://pypi.org/project/pyclipper/>`_ 
     for the decimal component of each polygon coordinate. This should be set to inverse of the required decimal 
     tolerance i.e. 0.01 requires a minimum scale factor of 100. This scaling factor is used 
     in :meth:`~BaseHatcher.scaleToClipper` and :meth:`~BaseHatcher.scaleFromClipper`. 
+    
+    :note:
+        From experience, 1e4, mostly works, however, there are some artefacts generated during clipping hatch vectors.
+        Therefore at a small peformance cost 1e5 is recommended.
     """
 
     def __init__(self):
