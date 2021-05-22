@@ -164,8 +164,8 @@ class Part(DocumentObject):
     The part can be transformed and has a position (:attr:`~Part.origin`),
     rotation (:attr:`~Part.rotation`) and additional scale factor (:attr:`~Part.scaleFactor`), which are collectively
     applied to the geometry in its local coordinate system :math:`(x,y,z)`. Changing the geometry using
-    :meth:`~Part.setGeometryByMesh` or :meth:`~Part.setGeometry` along with any of the transformation attributes will set
-    the part dirty and forcing the transformation and geometry to be re-computed on the next call in order to obtain
+    :meth:`~Part.setGeometryByMesh` or :meth:`~Part.setGeometry` along with any of the transformation attributes will
+    set the part dirty and forcing the transformation and geometry to be re-computed on the next call in order to obtain
     the :attr:`Part.geometry`.
 
     The part is currently based off a faceted mesh, internally building on capabilities of the Trimesh packages.
@@ -179,6 +179,12 @@ class Part(DocumentObject):
 
     _partType = 'Part'
     """ The part type is a static class attribute used for classifying the part when used in the document tree. """
+
+    POLYGON_FIX_EPSILON = 1e-3
+    """ 
+    Constant value used for repairing invalid/broken polygon regions obtained using :meth:`getVectorSlice`
+    Default value is equivalent to 1 micron.
+    """
 
     def __init__(self, name):
 
@@ -470,16 +476,18 @@ class Part(DocumentObject):
         return planarSection
 
     def getVectorSlice(self, z: float, returnCoordPaths: bool = True,
-                       simplificationFactor:bool = None, simplificationPreserveTopology: Optional[bool] = True,
-                       simplificationFactorAbsolute = False) -> Any:
+                       fixPolygons: bool = True,
+                       simplificationFactor:float = None, simplificationPreserveTopology: Optional[bool] = True,
+                       simplificationFactorMode:str = 'absolute') -> Any:
         """
         The vector slice is created by using `trimesh` to slice the mesh into a polygon
 
         :param z: The slice's z-position
         :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise Shapely Polygons
+        :param fixPolygons: Fixes any polygons during slicing by offset by epsilon value
         :param simplificationFactor:  Simplification factor used for the boundary
         :param simplificationPreserveTopology:  Preserves the slice's topology when using simplification algorithm
-        :param simplificationFactorAbsolute: Set `True` to use absolute simplification distance
+        :param simplificationFactorMode: Set mode ('absolute', 'line') for the simplification tolerance calculation
 
         :return: The vector slice at the given z level
         """
@@ -493,18 +501,36 @@ class Part(DocumentObject):
 
         if simplificationFactor:
 
-            if simplificationFactorAbsolute:
+            if simplificationFactorMode == 'absolute':
                 simpFactor = simplificationFactor
+            elif simplificationFactorMode == 'bound':
+                meanLen = np.mean(planarSection.extents)
+                simpFactor = simplificationFactor * meanLen
+            elif simplificationFactorMode == 'line':
+                pass
             else:
-                maxLen = np.max(planarSection.extents)
-                simpFactor = simplificationFactor * maxLen
+                raise Exception('simplification mode invalid')
 
             simpPolys = []
 
             for polygon in polygons:
+
+                if simplificationFactorMode == 'line':
+                    coords = np.vstack([polygon.exterior.xy[0], polygon.exterior.xy[1]]).T
+                    delta = np.diff(coords, axis=0)
+                    dist = np.sqrt(delta[:, 0] * delta[:, 0] + delta[:, 1] * delta[:, 1])
+                    simpFactor = np.mean(dist) * simplificationFactor
+
                 simpPolys.append(polygon.simplify(simpFactor, preserve_topology=simplificationPreserveTopology))
 
             polygons = simpPolys
+
+        # fix polygon
+        if fixPolygons:
+            fixPolys = []
+            for polygon in polygons:
+                fixPolys.append(polygon.buffer(Part.POLYGON_FIX_EPSILON))
+            polygons = fixPolys
 
         if returnCoordPaths:
             return self.path2DToPathList(polygons)
