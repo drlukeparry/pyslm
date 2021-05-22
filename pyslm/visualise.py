@@ -1,3 +1,5 @@
+import logging
+
 from typing import Any, List, Tuple, Optional
 from collections.abc import Iterable
 
@@ -163,16 +165,13 @@ def plotSequential(layer: Layer, plotArrows: Optional[bool] = False, plotOrderLi
 
         scanVectors.append(coords)
 
+    if len(scanVectors) == 0:
+        logging.warning('pyslm.visualise.plotSequential: Empty layer')
+        return
+
     scanVectors = np.vstack(scanVectors)
 
-    svTmp = scanVectors.copy().reshape(-1,2)
-    svTmp = np.roll(svTmp,-1,axis=0)[0:-2]
-    svTmp = svTmp.reshape(-1,2,2)
-
-    #scanVectors = np.vstack([scanVectors, svTmp])
-
     lc = mc.LineCollection(scanVectors, cmap=plt.cm.rainbow, linewidths=1.0)
-    lc2 = mc.LineCollection(svTmp, cmap=plt.cm.get_cmap('Greys'), linewidths=0.3, linestyles="--", lw=0.7)
 
     if plotOrderLine:
         midPoints = np.mean(scanVectors, axis=1)
