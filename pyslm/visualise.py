@@ -65,7 +65,7 @@ def plotPolygon(polygons: List[Any], zPos=0.0,
         else:
             fig, ax = plt.subplots()
 
-    ax.axis('equal')
+    #ax.axis('equal')
     plotNormalize = matplotlib.colors.Normalize()
 
     patchList = []
@@ -133,6 +133,7 @@ def plotLayers(layers: List[Layer],
 
 
 def plotSequential(layer: Layer, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
+                   plotJumps: Optional[bool] = False,
                    handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots sequentially the all the scan vectors (contours and hatches) for all Layer Geometry in a Layer
@@ -142,6 +143,7 @@ def plotSequential(layer: Layer, plotArrows: Optional[bool] = False, plotOrderLi
     :param plotArrows: Plot the direction of each scan vector. This reduces the plotting performance due to use of
                        matplotlib annotations, should be disabled for large datasets
     :param plotOrderLine: Plots an additional line showing the order of vector scanning
+    :param plotJumps:  Plots the jumps (in dashed lines) between vectors
     :param handle: Matplotlib handle to re-use
     """
 
@@ -185,11 +187,24 @@ def plotSequential(layer: Layer, plotArrows: Optional[bool] = False, plotOrderLi
     delta = scanVectors[:, 1, :] - scanVectors[:, 0, :]
     dist = np.sqrt(delta[:, 0] * delta[:, 0] + delta[:, 1] * delta[:, 1])
     cumDist = np.cumsum(dist)
-    lc.set_array(cumDist.ravel())
+    #lc.set_array(np.arange(len(scanVectors)))
+    lc.set_array(cumDist)
 
     # Add all the line collections to the figure
     ax.add_collection(lc)
-    ax.add_collection(lc2)
+
+    if plotJumps:
+        # Plot the jumping vectors by rolling the entire stack of scan vectors
+        svTmp = scanVectors.copy().reshape(-1, 2)
+        svTmp = np.roll(svTmp, -1, axis=0)[0:-2]
+        svTmp = svTmp.reshape(-1, 2, 2)
+
+        # scanVectors = np.vstack([scanVectors, svTmp])
+
+        jumpLC = mc.LineCollection(svTmp, cmap=plt.cm.get_cmap('Greys'), linewidths=0.3, linestyles="--", lw=0.7)
+
+        ax.add_collection(jumpLC)
+
     ax.plot()
 
     if plotArrows:
