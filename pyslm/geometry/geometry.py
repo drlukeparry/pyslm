@@ -48,6 +48,13 @@ class BuildStyle:
         self._jumpDelay = 0
         self._jumpSpeed = 0
 
+    def __str__(self):
+        str = "Build Style: (name: {:s}, id: {:d})\n".format(self._name, self._bid)
+        str += "  laser power: {:.1f} W, laser speed: {:.1f}, laser id: {:d}\n".format(self._laserPower,
+                                                                                       self._laserSpeed,
+                                                                                       self._laserId)
+        return str
+
     @property
     def bid(self) -> int:
         """

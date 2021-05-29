@@ -129,12 +129,12 @@ class Iterator(ABC):
         self._tree = None
 
     @property
-    def time(self):
-        """ The current time [s] of the  iterator (read only) """
+    def time(self) -> float:
+        """ The current time [s] of the iterator (read only) """
         return self._time
 
     @property
-    def currentLayerGeometryTime(self):
+    def currentLayerGeometryTime(self) -> float:
         """ The current start time of the active :class:`LayerGeometry` """
         return self._layerGeomTime
 
@@ -457,7 +457,7 @@ class ScanIterator(Iterator):
     ScanIterator builds upon  :class:`Iterator`  and utilises the TimeTree cache generated for each :class:`Layer`
     and its set of :class:`LayerGeometry` objects respectively. If the current :property:`time` is within the current
     :class:`LayerGeometry` the current point is interpolated across the individual scan vectors depending on its type in
-    :classmethod:`getPointInLayerGeometry` using the current BuildStyle associated with the LayerGeometry.
+    :method:`getPointInLayerGeometry` using the current BuildStyle associated with the LayerGeometry.
     """
     def __init__(self, model: List[Model], layers: List[Layer]):
         super().__init__(model, layers)
@@ -589,7 +589,6 @@ class ScanIterator(Iterator):
             position = self.getCurrentLaserPosition()
 
         # Increment the timestep
-
         layerGeomTime = self.getLayerGeomTime(self._layerInc, self._layerGeomInc)
 
         self._time += self._timestep
