@@ -6,7 +6,6 @@ island regions, which are tested for intersection and then the hatches generated
 import numpy as np
 import time
 
-from shapely.geometry.polygon import LineString, LinearRing, Polygon
 from shapely.geometry import MultiPolygon
 
 import pyslm
@@ -22,7 +21,6 @@ solidPart.origin[0] = 5.0
 solidPart.origin[1] = 2.5
 solidPart.scaleFactor = 2.0
 solidPart.rotation = [0, 0.0, np.pi]
-print(solidPart.boundingBox)
 
 # Set te slice layer position
 z = 14.99
@@ -54,7 +52,7 @@ if True:
 
     # The user can extract the ids of all the ids that are clipped or not clipped of the islands
     # The boundary should be provided to be clipped against.
-    a,b = myHatcher.intersectIslands(geomSlice, islands)
+    a, b = myHatcher.intersectIslands(geomSlice, islands)
 
     overlapIslands = [islands[i] for i in a]
     intersectIslands = [islands[i] for i in b]
@@ -62,11 +60,10 @@ if True:
     # The above intersectIsland internal method can also be achieved using the following approach below.
 
     # Get the Shapely Polygons from slicing the part
-    poly = solidPart.getVectorSlice(z, False).tolist()
+    poly = solidPart.getVectorSlice(z, False)
 
     # Use shapely MultiPolygon collection to allow full testing and clipping across all boundary regions
     poly = MultiPolygon(poly)
-
 
     intersectIslands = []
     overlapIslands = []
@@ -93,18 +90,17 @@ if True:
     unTouchedIslands = [islands[i] for i in unTouchedIslandSet]
 
     print('Finished Island Clipping')
-    #clipIslands = myHatcher.clipIslands(geomSlice, islands)
 
     fig, ax = pyslm.visualise.plotPolygon(geomSlice)
 
     # Plot using visualise.plotPolygon the original islands generated before intersection
     for island in islands:
-        x,y = island.boundary().exterior.xy
-        pyslm.visualise.plotPolygon([np.vstack([x,y]).T], handle=(fig,ax))
+        x, y = island.boundary().exterior.xy
+        pyslm.visualise.plotPolygon([np.vstack([x,y]).T], handle=(fig, ax))
 
     for island in intersectIslands:
-        x,y = island.boundary().exterior.xy
-        pyslm.visualise.plotPolygon([np.vstack([x,y]).T], handle=(fig,ax),  plotFilled=True, lineColor='g', fillColor = '#19aeffff')
+        x, y = island.boundary().exterior.xy
+        pyslm.visualise.plotPolygon([np.vstack([x,y]).T], handle=(fig, ax),  plotFilled=True, lineColor='g', fillColor = '#19aeffff')
 
     for island in overlapIslands:
         x, y = island.boundary().exterior.xy
@@ -113,7 +109,7 @@ if True:
 
 startTime = time.time()
 
-#Perform the complete hatching operation
+# Perform the complete hatching operation
 print('Hatching Started')
 
 layer = myHatcher.hatch(geomSlice)

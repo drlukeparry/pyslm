@@ -6,7 +6,7 @@ import numpy as np
 import pyslm
 
 import pyslm.visualise
-import pyslm.analysis.utils as analysis
+import pyslm.analysis
 from pyslm import hatching as hatching
 from pyslm.geometry import Layer, LayerGeometry, ContourGeometry, HatchGeometry
 from pyslm.hatching import BaseHatcher
@@ -329,7 +329,7 @@ model.buildStyles.append(bstyle)
 Analyse the layers using the analysis module. The path distance and the estimate time taken to scan the layer can be
 predicted.
 """
-print('Total Path Distance: {:.1f} mm'.format(analysis.getLayerPathLength(layer)))
-print('Total jump distance {:.1f} mm'.format(analysis.getLayerJumpLength(layer)))
-print('Time taken {:.1f} s'.format(analysis.getLayerTime(layer, [model])) )
+print('Total Path Distance: {:.1f} mm'.format(pyslm.analysis.getLayerPathLength(layer)))
+print('Total jump distance {:.1f} mm'.format(pyslm.analysis.getLayerJumpLength(layer)))
+print('Time taken {:.1f} s'.format(pyslm.analysis.getLayerTime(layer, [model])) )
 
