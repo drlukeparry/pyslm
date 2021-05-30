@@ -295,12 +295,15 @@ class Part(DocumentObject):
         return M
 
     def setGeometry(self, geometry,
-                    fixGeometry: bool = True) -> None:
+                    fixGeometry: Optional[bool] = True,
+                    mergeVertices: Optional[bool] = True) -> None:
         """
         Sets the Part geometry based on a mesh filename. The mesh must have a compatible file that can be
         imported via `trimesh` - see .
 
         :param filename: The mesh filename
+        :param fixGeometry: Use Trimesh's utilities to fix the mesh: Default = `True`
+        :param mergeVertices:  Merges the vertices of the mesh: Default = `True`
         """
 
         if isinstance(geometry, trimesh.Trimesh):
@@ -309,9 +312,12 @@ class Part(DocumentObject):
             logging.info('Geometry information <{:s}> - [{:s}]'.format(self.name, geometry))
             self._geometry = trimesh.load_mesh(geometry, process=False, use_embree=False, Validate_faces=False)
 
+        if mergeVertices:
+            self._geometry.merge_vertices()
+
         if fixGeometry:
-            self.geometry.process(validate=True)
-            self.geometry.fix_normals()
+            self._geometry.process(validate=True)
+            self._geometry.fix_normals()
 
 
         logging.info('\t Bounds: [{:.3f},{:.3f},{:.3f}], [{:.3f},{:.3f},{:.3f}]'.format(*self._geometry.bounds.ravel()))
@@ -323,7 +329,8 @@ class Part(DocumentObject):
     def checkGeometry(self) -> bool:
 
         if not self.geometry.is_watertight:
-            raise Exception('The geometry for {:s} is not watertight'.format(self.name))
+            logging.warning('The geometry for {:s} is not watertight'.format(self.name))
+
     def setGeometryByMesh(self, mesh: trimesh.Trimesh) -> None:
         """
          Sets the Part geometry based on an existing Trimesh object.
@@ -408,7 +415,6 @@ class Part(DocumentObject):
             raise ValueError('Part is not a valid volume')
 
         return self.geometry.volume
-
 
     @property
     def surfaceArea(self) -> float:  # const
