@@ -108,6 +108,7 @@ print("Current time at layer (1): {:.3f})".format(scanIter.time))
 
 # Seek based on the time
 scanIter.seek(time=0.4)
+
 print("Current layer is {:d} @ time = 0.4s".format(scanIter.getCurrentLayer().layerId))
 
 # Get the current laser state (position, laser parameters, firing)
@@ -115,12 +116,12 @@ laserX, laserY = scanIter.getCurrentLaserPosition()
 laserOn = scanIter.isLaserOn()
 bstyle = scanIter.getCurrentBuildStyle()
 
-print(bstyle)
-
 """
 Other useful metrics are cached such as the total build time
 """
 totalBuildTime = scanIter.getBuildTime()
 
 print('Total number of layers: {:d}'.format(len(layers)))
+
 print('Total Build Time: {:.1f}s ({:.1f}hr)'.format(totalBuildTime, totalBuildTime/3600))
+
