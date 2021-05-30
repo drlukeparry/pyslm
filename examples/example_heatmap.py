@@ -84,7 +84,6 @@ plt.scatter(exposurePoints[:,0], exposurePoints[:,1], marker='o', linestyle='Non
 # Plot the exposure points
 pyslm.visualise.plot(layer, plot3D=False, handle=(fig,ax))
 
-
 # Plot the corresponding layers
 pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True, plotArrows=False)
 

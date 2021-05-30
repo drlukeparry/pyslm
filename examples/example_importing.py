@@ -6,6 +6,9 @@ The following example works with a Renishaw .mtt file. The user needs to specify
 """
 
 import pyslm
+import pyslm.analysis
+import pyslm.visualise
+
 import numpy as np
 
 """
@@ -47,7 +50,7 @@ A wrapped lambda function is used to curry the existing models list and locate f
 the laser id used to scan the hatch geometry.
 """
 def plotLaserId(models, hatchGeom):
-    buildStyle = pyslm.analysis.getBuildStyleById(models, hatchGeom.mid, hatchGeom.bid)
+    buildStyle = pyslm.analysis.utils.getBuildStyleById(models, hatchGeom.mid, hatchGeom.bid)
     return np.tile(buildStyle.laserId, [int(len(hatchGeom.coords)/2),1])
 
 
