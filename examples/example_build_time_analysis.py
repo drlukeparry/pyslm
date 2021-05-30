@@ -98,7 +98,7 @@ def main():
     totalPerimeter = np.sum([layer.length for layer in layers]) * numCountourOffsets
     totalArea = np.sum([layer.area for layer in layers])
     print('\nStatistics:')
-    print('\tDiscretised volume {.2f} cm3'.format(totalArea * layerThickness / 1e3))
+    print('\tDiscretised volume {:.2f} cm3'.format(totalArea * layerThickness / 1e3))
     print("\tNum Layers {:d} Height: {:.2f}".format(numLayers, totalHeight))
     print("\tVolume: {:.2f} cm3, Area: {:.2f} mm2, Contour Perimeter: {:.2f} mm".format(totalVolume/1000, totalArea,totalPerimeter))
 
@@ -128,10 +128,10 @@ def main():
     sin_theta = np.sqrt((1-np.dot(v0, v1.T)**2))
     triAreas = solidPart.geometry.area_faces * sin_theta
     projectedArea = np.sum(triAreas)
-    print('\tProjected area: {:.3f}'.format(projectedArea))
-    print('\tSurface area: {:.3f}'.format(solidPart.area))
+    print('\tProjected surface area: {:.3f}'.format(projectedArea))
+    print('\tSurface area: {:.3f}'.format(solidPart.surfaceArea))
 
-    approxScanTime = solidPart.volume/(hatchDistance * hatchLaserScanSpeed * layerThickness) + solidPart.area / (contourLaserScanSpeed*layerThickness)
+    approxScanTime = solidPart.volume/(hatchDistance * hatchLaserScanSpeed * layerThickness) + solidPart.surfaceArea / (contourLaserScanSpeed*layerThickness)
     approxProjectedScanTime = solidPart.volume / (hatchDistance * hatchLaserScanSpeed * layerThickness) + projectedArea / (
                 contourLaserScanSpeed * layerThickness)
     print('\tApprox scan time *surface) {:.2f} hr'.format(approxScanTime/3600))

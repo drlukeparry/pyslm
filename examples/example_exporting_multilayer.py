@@ -135,12 +135,9 @@ modelRead = mttReader.models
 Plot the laser id used for each hatch vector used. A lambda function is used to plot this. 
 """
 def plotLaserId(models, hatchGeom):
-    buildStyle = pyslm.analysis.getBuildStyleById(models, hatchGeom.mid, hatchGeom.bid)
+    buildStyle = pyslm.analysis.utils.getBuildStyleById(models, hatchGeom.mid, hatchGeom.bid)
     return np.tile(buildStyle.laserId, [int(len(hatchGeom.coords)/2),1])
 
 
 (fig, ax) = pyslm.visualise.plot(readLayers[0], plot3D=False, plotOrderLine=True, plotArrows=False,
                                             index=lambda hatchGeom :plotLaserId([model], hatchGeom) )
-
-
-
