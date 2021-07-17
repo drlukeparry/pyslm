@@ -2,6 +2,7 @@
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
+    :skip: ABC
 
 .. automodapi:: pyslm.core
     :no-inheritance-diagram:

@@ -1,21 +1,33 @@
-import itertools
+import logging
 from typing import Any, List, Optional, Tuple, Union
 from abc import ABC
 
-
 import numpy as np
 
-from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model, utils
-
+from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model
+from ..geometry import utils as geomUtils
 from .utils import *
 
 class LaserState:
+    """
+    The LaserState Class is a simple structure used for storing the state of the current exposure point at
+    time :math:`t` including the position and the active :class:`BuildStyle` and whether it is active/firing which
+    may happen during the layer dwell time.
+    """
     def __init__(self):
-        self.position = (0,0)
+        self.position = (0, 0)
         self.buildStyle = None
         self.isActive = False
 
+
 class TimeNode:
+    """
+    The TimeNode class provides a structure for storing the pre-calculated time of a Layer or LayerGeometry structure,
+    which is stored in :attr:`TimeNode.time`. The TimeNode is constructed with  both references to children and parent
+    nodes within the functional scope, which build a parsable tree structure. The references are to other TimeNodes
+    and static and changes are not dynamically propagated, therefore caution is advised that the entire Cache tree
+    is updated after a known change.
+    """
     def __init__(self, parent=None, id:Optional[int]=0, value:Optional[Any] = None):
 
         self.parent = parent
@@ -61,7 +73,7 @@ class ScanVectorIterator:
 
     @staticmethod
     def reshapeVectors(vectorList: np.ndarray):
-        return np.vstack(vectorList).reshape(-1, 2, 2)
+        return np.vstack(vectorList).reshape([-1, 2, 2])
 
     @staticmethod
     def getLayerVectors(layer: Layer):
@@ -82,8 +94,6 @@ class ScanVectorIterator:
 
         self._layerIt = 0
         self._layerScanVecIt = 0
-
-        #self._layerScanVectors = self.getLayerVectors(self._layers[0])
 
         return self
 
@@ -151,7 +161,7 @@ class Iterator(ABC):
 
     def _generateCache(self) -> None:
 
-        print('Generating cache')
+        logging.info('Generating  Iterator TimeNode Cache Tree')
         self._tree = TimeNode()
 
         for layerId, layer in enumerate(self.layers):
@@ -228,7 +238,7 @@ class Iterator(ABC):
         :class:`LayerGeometry` index.
 
         :param layerId: The layer index in the list
-        :param geomId: The layer geometry index within the :class:`Layer`
+        :param layerGeomId: The layer geometry index within the :class:`Layer`
         :return: The time for the LayerGeometry
         """
         return self.tree.children[layerId].children[layerGeomId].time
@@ -373,22 +383,40 @@ class Iterator(ABC):
         return self.getCurrentLayer().geometry[self._layerGeomInc]
 
     def getCurrentLayer(self) -> Layer:
+        """
+        Gets the current layer of the iterator
+
+        :return: The current layer
+        """
         return self.layers[self._layerInc]
 
     def seekByLayerGeometry(self, layerId: int, layerGeomId: int) -> None:
+        """
+        Instructs the iterator to seek ahead in time to the specific :class:`LayerGeometry`
 
+        :param layerId:  The index of the layer within the list of layers provided to the iterator
+        :param layerGeomId:  The index of the layer geometry within the specified layer
+        """
         self._time = self._layerGeomTime = self.getTimeByLayerGeometryId(layerId, layerGeomId)
         self._layerInc = layerId
         self._layerGeomInc = layerGeomId
 
     def seekByLayer(self, layerId: int) -> None:
+        """
+        Instructs the iterator to seek ahead in time to the specific :class:`Layer`
 
+        :param layerId: The index of the layer within the list of layers provided to the iterator
+        """
         self._time = self._layerGeomTime = self.getTimeByLayerId(layerId)
         self._layerInc = layerId
         self._layerGeomInc = 0
 
     def seek(self, time: float) -> None:
+        """
+        Instructs the iterator to seek ahead to a specific time.
 
+        :param time: The time to seek to
+        """
         layerGeomNode = self.getLayerGeometryNodeByTime(time)
 
         if not layerGeomNode:
@@ -434,33 +462,33 @@ class Iterator(ABC):
 
 class LayerGeometryIterator(Iterator):
 
-    def __init__(self, model: List[Model], layers: List[Layer]):
-        super().__init__(model, layers)
+    def __init__(self, models: List[Model], layers: List[Layer]):
+        super().__init__(models, layers)
 
     def __iter__(self):
-        super().__iter()
+        super().__iter__()
         return self
 
 
 class ScanIterator(Iterator):
     """
-    The Scan Iterator class provides a  method to iterate at a variable :property:`timestep` across a BuildFile
+    The Scan Iterator class provides a  method to iterate at a variable :attr:`timestep` across a BuildFile
     consisting of list of :class:`Layer` and :class`Model` provided as the input. Typically this is used in
     numerical simulation of powder-bed fusion processes and also its temporal visualisation. Properties include the
-    current position are available via :classmethod:`getCurrentLaserPosition` and the current laser parameters in
-    :classmethod:`getCurrentBuildStyle` and if the laser is currently active :meth:`isLaserOn`.
+    current position are available via :meth:`getCurrentLaserPosition` and the current laser parameters in
+    :meth:`getCurrentBuildStyle` and if the laser is currently active :meth:`isLaserOn`.
 
     :note:
         The Iterator classes *assumes* that the laser position during rastering is linearly interpolated across each scan
-        vector, based on the :property:`timestep`, which can be modulated during the iterator.
+        vector, based on the :attr:`timestep`, which can be modulated during the iterator.
 
     ScanIterator builds upon  :class:`Iterator`  and utilises the TimeTree cache generated for each :class:`Layer`
-    and its set of :class:`LayerGeometry` objects respectively. If the current :property:`time` is within the current
+    and its set of :class:`LayerGeometry` objects respectively. If the current :attr:`time` is within the current
     :class:`LayerGeometry` the current point is interpolated across the individual scan vectors depending on its type in
-    :method:`getPointInLayerGeometry` using the current BuildStyle associated with the LayerGeometry.
+    :meth:`getPointInLayerGeometry` using the current BuildStyle associated with the LayerGeometry.
     """
-    def __init__(self, model: List[Model], layers: List[Layer]):
-        super().__init__(model, layers)
+    def __init__(self, models: List[Model], layers: List[Layer]):
+        super().__init__(models, layers)
 
         self._timestep: float = 1e-3
         self._scanId = 0
@@ -500,7 +528,7 @@ class ScanIterator(Iterator):
 
         :return:  The current position of the laser of the time
         """
-        buildStyle = utils.getBuildStyleById(self.models, layerGeom.mid, layerGeom.bid)
+        buildStyle = geomUtils.getBuildStyleById(self.models, layerGeom.mid, layerGeom.bid)
 
         laserVelocity = getEffectiveLaserSpeed(buildStyle)
 
@@ -556,7 +584,7 @@ class ScanIterator(Iterator):
 
     def getCurrentLaserPosition(self) -> Tuple[float, float]:
         """
-        Returns the current position of the point exposure at the current :property:`time`.
+        Returns the current position of the point exposure at the current :attr:`time`.
 
         :return: A tuple representing the exposure point :math:`(x,y)`
         """
@@ -575,7 +603,7 @@ class ScanIterator(Iterator):
         """
         layerGeom = self.getCurrentLayerGeometry()
 
-        return utils.getBuildStyleById(self.models, layerGeom.mid, layerGeom.bid)
+        return geomUtils.getBuildStyleById(self.models, layerGeom.mid, layerGeom.bid)
 
     def __iter__(self):
         super().__iter__()

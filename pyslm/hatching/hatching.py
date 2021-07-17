@@ -496,13 +496,15 @@ class BaseHatcher(abc.ABC):
         :return: Returns the list of un-clipped scan vectors
         """
 
-        # Hatch angle
-        theta_h = np.radians(hatchAngle)  # 'rad'
+        """
+        The hatch angle
+        Note the angle is reversed here because the rotation matrix is counter-clockwise
+        """
+        theta_h = np.radians(hatchAngle)# * -1.0)  # 'rad'
 
         # Get the bounding box of the paths
         bbox = self.boundaryBoundingBox(paths)
 
-        # print('bounding box bbox', bbox)
         # Expand the bounding box
         bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
 
@@ -1053,8 +1055,11 @@ class StripeHatcher(Hatcher):
         :return: Returns the list of unclipped scan vectors
         """
 
-        # Hatch angle
-        theta_h = np.radians(hatchAngle)  # 'rad'
+        """
+        The hatch angle
+        Note the angle is reversed here because the rotation matrix is counter-clockwise
+        """
+        theta_h = np.radians(hatchAngle * -1.0)  # 'rad'
 
         # Get the bounding box of the paths
         bbox = self.boundaryBoundingBox(paths)

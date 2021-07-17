@@ -11,6 +11,8 @@ PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 .. image:: https://badges.gitter.im/pyslm/community.svg
     :target: https://gitter.im/pyslm/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
     :alt: Chat on Gitter
+.. image:: https://static.pepy.tech/personalized-badge/pythonslm?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
+ :target: https://pepy.tech/project/pythonslm
 
 
 PySLM is a Python library for supporting development of input files used in Additive Manufacturing or 3D Printing,
@@ -85,7 +87,7 @@ If you would like to support implementing a custom format, please raise a `reque
 * Renishaw MTT (**.mtt**),
 * DMG Mori Realizer (**.rea**),
 * EOS SLI formats (**.sli**) - WIP,
-* SLM Solutions (**.slm**) - WIP.
+* SLM Solutions (**.slm**).
 
 For further information, see the latest `release notes <https://github.com/drlukeparry/pyslm/blob/dev/CHANGELOG.md>`_.
 
@@ -96,7 +98,7 @@ via PyPi and/or Anaconda distribution.
 
 .. code:: bash
 
-    conda install -c conda-forge shapely, Rtree, networkx, scikit-image
+    conda install -c conda-forge shapely, Rtree, networkx, scikit-image, cython
     conda install trimesh
 
 Installation of PySLM can then be performed using pre-built python packages using the PyPi repository. Additionally to

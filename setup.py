@@ -22,6 +22,7 @@ requirements_default = set([
     'setuptools',  # used for packaging
     'shapely',
     'trimesh',
+    'cython',
     'triangle'
 ])
 

@@ -319,7 +319,6 @@ class Part(DocumentObject):
             self._geometry.process(validate=True)
             self._geometry.fix_normals()
 
-
         logging.info('\t Bounds: [{:.3f},{:.3f},{:.3f}], [{:.3f},{:.3f},{:.3f}]'.format(*self._geometry.bounds.ravel()))
         logging.info('\t Extent: [{:.3f},{:.3f},{:.3f}]'.format(*self._geometry.extents))
 
@@ -407,7 +406,6 @@ class Part(DocumentObject):
         return np.array([bbox[3] - bbox[0],
                          bbox[4] - bbox[1],
                          bbox[5] - bbox[2]])
-
 
     @property
     def volume(self) -> float:
