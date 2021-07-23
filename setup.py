@@ -21,8 +21,9 @@ requirements_default = set([
     'numpy',  # all data structures
     'setuptools',  # used for packaging
     'shapely',
-    #'rtree',
-    'trimesh'
+    'trimesh',
+    'cython',
+    'triangle'
 ])
 
 # "easy" requirements should install without compiling
@@ -34,6 +35,7 @@ requirements_easy = set([
     'scikit-image',
     'networkx',
     'trimesh',  # Required for meshing geometry
+    'triangle',
     'colorlog'])  # log in pretty colors
 
 # requirements for building documentation
@@ -103,6 +105,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Natural Language :: English',
         'Topic :: Scientific/Engineering'],
     license="",

@@ -5,6 +5,7 @@ import abc
 
 from .utils import *
 
+
 class BaseSort(abc.ABC):
     def __init__(self):
         pass
@@ -22,12 +23,27 @@ class BaseSort(abc.ABC):
         """
         raise NotImplementedError('Sort method must be implemented')
 
-class AlternateSort(BaseSort):
+
+class UnidirectionalSort(BaseSort):
     """
-    Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
+    Method simply passes the hatch vectors in their current form.
     """
     def __init__(self):
-        pass
+        super().__init__()
+
+    def __str__(self):
+        return 'Unidrectional Hatch Sort'
+
+    def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        """ This approach simply flips the odd pair of hatches"""
+
+
+class FlipSort(BaseSort):
+    """
+    Sort method flips all pairs of scan vectors so that their direction alternates across the input
+    """
+    def __init__(self):
+        super().__init__()
 
     def __str__(self):
         return 'Alternating Hatch Sort'
@@ -35,11 +51,24 @@ class AlternateSort(BaseSort):
     def sort(self, scanVectors: np.ndarray) -> np.ndarray:
         """ This approach simply flips the odd pair of hatches"""
         sv = to3DHatchArray(scanVectors)
-        sv[1:-1:2] = np.flip(sv[1:-1:2], 1)
+        sv = np.flip(sv, 1)
+        return from3DHatchArray(sv)
 
-        #vectorCopy = scanVectors.copy()
-        # return vectorCopy
 
+class AlternateSort(BaseSort):
+    """
+    Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
+    """
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return 'Alternating Hatch Sort'
+
+    def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        """ This approach simply flips the odd pair of hatches"""
+        sv = to3DHatchArray(scanVectors)
+        sv[1::2] = np.flip(sv[1::2], 1)
         return from3DHatchArray(sv)
 
 
@@ -51,6 +80,7 @@ class LinearSort(BaseSort):
     """
 
     def __init__(self):
+        super().__init__()
         self._hatchAngle = 0.0
 
     @property
@@ -92,6 +122,8 @@ class GreedySort(BaseSort):
     The approach finds clusters of scan vectors based on their connectivity based on a threshold
     """
     def __init__(self, hatchAngle = 0.0, hatchTol = None):
+
+        super().__init__()
 
         self._hatchAngle = hatchAngle
         self._sortY = False

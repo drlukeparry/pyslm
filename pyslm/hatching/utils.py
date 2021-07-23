@@ -4,10 +4,19 @@ import trimesh.path.polygons
 import shapely.geometry
 
 from shapely.geometry import Polygon, LinearRing
+from skimage.measure import approximate_polygon
 
 
 def simplifyBoundaries(paths: List[Any], tolerance: float = 0.5, method : Optional[str] = '') -> Any:
+    """
+    Simplify the boundaries of paths using Douglas-Peucker algorithm provided by the
+    scikit-image library or an internal method within shapely.
 
+    :param paths: The paths to simplify
+    :param tolerance: The simplification tolerance used
+    :param method: Not used
+    :return: Simplified paths
+    """
     if not paths:
         return
 
@@ -16,11 +25,9 @@ def simplifyBoundaries(paths: List[Any], tolerance: float = 0.5, method : Option
     if isinstance(paths[0], shapely.geometry.Polygon):
         boundaries = [path.simplify(tolerance, preserve_topology=True) for path in paths]
     else:
-        from skimage.measure import approximate_polygon
         boundaries = [approximate_polygon(path, tolerance) for path in paths]
 
     return boundaries
-
 
 
 def pathsToClosedPolygons(paths) -> List[shapely.geometry.Polygon]:
@@ -55,8 +62,7 @@ def to3DHatchArray(hatchVectors: np.ndarray) -> np.ndarray:
     """
     Utility to reshape a  flat 2D hatch vector array into a 3D array to allow manipulation of individual vectors
 
-    :param hatchVectors: Numpy Array of Hatch Coordinates of shape (2n, 2) where n is the number of of individual hatch
-    vectors
+    :param hatchVectors: Numpy Array of Hatch Coordinates of shape (2n, 2) where n is the number of of individual hatch vectors
     :return: A view of the hatch vector formatted as 3D array of shape (n,2,2)
     """
     if hatchVectors.ndim != 2:
@@ -69,7 +75,7 @@ def from3DHatchArray(hatchVectors: np.ndarray) -> np.ndarray:
     """
     Utility to reshape a 3D hatch vector array into a flat 2D array to allow manipulation of individual vectors
 
-    :param hatchVectors: Numpy Array of Hatch Coordinates of shape (n, 2, 2) where n is the number of of individual hatch vectors
+    :param hatchVectors: Numpy Array of Hatch Coordinates of shape (n, 2, 2) where n is the number of individual hatch vectors
     :return: A view of the hatch vector formatted as 3D array of shape (2n,2)
     """
 

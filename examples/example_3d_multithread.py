@@ -1,8 +1,9 @@
 """
-A simple example showing how to use PySLM for generating 3D model.
-THis example takes advantage of the multi-processing module to run across more threads.
+A simple example showing how to use PySLM for generating slices across a 3D model.
+THhs example takes advantage of the multi-processing module to run across multiple threads.
 """
 import pyslm
+import pyslm.visualise
 from pyslm import hatching as hatching
 import numpy as np
 import time
@@ -84,11 +85,11 @@ def main():
 
     # uncomment to test the time processing in single process
     #for pc in processList:
-     #   calculateLayer(pc)
+    #   calculateLayer(pc)
 
     layers = p.map(calculateLayer, processList)
-    print(layers[0])
-    print('multiprocessing time', time.time()-startTime)
+
+    print('Multiprocessing time {:.1f} s'.format(time.time()-startTime))
     p.close()
 
     print('Completed Hatching')

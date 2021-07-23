@@ -1,10 +1,12 @@
 sphinx
 numpy
+matplotlib
 scipy
 shapely
 networkx
 Rtree
 trimesh
+triangle
 scikit-image
 cython
 

@@ -1,8 +1,10 @@
 """
-A simple example showing how t use PySLM for generating a Stripe Scan Strategy across a single layer.
+A simple example showing how to use PySLM for generating a Stripe Scan Strategy across a single layer and
+visualising the point exposures across the scan vectors and the 'effective' heat or exposure map of the layer.
 """
 import numpy as np
 import pyslm
+import pyslm.visualise
 from pyslm import hatching as hatching
 import matplotlib.pyplot as plt
 
@@ -54,7 +56,7 @@ bstyle.bid = 1
 bstyle.laserSpeed = 200.0 # [mm/s]
 bstyle.laserPower = 200 # [W]#
 bstyle.pointDistance = 60 # (60 microns)
-bstyle.pointExposureTime = 30 #(30 micro seconds)
+bstyle.pointExposureTime = 30 #
 
 model = pyslm.geometry.Model()
 model.mid = 1
@@ -62,15 +64,16 @@ model.buildStyles.append(bstyle)
 
 resolution = 0.2
 
-# Generate the exposure points for the layer given the hlayer geometry, and pointexposure parameters (pointDistance)
-# specific in the specific model buildstyle assigned to each layer geometry
+"""
+Generate the exposure points for the layer given the hatch layer geometry, and point exposure parameters (pointDistance)
+ specific in the specific model buildstyle assigned to each layer geometry
+"""
 exposurePoints = pyslm.hatching.getExposurePoints(layer, model)
-
 
 
 # Plot the heatmap based on the point exposure and the chosen resolution
 # Currently the part and z-layer is required to generate a bitmap which covers the part geometry.
-#fig, ax = pyslm.visualise.plotHeatMap(solidPart, z, exposurePoints,  resolution)
+fig, ax = pyslm.visualise.plotHeatMap(solidPart, z, exposurePoints,  resolution)
 
 # Plot all the exposure points
 fig, ax = plt.subplots()
@@ -80,7 +83,6 @@ plt.scatter(exposurePoints[:,0], exposurePoints[:,1], marker='o', linestyle='Non
 
 # Plot the exposure points
 pyslm.visualise.plot(layer, plot3D=False, handle=(fig,ax))
-
 
 # Plot the corresponding layers
 pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True, plotArrows=False)
