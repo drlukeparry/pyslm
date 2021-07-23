@@ -45,12 +45,22 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Build and publish
+    - name: Build
+    
+      if: matrix.os == 'windows-latest'
+
+      run: |
+        python setup.py sdist bdist_wheel
+        
+        
+    - name: Publish
     
       if: matrix.os == 'windows-latest'
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
-        python setup.py sdist bdist_wheel
         twine upload dist/*
+        
+    
+    
