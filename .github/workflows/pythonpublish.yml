@@ -43,14 +43,10 @@ jobs:
         pip3 install --user -r requirements.txt
         
     - name: Build
-    
       run: |
         python setup.py sdist bdist_wheel
-        
-        
-    - name: Publish
-    
-
+            
+    - name: Publish (Windows)
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
@@ -58,5 +54,11 @@ jobs:
       run: |
         twine upload dist/*
         
-    
+    - name: Publish (Mac OS)
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      if: matrix.os == 'macos-latest'
+      run: |
+        twine upload dist/*    
     
