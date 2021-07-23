@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
   
 ## [Unreleased]
 
+## [0.4.0] - 2021-07-23
+
 ### Added
 - Added [example_laser_iterator.py](examples/example_laser_iterator.py) for demonstrating the basic use of the iterator class  [0f26f4a4aa33d80769d9713157e8b675cb48a862](https://github.com/drlukeparry/pyslm/commit/0f26f4a4aa33d80769d9713157e8b675cb48a862)
 - Added [example_parametric_study.py](examples/example_parametric_study.py) for showing how create a design of experiment study [54dfca913b23ad71b025f5eec646f5f896b605b8](https://github.com/drlukeparry/pyslm/commit/54dfca913b23ad71b025f5eec646f5f896b605b8)
