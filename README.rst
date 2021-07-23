@@ -1,7 +1,7 @@
 PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 =============================================================================
 
-.. image:: https://github.com/drlukeparry/pyslm/workflows/Python%20application/badge.svg
+.. image:: https://github.com/drlukeparry/pyslm/actions/workflows/pythonpublish.yml/badge.svg
     :target: https://github.com/drlukeparry/pyslm/actions
 .. image:: https://readthedocs.org/projects/pyslm/badge/?version=latest
     :target: https://pyslm.readthedocs.io/en/latest/?badge=latest
@@ -23,7 +23,7 @@ may provide the basic functionality to generate the scan vectors used on systems
 to prototype and develop new algorithms.
 
 This library provides design tools for use in Additive Manufacturing including the slicing, hatching, support generation
-and  related analysis tools (e.g. overhang analysis, build-time estimation).
+and related analysis tools (e.g. overhang analysis, build-time estimation).
 
 PySLM is built-upon python libraries `Trimesh <https://github.com/mikedh/trimesh>`_ and based on some custom modifications
 to the `PyClipper <https://pypi.org/project/pyclipper/>`_ libraries, which are leveraged to provide the slicing and
@@ -76,6 +76,7 @@ with each scan vector can be shown.
 
 **Analysis:**
 * Build time estimation tools (based on scan strategy and geometry)
+* Iterators (Scan Vector and Exposure Point) for Simulation
 
 **Export to Machine Files:**
 
@@ -93,7 +94,7 @@ For further information, see the latest `release notes <https://github.com/drluk
 
 Installation
 *************
-Installation is currently supported on Windows and Linux environments. The pre-requisites for using PySLM can be installed
+Installation is currently supported on Windows, Mac OS X and Linux environments. The pre-requisites for using PySLM can be installed
 via PyPi and/or Anaconda distribution.
 
 .. code:: bash
@@ -111,7 +112,7 @@ translators available.
     pip install libSLM
     pip install PythonSLM
 
-Alternatively, PySLM may be compiled from source. Currently the prerequisites are the cython package and a compliant c++
+Alternatively, PySLM may be compiled directly from source. Currently the prerequisites are the cython package and a compliant c++
 build environment.
 
 .. code:: bash
