@@ -55,10 +55,11 @@ jobs:
         
     - name: Publish
     
-      if: matrix.os == 'windows-latest'
+
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      if: matrix.os == 'windows-latest'
       run: |
         twine upload dist/*
         
