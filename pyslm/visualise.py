@@ -212,7 +212,7 @@ def plotSequential(layer: Layer, plotArrows: Optional[bool] = False, plotOrderLi
             midPoint = np.mean(hatch, axis=0)
             delta = hatch[1, :] - hatch[0, :]
 
-            plt.annotate('', xytext=midPoint - delta * 1e-4,
+            ax.annotate('', xytext=midPoint - delta * 1e-4,
                          xy=midPoint,
                          arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
 
@@ -292,7 +292,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                     midPoint = np.mean(hatch, axis=0)
                     delta = hatch[1, :] - hatch[0, :]
 
-                    plt.annotate('', xytext = midPoint - delta * 1e-4,
+                    ax.annotate('', xytext = midPoint - delta * 1e-4,
                                      xy = midPoint,
                                      arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
 
@@ -331,7 +331,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                     midPoint = np.mean(contourGeom.coords[i:i + 2], axis=0)
                     delta = contourGeom.coords[i + 1, :] - contourGeom.coords[i, :]
 
-                    plt.annotate('',
+                    ax.annotate('',
                                  xytext=midPoint - delta * 1e-4,
                                  xy=midPoint,
                                  arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
