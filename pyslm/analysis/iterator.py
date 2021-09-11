@@ -8,6 +8,7 @@ from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, Poi
 from ..geometry import utils as geomUtils
 from .utils import *
 
+
 class LaserState:
     """
     The LaserState Class is a simple structure used for storing the state of the current exposure point at
@@ -28,7 +29,7 @@ class TimeNode:
     and static and changes are not dynamically propagated, therefore caution is advised that the entire Cache tree
     is updated after a known change.
     """
-    def __init__(self, parent=None, id:Optional[int]=0, value:Optional[Any] = None):
+    def __init__(self, parent=None, id: Optional[int]=0, value: Optional[Any] = None):
 
         self.parent = parent
         self.id = id
@@ -39,6 +40,7 @@ class TimeNode:
     def getChildrenTime(self) -> float:
         """
         Get the total time taken by the children
+
         :return: The total time taken
 
         """
@@ -473,12 +475,12 @@ class LayerGeometryIterator(Iterator):
 class ScanIterator(Iterator):
     """
     The Scan Iterator class provides a  method to iterate at a variable :attr:`timestep` across a BuildFile
-    consisting of list of :class:`Layer` and :class`Model` provided as the input. Typically this is used in
+    consisting of list of :class:`Layer` and :class:`Model` provided as the input. Typically this is used in
     numerical simulation of powder-bed fusion processes and also its temporal visualisation. Properties include the
     current position are available via :meth:`getCurrentLaserPosition` and the current laser parameters in
     :meth:`getCurrentBuildStyle` and if the laser is currently active :meth:`isLaserOn`.
 
-    :note:
+    .. note::
         The Iterator classes *assumes* that the laser position during rastering is linearly interpolated across each scan
         vector, based on the :attr:`timestep`, which can be modulated during the iterator.
 

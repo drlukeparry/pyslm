@@ -99,8 +99,8 @@ def getLayerPathLength(layer: Layer) -> float:
 def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
     """
     Returns the effective laser speed given a BuildStyle using the point distance and point exposure time
-    :param bstyle: The :class:`~pyslm.geometry.BuildStyle` containing a valid point exposure
 
+    :param bstyle: The :class:`~pyslm.geometry.BuildStyle` containing a valid point exposure
     :return: The laser speed [mm/s]
 
     """
