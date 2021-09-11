@@ -1,6 +1,11 @@
 PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 =============================================================================
 
+.. https://github.com/drlukeparry/pyslm/raw/master/docs/images/pyslm.png
+
+.. image:: images/pyslm.png
+    :alt:  PySLM - Library for  Additive Manufacturing and 3D Printing including Selective Laser Melting
+
 .. image:: https://github.com/drlukeparry/pyslm/actions/workflows/pythonpublish.yml/badge.svg
     :target: https://github.com/drlukeparry/pyslm/actions
 .. image:: https://readthedocs.org/projects/pyslm/badge/?version=latest
@@ -43,7 +48,11 @@ using a single/multi point exposure by generating a series of scan vectors in a 
 
 **Support Structure Generation**
 
-* [TODO] A prototype for support structure generation
+* Projection based block and truss support structure generation
+
+    * 3D intersected support volumes are generated from overhang regions using OpenGL ray-tracing approach
+    * Generate a truss grid using support volumes suitable for Metal AM processes
+* Extracting overhang surfaces from meshes
 
 **Slicing:**
 
@@ -55,9 +64,9 @@ using a single/multi point exposure by generating a series of scan vectors in a 
 The following operations are provided as a convenience to aid developing the scan strategies:
 
 * Offsetting of contours and boundaries
-* Trimming of lines and hatch vectors (sequentially ordered)
+* Trimming of lines and hatch vectors (sequentially ordered and sorted)
 
-The following scan strategies have been implemented as reference on platforms:
+The following scan strategies have been implemented as reference for AM platforms:
 
 * Standard 'Alternating' hatching
 * Stripe Scan Strategy
@@ -75,8 +84,11 @@ with each scan vector can be shown.
 * Overhang visualisation
 
 **Analysis:**
-* Build time estimation tools (based on scan strategy and geometry)
-* Iterators (Scan Vector and Exposure Point) for Simulation
+
+* Build time estimation tools
+    * Based on scan strategy and geometry
+    * Time estimation based on LayerGeometry
+* Iterators (Scan Vector and Exposure Points) useful for simulation studies
 
 **Export to Machine Files:**
 
@@ -158,6 +170,10 @@ length generated in a region.
 
     # Plot the layer geometries
     pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
+
+.. image:: images/stripe_scan_strategy_example.png
+    :width: 400
+    :alt:  PySLM - Illustration of a Stripe Scan Strategy
 
 
 For further guidance please look at documented examples are provided in `examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .
