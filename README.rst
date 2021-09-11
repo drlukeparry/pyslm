@@ -1,9 +1,9 @@
 PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 =============================================================================
 
-.. https://github.com/drlukeparry/pyslm/raw/master/docs/images/pyslm.png
+.. https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
 
-.. image:: images/pyslm.png
+.. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
     :alt:  PySLM - Library for  Additive Manufacturing and 3D Printing including Selective Laser Melting
 
 .. image:: https://github.com/drlukeparry/pyslm/actions/workflows/pythonpublish.yml/badge.svg
@@ -171,7 +171,7 @@ length generated in a region.
     # Plot the layer geometries
     pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
 
-.. image:: images/stripe_scan_strategy_example.png
+.. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/stripe_scan_strategy_example.png
     :width: 400
     :alt:  PySLM - Illustration of a Stripe Scan Strategy
 
