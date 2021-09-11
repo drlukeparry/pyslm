@@ -17,7 +17,7 @@ def simplifyBoundaries(paths: List[Any], tolerance: float = 0.5, method : Option
     :param method: Not used
     :return: Simplified paths
     """
-    if not paths:
+    if paths is None:
         return
 
     boundaries = []

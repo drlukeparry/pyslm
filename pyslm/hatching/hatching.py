@@ -14,7 +14,7 @@ from ..geometry import Layer, Model, LayerGeometry, ContourGeometry, HatchGeomet
 
 def getExposurePoints(layer: Layer, models: List[Model], includePowerDeposited: bool = True):
     """
-    A utility method to return a list of exposure points given a :class:`~pyslm.geometry.Layer` with an associated
+    A utility method to return a list of exposure points given a :class:`Layer` with an associated
     :class:`Model` which contains the :class:`BuildStyle` that provides the point
     exposure distance or an effective laser speed to spatially discretise the scan vectors into a series of points.
     If the optional parameter `includePowerDeposited` is set to True, the laser power deposited in included.
@@ -24,7 +24,7 @@ def getExposurePoints(layer: Layer, models: List[Model], includePowerDeposited: 
 
     :param layer: The layer to process
     :param models: A list of models containing buildstyles which are referenced with the layer's :class:`LayerGeometry`
-    :param includePowerDeposited: Set to true to return the calculated power deposited.
+    :param includePowerDeposited: Set to `True`` to return the calculated power deposited.
     :return: Returns a list of coordinates (nx2) in the global domain with an optional power deposited.
     """
 
@@ -142,22 +142,23 @@ def getExposurePoints(layer: Layer, models: List[Model], includePowerDeposited: 
 
 class BaseHatcher(abc.ABC):
     """
-    The BaseHatcher class provides common methods used for generating the 'contour' and infill 'hatch' scan vectors.
+    The BaseHatcher class provides common methods used for generating the 'contour' and infill 'hatch' scan vectors
+    for a geometry slice typically a multi-polygon region.
 
     The class provides an interface tp generate a variety of hatching patterns used. The developer should re-implement a
     subclass and re-define the abstract method, :meth:`BaseHatcher.hatch`, which will be called.
 
     The user typically specifies a boundary, which may be offset the boundary of region using
-    :meth:`~BaseHatcher.offsetBoundary`. This is typically performed before generating the infill.
+    :meth:`offsetBoundary`. This is typically performed before generating the infill.
     Following offsetting, the a series of hatch lines are generated using :meth:`~BaseHatcher.generateHatching` to fill
-    the entire boundary region using :meth:`~BaseHatcher.polygonBoundingBox`. To obtain the final clipped infill, the
+    the entire boundary region using :meth:`polygonBoundingBox`. To obtain the final clipped infill, the
     hatches are clipped using :meth:`~BaseHatcher.clipLines` which are clipped in the same sequential order they are
     generated using a technique explained further in the class method. The generated scan paths should be stored into
     collections of :class:`~pyslm.geometry.LayerGeometry` accordingly.
 
     For all polygon manipulation operations used for offsetting and clipping, internally this calls provides automatic
     conversion to the integer coordinate system used by ClipperLib by internally calling
-    :meth:`~BaseHatcher.scaleToClipper` and :meth:`~BaseHatcher.scaleFromClipper`.
+    :meth:`scaleToClipper` and :meth:`scaleFromClipper`.
     """
 
 
