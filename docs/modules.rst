@@ -22,6 +22,12 @@
     :toctree: api
     :skip: LinearRing, Polygon
 
+.. automodapi:: pyslm.support
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :toctree: api
+    :skip: ABC, LinearRing, MultiPolygon, BaseHatcher, find_contours, Polygon, Canvas, Path2D, PyPolyNode, ChainTransform, Part, set_state, set_viewport, ortho, perspective, rotate, triangulate_float64, Program, STTransform
+
 .. automodapi:: pyslm.visualise
     :no-inheritance-diagram:
     :no-inherited-members:
