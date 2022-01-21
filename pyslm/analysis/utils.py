@@ -127,8 +127,8 @@ def getLayerGeometryTime(layerGeometry: LayerGeometry, models: List[Model]) -> f
     :param models: A list of :class:`~pyslm.geometry.Model` which is used by the :class:`geometry.LayerGeometry`
     :return: The time taken to scan across the :class:`~pyslm.geometry.LayerGeometry`
     """
-    # Find the build style
 
+    # Find the build style
     bstyle = utils.getBuildStyleById(models, layerGeometry.mid, layerGeometry.bid)
     return getLayerGeometryPathLength(layerGeometry) / getEffectiveLaserSpeed(bstyle)
 

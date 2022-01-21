@@ -17,6 +17,11 @@ try:
 except BaseException as E:
     raise BaseException("Vispy is required to use the support.geometry submodule")
 
+try:
+    import pycork
+except BaseException as E:
+    raise BaseException("Pycork is required for the support submodule")
+
 import abc
 from builtins import staticmethod
 from typing import Any, Optional, List, Tuple, Union
@@ -194,7 +199,7 @@ class BlockSupportBase(SupportStructure):
         return self._supportVolume
 
     @property
-    def volume(self):
+    def volume(self) -> float:
         """ The calculated volume of the support volume region """
         return self._supportVolume.volume
 
@@ -408,14 +413,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
     :class:`BlockSupportBase`.
     """
 
-    CORK_PATH = ''
-    """
-    The Path to the Cork Boolean Library as a static attribute. This should be specified when initialising the scripts.
-    
-    .. note::
-        In future this may be included as a separate Python module for ease of installation. 
-    """
-
     _supportSkinSideTolerance = 1.0 - 1e-3
     """
     The support skin side tolerance is used for masking the extrusions side faces when generating the polygon region
@@ -468,17 +465,17 @@ class BlockSupportGenerator(BaseSupportGenerator):
     @property
     def splineSimplificationFactor(self) -> float:
         """
-        The simplification factor using a spline aproxixmation approach for smoothening the support volume boundary
+        The simplification factor using a spline approximation approach for smoothening the support volume boundary
         """
         return self._splineSimplificationFactor
 
     @splineSimplificationFactor.setter
     def splineSimplificationFactor(self, value: float):
-        self._splineSimplificationFactor  = value
+        self._splineSimplificationFactor = value
 
     @property
     def overhangAngle(self) -> float:
-        """ The overhang angle (degrees) used for identifying support surfaces on the Part. """
+        """ The overhang angle (degrees) used for identifying support surfaces on the :class:`Part` """
         return self._overhangAngle
 
     @overhangAngle.setter
@@ -521,7 +518,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
     @property
     def innerSupportEdgeGap(self) -> float:
         """
-        The inner support gap is the distance between  supports regions that are identified as separated by a
+        The inner support gap is the distance between supports regions that are identified as separated by a
         significant vertical extent.
         """
         return self._innerSupportEdgeGap
@@ -547,7 +544,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         """
         The simplification factor used for simplifying the boundary polygon generated from the rasterisation process.
         This has the effect of reducing the complexity of the extruded support volume generated that is intersected with
-        the Part.
+        the :class:`Part`.
         """
         return self._simplifyPolygonFactor
 
@@ -603,6 +600,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         # upper surface
         #bbox = np.hstack([offsetPoly.bounds, subregion.bounds[:,2].reshape(2,1)])
 
+        # Extend the bounding box extents in the Z direction
         bbox2 = bbox.copy()
         bbox2[0,2] -= 1
         bbox2[1,2] += 1
@@ -618,6 +616,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
         mask = lowerImg > 1.01
         heightMap2[mask] = lowerImg[mask]
 
+        #import matplotlib.pyplot as plt
+        #plt.imshow(heightMap2)
         return heightMap2.T, upperImg, lowerImg
 
     def _identifySelfIntersectionHeightMapRayTracing(self, subregion: trimesh.Trimesh,
@@ -725,7 +725,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         """
         The geometry of the part requires exporting as a '.off' file to be correctly used with the Cork Library
         """
-        part.geometry.export('part.off')
+        #part.geometry.export('part.off')
 
         supportBlockRegions = []
 
@@ -772,19 +772,25 @@ class BlockSupportGenerator(BaseSupportGenerator):
             timeIntersect = time.time()
 
             logging.info('\t - start intersecting mesh')
-            # Intersect the projection of the support face with the original part using the Cork Library
-            extruMesh.export('downProjExtr.off')
-            subprocess.call([self.CORK_PATH, '-isct', 'part.off', 'downProjExtr.off', 'c.off'])
-            logging.info('\t - finished intersecting mesh')
+            if False:
 
-            """
-            Note the cutMesh is the project down from the support surface with the original mesh
-            """
+                # Intersect the projection of the support face with the original part using the Cork Library
+                extruMesh.export('downProjExtr.off')
+                subprocess.call([self.CORK_PATH, '-isct', 'part.off', 'downProjExtr.off', 'c.off'])
+                logging.info('\t - finished intersecting mesh')
+
+                """
+                Note the cutMesh is the project down from the support surface with the original mesh
+                """
+
+                cutMesh = trimesh.load_mesh('c.off', process=True, validate=True)
+
             bbox = extruMesh.bounds
-            cutMesh = trimesh.load_mesh('c.off', process=True, validate=True)
-            logging.info('\t\t - mesh intersection time using Cork: '.format(time.time() - timeIntersect))
-
+            cutMesh = boolIntersect(part.geometry, extruMesh)
+            logging.info('\t\t - Mesh intersection time using Cork: {:.3f}s'.format(time.time() - timeIntersect))
+            logging.info('\t -  intersecting mesh')
             totalBooleanTime += time.time() - timeIntersect
+
             # Note this a hard tolerance
             if cutMesh.volume < -1: # 50
 
@@ -828,6 +834,9 @@ class BlockSupportGenerator(BaseSupportGenerator):
             logging.info('\t - finished generated support height map')
 
             heightMap = np.pad(heightMap, ((2, 2), (2,2)), 'constant', constant_values=((1, 1), (1,1)))
+
+            import matplotlib.pyplot as plt
+
             vx, vy = np.gradient(heightMap)
             grads = np.sqrt(vx ** 2 + vy ** 2)
 
@@ -889,7 +898,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                     continue
 
                 if len(outPolygons) > 1:
-                    raise ValueError('multi polygons')
+                    raise Exception('Multi polygons - error please submit a bug report')
 
                 bufferPolyA = mergedPoly.polygons_full[0].simplify(self.simplifyPolygonFactor*self.rayProjectionResolution)
 
@@ -950,7 +959,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                         hitLoc2 = coords2.copy()
                         hitLoc2[:, 2] = 0.0
 
-                        logging.info('Creating Base-plate support')
+                        logging.info('\tCreating Base-plate support')
                     else:
                         logging.warning('PROJECTIONS NOT MATCHING - skipping support generation')
                         continue
@@ -960,20 +969,27 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
                 # Extrude the surface based on the heights from the second ray cast
                 extrudedBlock = extrudeFace(surf2, None, hitLoc2[:, 2] - self.lowerProjectionOffset)
-                extrudedBlock.export('b.off')
 
-                """
-                Take the near net-shape support and obtain the difference with the original part to get clean 
-                boundaries for the support
-                """
                 import time
-                timeDiff  = time.time()
-                subprocess.call([self.CORK_PATH, '-diff', 'b.off', 'part.off', 'c.off'])
-                blockSupportMesh = trimesh.load_mesh('c.off', process=True, validate=True)
+                timeDiff = time.time()
+
+                if False:
+
+                    extrudedBlock.export('b.off')
+
+                    """
+                    Take the near net-shape support and obtain the difference with the original part to get clean 
+                    boundaries for the support
+                    """
+
+                    subprocess.call([self.CORK_PATH, '-diff', 'b.off', 'part.off', 'c.off'])
+                    blockSupportMesh = trimesh.load_mesh('c.off', process=True, validate=True)
+
+                blockSupportMesh = boolDiff(extrudedBlock, part.geometry)
                 blockSupportMesh.fix_normals()
                 blockSupportMesh.remove_degenerate_faces()
 
-                #print('timeDiff ', time.time() - timeDiff)
+                logging.info('\t\t Boolean Difference Time: {:.3f}\n'.format(time.time() - timeDiff))
 
                 totalBooleanTime += time.time() - timeDiff
 
@@ -988,9 +1004,9 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
                 supportBlockRegions.append(baseSupportBlock)
 
-            logging.info('\t - processed support face')
+            logging.info('\t - processed support face\n')
 
-        logging.info('Total boolean time: {:.3f}'.format(totalBooleanTime))
+        logging.info('Total boolean time: {:.3f}\n'.format(totalBooleanTime))
         print('Total Boolean Time', totalBooleanTime)
         return supportBlockRegions
 
@@ -1020,7 +1036,7 @@ class GridBlockSupport(BlockSupportBase):
     _pairTolerance = 1e-1
     """
     Pair tolerance used for matching upper and lower paths of the support boundary. This is an internal tolerance
-    used but may be re-define."""
+    used but can be re-define."""
 
 
     def __init__(self, supportObject: Part = None,
@@ -1062,12 +1078,12 @@ class GridBlockSupport(BlockSupportBase):
         self._useSupportSkin = value
 
     @property
-    def useSupportBorder(self):
+    def useSupportBorder(self) -> bool:
         """ Generates a border around the each truss grid """
         return self._useSupportBorder
 
     @useSupportBorder.setter
-    def useSupportBorder(self, value):
+    def useSupportBorder(self, value: bool):
         self._useSupportBorder = value
 
     @property
@@ -1223,11 +1239,15 @@ class GridBlockSupport(BlockSupportBase):
         if self._mergeMesh:
             logging.info('\t - Performing Boolean Union of all Intersection Meshes')
             # Intersect the projection of the support face with the original part using the Cork Library
-            slicesX.export('secX.off')
-            slicesY.export('secY.off')
 
-            subprocess.call([BlockSupportGenerator.CORK_PATH, '-resolve', 'secY.off', 'secX.off', 'merge.off'])
-            isectMesh = trimesh.load_mesh('merge.off')
+            if False:
+                slicesX.export('secX.off')
+                slicesY.export('secY.off')
+
+                subprocess.call([BlockSupportGenerator.CORK_PATH, '-resolve', 'secY.off', 'secX.off', 'merge.off'])
+                isectMesh = trimesh.load_mesh('merge.off')
+
+            isectMesh = resolveIntersection(slicesX, slicesY)
             isectMesh += supportSkins
         else:
             logging.info('\t Concatenating Support Geometry Meshes Together')

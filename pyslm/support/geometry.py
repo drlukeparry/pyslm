@@ -19,6 +19,8 @@ from shapely.geometry import Polygon
 from mapbox_earcut import triangulate_float64, triangulate_float32
 from triangle import triangulate
 
+import pycork
+
 from pyslm import pyclipper
 from line_profiler_pycharm import profile
 
@@ -104,39 +106,34 @@ def extrudeFace(extrudeMesh: trimesh.Trimesh,
     return extMesh
 
 
-def boolUnion(meshA, meshB, CORK_PATH):
+def boolUnion(meshA, meshB):
 
-    if isinstance(meshA, trimesh.Trimesh):
-        meshA.export('a.off')
+    vertsOut, facesOut = pycork.union(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
-    if isinstance(meshB, trimesh.Trimesh):
-        meshA.export('b.off')
-
-    subprocess.call([CORK_PATH, '-union', 'b.off', 'a.off', 'c.off'])
-    return trimesh.load_mesh('c.off')
+    return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
 
-def boolIntersect(meshA, meshB, CORK_PATH):
+def boolIntersect(meshA, meshB):
 
-    if isinstance(meshA, trimesh.Trimesh):
-        meshA.export('a.off')
+    vertsOut, facesOut = pycork.intersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
-    if isinstance(meshB, trimesh.Trimesh):
-        meshA.export('b.off')
+    return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
-    subprocess.call([CORK_PATH, '-isct', 'a.off', 'b.off', 'c.off'])
-    return trimesh.load_mesh('c.off')
+    #subprocess.call([CORK_PATH, '-isct', 'a.off', 'b.off', 'c.off'])
+    #return trimesh.load_mesh('c.off')
 
-def boolDiff(meshA, meshB, CORK_PATH):
+def boolDiff(meshA, meshB):
 
-    if isinstance(meshA, trimesh.Trimesh):
-        meshA.export('a.off')
+    vertsOut, facesOut = pycork.difference(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
-    if isinstance(meshB, trimesh.Trimesh):
-        meshA.export('b.off')
+    return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
-    subprocess.call([CORK_PATH, '-diff', 'a.off', 'b.off', 'c.off'])
-    return trimesh.load_mesh('c.off')
+def resolveIntersection(meshA, meshB):
+
+    vertsOut, facesOut = pycork.resolveIntersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
+
+    return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
+
 
 def createPath2DfromPaths(paths: List[np.ndarray]) -> trimesh.path.Path2D:
     """

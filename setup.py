@@ -38,6 +38,20 @@ requirements_easy = set([
     'triangle',
     'colorlog'])  # log in pretty colors
 
+
+requirements_supports = set([
+    'setuptools',  # do setuptools stuff
+    'shapely',
+    'rtree',
+    'scikit-image',
+    'networkx',
+    'trimesh',  # Required for meshing geometry
+    'triangle',
+    'vispy',
+    'pycork'
+    'mapbox-earcut'
+    'colorlog'])  # log in pretty colors
+
 # requirements for building documentation
 # Note API is only read from pyclipper in external project
 requirements_docs = set([
@@ -113,6 +127,7 @@ setup(
     packages=find_packages(exclude=('tests', 'docs', 'examples')),
     install_requires=list(requirements_default),
     extras_require={'easy': list(requirements_easy),
+                    'support': list(requirements_supports),
                     'docs': list(requirements_docs)},
 
     project_urls = {
