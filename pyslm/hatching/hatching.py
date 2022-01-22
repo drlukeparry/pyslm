@@ -875,7 +875,10 @@ class Hatcher(BaseHatcher):
         hatchLayerGeometries = []
 
         for i in range(self._numOuterContours):
-            offsetDelta -= self._contourOffset
+
+            if i > 0:
+                offsetDelta -= self._contourOffset
+
             offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
             for poly in offsetBoundary:
@@ -885,9 +888,14 @@ class Hatcher(BaseHatcher):
                     contourGeometry.subType = "outer"
                     contourLayerGeometries.append(contourGeometry)  # Append to the layer
 
+
+
         # Repeat for inner contours
         for i in range(self._numInnerContours):
-            offsetDelta -= self._contourOffset
+
+            if i > 0:
+                offsetDelta -= self._contourOffset
+
             offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
             for poly in offsetBoundary:
