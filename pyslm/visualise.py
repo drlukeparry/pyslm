@@ -15,7 +15,7 @@ from .core import Part
 from .geometry import Layer, HatchGeometry, ContourGeometry
 
 
-def getContoursFromShapelyPolygon(poly, mergeRings:bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def getContoursFromShapelyPolygon(poly, mergeRings: Optional[bool] = True) -> Tuple[np.ndarray, np.ndarray]:
 
     outerRings = []
     innerRings = []
@@ -106,7 +106,7 @@ def plotPolygon(polygons: List[Any], zPos=0.0,
 def plotLayers(layers: List[Layer],
                plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True,
                plotPoints: Optional[bool] = True,
-               handle=None) -> Tuple[plt.Figure, plt.Axes]:
+               handle: Optional[Tuple[plt.Figure, plt.Axes]] = None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots a list of :class:`Layer`, specifically the scan vectors (contours and hatches) and point exposures for each
     :class:`LayerGeometry` using `Matplotlib`. The Layer may be plotted in 3D by setting the plot3D parameter.
@@ -132,9 +132,10 @@ def plotLayers(layers: List[Layer],
     return fig, ax
 
 
-def plotSequential(layer: Layer, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
+def plotSequential(layer: Layer,
+                   plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
                    plotJumps: Optional[bool] = False,
-                   handle=None) -> Tuple[plt.Figure, plt.Axes]:
+                   handle: Optional[Tuple[plt.Figure, plt.Axes]]  = None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots sequentially the all the scan vectors (contours and hatches) for all Layer Geometry in a Layer
     using `Matplotlib`. The :class:`Layer` may be only plotted across a single 2D layer.
@@ -212,7 +213,7 @@ def plotSequential(layer: Layer, plotArrows: Optional[bool] = False, plotOrderLi
             midPoint = np.mean(hatch, axis=0)
             delta = hatch[1, :] - hatch[0, :]
 
-            plt.annotate('', xytext=midPoint - delta * 1e-4,
+            ax.annotate('', xytext=midPoint - delta * 1e-4,
                          xy=midPoint,
                          arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
 
@@ -223,7 +224,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
          plot3D: Optional[bool] = True, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
          plotColorbar: Optional[bool] = False,
          index: Optional[str] = '',
-         handle=None) -> Tuple[plt.Figure, plt.Axes]:
+         handle: Optional[Tuple[plt.Figure, plt.Axes]] = None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots the all the scan vectors (contours and hatches) and point exposures for each Layer Geometry in a Layer
     using `Matplotlib`. The :class:`Layer` may be plotted in 3D by setting the plot3D parameter.
@@ -292,7 +293,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                     midPoint = np.mean(hatch, axis=0)
                     delta = hatch[1, :] - hatch[0, :]
 
-                    plt.annotate('', xytext = midPoint - delta * 1e-4,
+                    ax.annotate('', xytext = midPoint - delta * 1e-4,
                                      xy = midPoint,
                                      arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
 
@@ -331,7 +332,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                     midPoint = np.mean(contourGeom.coords[i:i + 2], axis=0)
                     delta = contourGeom.coords[i + 1, :] - contourGeom.coords[i, :]
 
-                    plt.annotate('',
+                    ax.annotate('',
                                  xytext=midPoint - delta * 1e-4,
                                  xy=midPoint,
                                  arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
@@ -375,7 +376,7 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
     return fig, ax
 
 
-def plotHeatMap(part: Part, z: float, exposurePoints: np.ndarray, resolution:float = 0.25) -> Tuple[plt.Figure, plt.Axes]:
+def plotHeatMap(part: Part, z: float, exposurePoints: np.ndarray, resolution: float = 0.25) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots an effective heat map given the exposure points and at a given z position. The heatmap is discretised by
     summing the energy input of all exposure points onto an image and then capturing the aerial heat input by dividing

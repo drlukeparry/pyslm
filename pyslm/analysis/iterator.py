@@ -52,6 +52,10 @@ class TimeNode:
 
 
 class ScanVectorIterator:
+    """
+    ScanVectorIterator provides an iterator that will traverse across every scan vector (linear) across both hatch
+    and contour scan vectors for all layers passed into the constructor.
+    """
     def  __init__(self,  layers: List[Layer]):
 
         self._vectors = []
@@ -66,7 +70,11 @@ class ScanVectorIterator:
         return self._vectors
 
     def initialise(self):
+        """
+        Initialises the iterator based on the input of collection of layers.
 
+        :return: The list of reshaped vectors
+        """
         layerVecs = []
         for layer in self._layers:
             layerVecs += self.getLayerVectors(layer)
@@ -78,12 +86,17 @@ class ScanVectorIterator:
         return np.vstack(vectorList).reshape([-1, 2, 2])
 
     @staticmethod
-    def getLayerVectors(layer: Layer):
+    def getLayerVectors(layer: Layer) -> List[np.ndarray]:
+        """
+        Returns a list of scan vectors groups from a :class:`Layer`.
 
-        layerGeoms = layer.geometry
+        :param layer: The Layer to obtain the scan vectors from
+        :return:  The scan vector list
+        """
 
         layerVecs = []
-        for geom in layerGeoms:
+
+        for geom in layer.geometry:
             if isinstance(geom, ContourGeometry):
                 """ Trick to change contour vectors to normal lines """
                 layerVecs.append(np.tile(geom.coords, (1, 2)).reshape(-1, 2)[1:-1])

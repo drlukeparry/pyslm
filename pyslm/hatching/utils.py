@@ -7,7 +7,7 @@ from shapely.geometry import Polygon, LinearRing
 from skimage.measure import approximate_polygon
 
 
-def simplifyBoundaries(paths: List[Any], tolerance: float = 0.5, method : Optional[str] = '') -> Any:
+def simplifyBoundaries(paths: List[Any], tolerance: Optional[float] = 0.5, method: Optional[str] = '') -> Any:
     """
     Simplify the boundaries of paths using Douglas-Peucker algorithm provided by the
     scikit-image library or an internal method within shapely.
@@ -53,8 +53,9 @@ def pathsToClosedPolygons(paths) -> List[shapely.geometry.Polygon]:
 
     return complete
 
+
 def isValidHatchArray(hatchVectors: np.ndarray) -> bool:
-    """ Utility method  to check if the numpy arraay is a valid hatch array"""
+    """ Utility method  to check if the numpy array is a valid hatch array"""
     return hatchVectors.ndim == 2 and (hatchVectors.shape[0] % 2) == 0
 
 
@@ -73,13 +74,15 @@ def to3DHatchArray(hatchVectors: np.ndarray) -> np.ndarray:
 
 def from3DHatchArray(hatchVectors: np.ndarray) -> np.ndarray:
     """
-    Utility to reshape a 3D hatch vector array into a flat 2D array to allow manipulation of individual vectors
+    Utility to reshape a 3D hatch vector array of shape (n,2,2)  into a flat 2D array to
+    allow manipulation of individual vectors.
 
     :param hatchVectors: Numpy Array of Hatch Coordinates of shape (n, 2, 2) where n is the number of individual hatch vectors
-    :return: A view of the hatch vector formatted as 3D array of shape (2n,2)
+    :return: A view of the hatch vector formatted as 2D array of shape (2n, 2)
     """
 
     if hatchVectors.ndim != 3:
-        raise ValueError('Hatch Vector Shape should be 3D array')
+        raise ValueError('Hatch Vector Shape should be a 3D array')
 
     return hatchVectors.reshape(-1, 2)
+
