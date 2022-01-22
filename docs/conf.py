@@ -65,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyslm'
-copyright = u'2021, Luke Parry'
+copyright = u'2022, Luke Parry'
 author = 'Luke Parry'
 
 autodoc_default_options = {
