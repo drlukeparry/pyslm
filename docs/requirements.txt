@@ -12,3 +12,4 @@ trimesh
 pyclipper
 scikit-image
 cython
+pycork

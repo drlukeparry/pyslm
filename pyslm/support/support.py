@@ -118,7 +118,7 @@ class SupportStructure(abc.ABC):
         """
         Returns the  volume of the Support Geometry
         """
-        raise NotImplementedError('supportVolume property is an abstract method')
+        raise NotImplementedError('Support Volume property is an abstract method')
 
     def projectedSupportArea(self) -> float:
         """
@@ -275,16 +275,16 @@ class BaseSupportGenerator(abc.ABC):
     """
 
     PYCLIPPER_SCALEFACTOR = 1e4
-    """ 
+    """
     The scaling factor used for polygon clipping and offsetting in `PyClipper <https://pyclipper.com>`_ for the decimal
-    component of each polygon coordinate. This should be set to inverse of the required decimal tolerance i.e. 0.01 
+    component of each polygon coordinate. This should be set to inverse of the required decimal tolerance i.e. 0.01
     requires a minimum scale factor of 1e2. Default is 1e4.
     """
 
     POINT_OVERHANG_TOLERANCE = 0.05
     """
     The Point Overhang Tolerance is used for determining if adjacent connected vertices lies above, which indicates
-    that this vertex requires a Point Support generating.    
+    that this vertex requires a Point Support generating.
     """
 
     def __init__(self):
@@ -347,7 +347,7 @@ class BaseSupportGenerator(abc.ABC):
         edges = mesh.edges_unique
         edgeVerts = mesh.vertices[edges]
 
-        """ 
+        """
         Calculate the face angles with respect to the +z vector  and the inter-face angles
         """
         theta = getSupportAngles(part, np.array([[0., 0., 1.0]]))
@@ -371,7 +371,7 @@ class BaseSupportGenerator(abc.ABC):
             if np.abs(ang) < edgeOverhangAngle:
 
                 """
-                Locate the adjacent faces in the model using the face-adjacency property to identify if the edge 
+                Locate the adjacent faces in the model using the face-adjacency property to identify if the edge
                 belongs to a sharp corner which tends to be susceptible areas. This is done by calculating the angle
                 between faces.
                 """
@@ -800,10 +800,10 @@ class BlockSupportGenerator(BaseSupportGenerator):
             if cutMesh.volume < BlockSupportGenerator._intersectionVolumeTolerance: # 50
 
                 """
-                
+
                 Create a support structure that extends to the base plate (z=0)
-                
-                NOTE - not currently used - edge smoothing cannot be performed despite this being a 
+
+                NOTE - not currently used - edge smoothing cannot be performed despite this being a
                 quicker methods, it suffer sever quality issues with jagged edges so should be avoided.
                 """
 
@@ -852,7 +852,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
             """
             Find the outlines of any regions of the height map which deviate significantly
-            This is used to separate both self-intersecting supports and those which are simply connected 
+            This is used to separate both self-intersecting supports and those which are simply connected
             to the base-plate.
             """
             outlines = find_contours(grads, self.gradThreshold(self.rayProjectionResolution, self.overhangAngle),
@@ -989,7 +989,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                     blockSupportMesh = trimesh.load_mesh('c.off', process=True, validate=True)
 
                 """
-                Take the near net-shape support and obtain the difference with the original part to get clean 
+                Take the near net-shape support and obtain the difference with the original part to get clean
                 boundaries for the support
                 """
 
@@ -1315,7 +1315,7 @@ class GridBlockSupport(BlockSupportBase):
         Obtain the bounding box of the geometry and then transform this to local slice coordinate system. This is needed
         to ensure that the X and Y slice grids correctly align when the are eventually put together. It is achieved by
         ensuring the centroid of the support volume is used as a consistent origin in both coordinate systems.
-        This transforms the support geometry based on the transformation matrix and the original bounds. 
+        This transforms the support geometry based on the transformation matrix and the original bounds.
         """
 
         bboxPoly = self.generateSliceBoundingBoxPolygon(section)
@@ -1395,7 +1395,7 @@ class GridBlockSupport(BlockSupportBase):
             skinSolutionPaths = pc2.Execute(pyclipper.CT_DIFFERENCE)
 
             """
-            Merge all the paths together 
+            Merge all the paths together
             """
             pc2.Clear()
             pc2.AddPaths(trimmedTrussPaths, pyclipper.PT_SUBJECT)
@@ -1486,7 +1486,7 @@ class GridBlockSupport(BlockSupportBase):
         paths2 = list(map(tuple, paths2))
         clipPaths = BaseHatcher.scaleToClipper(paths2)
 
-        """ 
+        """
         Offset the paths interior
         """
         pc.AddPath(clipPaths, pyclipper.JT_SQUARE, pyclipper.ET_CLOSEDPOLYGON)
@@ -1557,7 +1557,7 @@ class GridBlockSupport(BlockSupportBase):
             skinSolutionPaths = pc2.Execute(pyclipper.CT_DIFFERENCE)
 
             """
-            Merge all the paths together 
+            Merge all the paths together
             """
             pc2.Clear()
             pc2.AddPaths(trimmedTrussPaths, pyclipper.PT_SUBJECT)
@@ -1602,7 +1602,7 @@ class GridBlockSupport(BlockSupportBase):
         """
         blockSupportMesh = self.supportVolume
 
-        """ 
+        """
         Extract the top and bottom surfaces of the mesh that are perpendicular to the z direction
         """
         blockSupportSides = blockSupportMesh.copy()
@@ -1652,7 +1652,7 @@ class GridBlockSupport(BlockSupportBase):
         (top, bottom) = (supportSurf[0], supportSurf[1])
 
         """
-        Swap the curves based on their overall position in their z-position for the support structure boundary. 
+        Swap the curves based on their overall position in their z-position for the support structure boundary.
         Semantically this makes no difference to the generation of the support structure.
         """
         if bottom.bounds[0, 2] > top.bounds[0, 2]:
@@ -1742,8 +1742,8 @@ class GridBlockSupport(BlockSupportBase):
             bottomXY = bottomVerts[:, :2]
             bottomZ = bottomVerts[:, 2]
 
-            """ 
-            The Polygon order or orientation has to be consistent with the top curve, since this is not guaranteed 
+            """
+            The Polygon order or orientation has to be consistent with the top curve, since this is not guaranteed
             automatically by Trimesh. If the orientations are not consistent between the top and bottom curve both the
             (XY,Z) coordinates are flipped.
             """
@@ -1752,10 +1752,10 @@ class GridBlockSupport(BlockSupportBase):
                 bottomZ = np.flip(bottomZ, axis=0)
 
             """
-            The starting pint of the curves are arbitrary set by Trimesh. We use the start point of the previous curve to 
-            identify the point. 
+            The starting pint of the curves are arbitrary set by Trimesh. We use the start point of the previous curve to
+            identify the point.
 
-            Iterate through all the points in the second curve and  find the closest point to the start index in the 
+            Iterate through all the points in the second curve and  find the closest point to the start index in the
             previous curve based on the distance. The coordinates (both XY, Z) are moved using numpy.roll to move the
             starting point of the curves as close to each other.
             """
@@ -1788,7 +1788,7 @@ class GridBlockSupport(BlockSupportBase):
 
             """
             Create the interpolation or mapping function to go from the 2D polygon to the 3D mesh for the support boundary.
-            This is done based on the top most projected curve. 
+            This is done based on the top most projected curve.
             """
             y1 = topXY[:, 0]
             y2 = topXY[:, 1]
@@ -1813,7 +1813,7 @@ class GridBlockSupport(BlockSupportBase):
             vy, fy = trimesh.remesh.subdivide(tmpMesh.vertices, tmpMesh.faces)
             # vy, fy = trimesh.remesh.subdivide(vy,fy)
 
-            """ 
+            """
             Interpolate or map the planar 2D mesh using the existing boundary path to generate the 3D support volume
             """
             boundaryX = f1(vy[:, 0])

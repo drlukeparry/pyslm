@@ -1,10 +1,20 @@
 
 # Change Log
 All notable changes to this project will be documented in this file.
-  
+
 ## [Unreleased]
-- Added the Support Module 
-    - Introduced Various Classes for Generating BlockSupports
+
+## [0.5.0] - 2022-01-23
+
+- Added the Support Module: `pyslm.support`
+    - Added generic abstract class `support.SupportStructure` for providing the generic infrastructure for defining support structures (e.g. block, grid, tree) and common methods
+    - Introduced Various Classes - `BaseSupportGenerator` and `BlockSupportGenerator` for Generating BlockSupports
+    - Introduced `support.geometry.extrudeFace` method for extruding block faces with variable height
+    - Introduced method `support.geometry.triangualtePolygonFromPaths` to triangulate polygons generated in the Support Module
+    - Introduced a method `support.render.projectHeightMap` for projecting height/depth maps using OpenGL to calculate the depth map for projecting supports
+    - Introduced classes `GridBlockSupport`, `GridBlockSupportGenerator` and associating mapping function for generating polygon truss grid supports
+    - Introduced classes for identifying and generating conforming support volume
+    - Self-intersecting support volumes are generated via pycork
 
 ## [0.4.0] - 2021-07-23
 
@@ -59,13 +69,13 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Internally generateHatching() and hatch() in subclasses of `BaseHatcher` to generate the internal hatch geometry to use multiple boundaries
-to ensure that the subregion generation sorting covers the global region. 
+to ensure that the subregion generation sorting covers the global region.
 - Internally `BaseHatcher.boundaryBoundingBox()` is called instead of `BaseHatcher.polygonBoundingBox()`
 - Removed the for loop which previously iterate across boundaries.
-- Updated IslandHatcher to use this behaviour 
+- Updated IslandHatcher to use this behaviour
 - Updated BaseHatcher to use static members where possible
 - Analysis method `analysis.getLayerTime` requires a `Model` list
-- Analysis methods use point exposure time and distance using `analysis.getLayerTime` 
+- Analysis methods use point exposure time and distance using `analysis.getLayerTime`
 - Removed debug messages when visualising layers
 - Fixed import of submodules in PySLM - [66f48fd9929d244b836583f24c087602cdc31a96](https://github.com/drlukeparry/pyslm/commit/66f48fd9929d244b836583f24c087602cdc31a96)
 
@@ -78,12 +88,12 @@ to ensure that the subregion generation sorting covers the global region.
 ## [0.2.1] - 2020-06-19
 
 ### Fixed
-- Fixed the setup.py source tarball to include the PyClipper extensions. 
+- Fixed the setup.py source tarball to include the PyClipper extensions.
 
 ## [0.2.0] - 2020-06-17
- 
-Development branch of PySLM with new features. 
- 
+
+Development branch of PySLM with new features.
+
 ### Added
 - Added transformations to the Part class so that these can be translated, rotated, scaled efficiently on demand
     - Updates on the geometry are cached when geometry method is called.
@@ -96,7 +106,7 @@ Development branch of PySLM with new features.
 - Added a Geometry Submodule in [pyslm.geometry](https://github.com/drlukeparry/pyslm/blob/master/pyslm/geometry)
     - libSLM Python Extension Library is used if available
     - A set of native compatible Python classes are available if libSLM is not available
-    - Classes include: 
+    - Classes include:
         - `Layer`
         - `LayerGeometry`
         - `Model`
@@ -105,7 +115,7 @@ Development branch of PySLM with new features.
         - `HatchGeometry`, `ContourGeometry`, `PointsGeometry`
 - Added an Analysis Module in [pyslm.analysis](https://github.com/drlukeparry/pyslm/blob/master/pyslm/analysis):
     - Total length of all the scan vectors across a layer
-    - Total jump length between scan vectors across all vectors  
+    - Total jump length between scan vectors across all vectors
     - Total scan time across a layer
 - Added a method to generate bitmap slices from a single image is included in Part
 - Added a Visualise Submodule in [pyslm.visualise](https://github.com/drlukeparry/pyslm/blob/master/pyslm/visualise.py)
@@ -121,19 +131,19 @@ Development branch of PySLM with new features.
     - Island hatching example using new implementation - [example_island_hatcher.py](https://github.com/drlukeparry/pyslm/blob/master/examples/example_island_hatcher.py)
     - Bitmap slicing of parts - [example_bitmap_slice.py](https://github.com/drlukeparry/pyslm/blob/master/examples/example_bitmap_slice.py)
     - A heat-map/exposure map visualisation - [example_heatmap.py](https://github.com/drlukeparry/pyslm/blob/master/examples/example_heatmap.py)
-    
- 
+
+
 ### Changed
 - `Part.getVectorSlice` method by default returns a list of coord paths
 - `Part.getVectorSlice` now returns a list of `Shapely.geometry.Polygon` if optional argument is passed
 - `hatching.IslandHatcher` in the previous release is changed to `BasicIslandHatcher`
- 
+
 ### Fixed
-- Further changes and improvements to the overall documentation. 
+- Further changes and improvements to the overall documentation.
 - Updated requirements.txt to ensure documentation can correctly build on readthedocs
 
 ## [0.1.0] - 2020-05-08
-  
-  The first release of PySLM in its distributed packaged form via PyPi. This release includes basic slicing and 
+
+  The first release of PySLM in its distributed packaged form via PyPi. This release includes basic slicing and
   hatching using a custom version of PyClipper built internally using setuptools.
- 
+
