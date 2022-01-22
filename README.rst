@@ -49,9 +49,9 @@ using a single/multi point exposure by generating a series of scan vectors in a 
 **Support Structure Generation**
 
 * Projection based block and truss support structure generation
-
     * 3D intersected support volumes are generated from overhang regions using OpenGL ray-tracing approach
     * Generate a truss grid using support volumes suitable for Metal AM processes
+    * Exact support volume generation using the `pycork <https://github.com/drlukeparry/pycork>`_ library
 * Extracting overhang surfaces from meshes
 
 **Slicing:**

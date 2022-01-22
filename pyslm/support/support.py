@@ -419,6 +419,11 @@ class BlockSupportGenerator(BaseSupportGenerator):
     for creating the surrounding support skin.
     """
 
+    _intersectionVolumeTolerance = 50
+    """
+    An internal tolerancces used to determine if the projected volume intersects with the part
+    """
+
     _gausian_blur_sigma = 1.0
     """
     The internal parameter is used for blurring the calculated depth field to smooth out the boundaries. Care should
@@ -725,7 +730,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
         """
         The geometry of the part requires exporting as a '.off' file to be correctly used with the Cork Library
         """
-        #part.geometry.export('part.off')
 
         supportBlockRegions = []
 
@@ -772,6 +776,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
             timeIntersect = time.time()
 
             logging.info('\t - start intersecting mesh')
+
             if False:
 
                 # Intersect the projection of the support face with the original part using the Cork Library
@@ -792,9 +797,12 @@ class BlockSupportGenerator(BaseSupportGenerator):
             totalBooleanTime += time.time() - timeIntersect
 
             # Note this a hard tolerance
-            if cutMesh.volume < -1: # 50
+            if cutMesh.volume < BlockSupportGenerator._intersectionVolumeTolerance: # 50
 
                 """
+                
+                Create a support structure that extends to the base plate (z=0)
+                
                 NOTE - not currently used - edge smoothing cannot be performed despite this being a 
                 quicker methods, it suffer sever quality issues with jagged edges so should be avoided.
                 """
@@ -808,7 +816,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
                 supportBlockRegions.append(baseSupportBlock)
 
-                continue  # No intersection had taken place
+                continue  # No self intersection with the part has taken place with the support
             elif not findSelfIntersectingSupport:
                 continue
 
@@ -941,8 +949,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
                 """
                 Intersecting with cutmesh is more efficient when projecting downwards
                 """
-
-                if cutMesh.volume > 50:
+                #
+                if cutMesh.volume > BlockSupportGenerator._intersectionVolumeTolerance:
 
                     hitLoc2, index_ray2, index_tri2 = cutMeshUpper.ray.intersects_location(ray_origins=coords2,
                                                                                            ray_directions=ray_dir,
@@ -977,13 +985,13 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
                     extrudedBlock.export('b.off')
 
-                    """
-                    Take the near net-shape support and obtain the difference with the original part to get clean 
-                    boundaries for the support
-                    """
-
                     subprocess.call([self.CORK_PATH, '-diff', 'b.off', 'part.off', 'c.off'])
                     blockSupportMesh = trimesh.load_mesh('c.off', process=True, validate=True)
+
+                """
+                Take the near net-shape support and obtain the difference with the original part to get clean 
+                boundaries for the support
+                """
 
                 blockSupportMesh = boolDiff(extrudedBlock, part.geometry)
                 blockSupportMesh.fix_normals()
@@ -1007,7 +1015,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
             logging.info('\t - processed support face\n')
 
         logging.info('Total boolean time: {:.3f}\n'.format(totalBooleanTime))
-        print('Total Boolean Time', totalBooleanTime)
+
         return supportBlockRegions
 
 
@@ -1069,7 +1077,7 @@ class GridBlockSupport(BlockSupportBase):
         self._mergeMesh = state
 
     @property
-    def useSupportSkin(self) -> True:
+    def useSupportSkin(self) -> bool:
         """ Generates a support skin around the extruded boundary of the support"""
         return self._useSupportSkin
 
@@ -1124,7 +1132,7 @@ class GridBlockSupport(BlockSupportBase):
 
     @gridSpacing.setter
     def gridSpacing(self, spacing: List[float]):
-        """ The Grid Spacing used for the support structure """
+        """ The Grid spacing used for the support structure """
         self._gridSpacing = spacing
 
     @staticmethod

@@ -54,11 +54,11 @@ class Canvas(app.Canvas):
         return self._visSize
 
     @property
-    def mesh(self):
+    def mesh(self) -> trimesh.Trimesh:
         return self._mesh
 
     @property
-    def bbox(self):
+    def bbox(self) -> np.ndarray:
         return self._bbox
 
     def setMesh(self, mesh: trimesh.Trimesh):

@@ -22,7 +22,7 @@ from triangle import triangulate
 import pycork
 
 from pyslm import pyclipper
-from line_profiler_pycharm import profile
+
 
 def extrudeFace(extrudeMesh: trimesh.Trimesh,
                 height: Optional[float] = None,
@@ -106,29 +106,28 @@ def extrudeFace(extrudeMesh: trimesh.Trimesh,
     return extMesh
 
 
-def boolUnion(meshA, meshB):
+def boolUnion(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
 
     vertsOut, facesOut = pycork.union(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
     return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
 
-def boolIntersect(meshA, meshB):
+def boolIntersect(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
 
     vertsOut, facesOut = pycork.intersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
     return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
-    #subprocess.call([CORK_PATH, '-isct', 'a.off', 'b.off', 'c.off'])
-    #return trimesh.load_mesh('c.off')
 
-def boolDiff(meshA, meshB):
+def boolDiff(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
 
     vertsOut, facesOut = pycork.difference(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
     return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
-def resolveIntersection(meshA, meshB):
+
+def resolveIntersection(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
 
     vertsOut, facesOut = pycork.resolveIntersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
@@ -171,6 +170,7 @@ def path2DToPathList(shapes: List[shapely.geometry.polygon.Polygon]) -> List[np.
             paths.append(coords)
 
     return paths
+
 
 def sortExteriorInteriorRings(polyNode,
                               closePolygon: Optional[bool] = False) -> Tuple[List[np.ndarray], List[np.ndarray]]:
@@ -240,23 +240,23 @@ def triangulateShapelyPolygon(polygon: shapely.geometry.Polygon,
     return result['vertices'], result['triangles']
 
 def triangulatePolygonFromPaths(exterior: np.ndarray, interiors: List[np.ndarray],
-                                triangle_args:str = None,
+                                triangle_args: str = None,
                                 **kwargs):
     """
-    Given a list of exteiror and interiors triangulation using a
+    Given a list of exterior and interiors triangulation using a
     python interface to `triangle.c`
 
     .. code-block:: bash
         pip install triangle
 
-    :param polygon:  Polygon object to be triangulated
+    :param exterior: Exterior boundaries of polygon
+    :param interiors: Interior boundaries of polygon
     :param triangle_args: Passed to triangle.triangulate i.e: 'p', 'pq30'
     :param kwargs:
     :return: Returns a tuple of vertices and faces
     """
 
     # set default triangulation arguments if not specified
-
     if triangle_args is None:
         triangle_args = 'p'
 
@@ -268,7 +268,8 @@ def triangulatePolygonFromPaths(exterior: np.ndarray, interiors: List[np.ndarray
 
     return result['vertices'], result['triangles']
 
-def _polygon_to_kwargs2(exterior, interiors):
+
+def _polygon_to_kwargs2(exterior: np.ndarray, interiors:  List[np.ndarray]):
     """
     Given both exterior and interior boundaries, create input for the
     the triangle mesh generator. This is version #2 which has been  adapted from
@@ -461,6 +462,7 @@ def _polygon_to_kwargs(polygon):
         result['holes'] = holes
 
     return result
+
 
 def triangulatePolygon(section,
                        closed: Optional[bool] = False) -> Tuple[np.ndarray, np.ndarray]:
