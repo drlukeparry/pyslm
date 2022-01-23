@@ -49,6 +49,7 @@ requirements_supports = set([
     'triangle',
     'vispy',
     'pycork'
+    'PyQt5',
     'mapbox-earcut'
     'colorlog'])  # log in pretty colors
 

@@ -18,3 +18,4 @@ pyclipper
 scikit-image
 cython
 pycork
+PyQt5
