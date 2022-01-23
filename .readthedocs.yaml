@@ -35,4 +35,4 @@ build:
   apt_packages:
     - libclang
     - cmake
-    - gmp
+    - libgmp-dev
