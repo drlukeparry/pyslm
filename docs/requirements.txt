@@ -11,6 +11,7 @@ shapely
 networkx
 trimesh
 triangle
+matplotlib
 vispy
 mapbox_earcut
 pyclipper
