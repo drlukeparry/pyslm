@@ -4,11 +4,10 @@ Provides supporting functions to generate geometry for support structures
 
 import logging
 import collections
-import subprocess
+
 import numpy as np
 from typing import Any, List, Optional, Tuple
 
-import line_profiler
 import trimesh
 from trimesh import grouping
 

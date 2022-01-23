@@ -10,6 +10,9 @@ scipy
 shapely
 networkx
 trimesh
+triangle
+vispy
+mapbox_earcut
 pyclipper
 scikit-image
 cython
