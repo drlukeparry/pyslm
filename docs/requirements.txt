@@ -4,6 +4,7 @@ sphinx-autodoc-typehints==1.10.3
 sphinx-paramlinks
 autodocsumm
 pypandoc
+m2r2
 numpy
 scipy
 shapely
