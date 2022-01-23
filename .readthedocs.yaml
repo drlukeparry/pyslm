@@ -33,6 +33,6 @@ python:
 
 build:
   apt_packages:
-    - libclang
+    - build-essential
     - cmake
     - libgmp-dev
