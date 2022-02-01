@@ -53,9 +53,36 @@ def getLayerGeometryPathLength(layerGeom: LayerGeometry) -> float:
         totalPathDist = np.sum(lineDist)
 
     if isinstance(layerGeom, PointsGeometry):
-        raise Exception('Cannot pass a PointsGeometry to calculate the total path length'
-                        )
+        raise Exception('Cannot pass a PointsGeometry to calculate the total path length')
+
     return float(totalPathDist)
+
+
+def getLayerGeomTotalJumps(layerGeom: LayerGeometry) -> int:
+    """
+    Returns the number of jumps across a :class:`LayerGeometry`.
+
+    .. note::
+        It is assumed that there is a single jump for each ContourGeometry and PointsGeometry
+
+    :param layerGeom: The :class:`LayerGeometry` to measure
+    :return: Returns the total number of jumps
+    """
+    coords = layerGeom.coords
+
+    numJumps = 0
+
+    if isinstance(layerGeom, ContourGeometry):
+        numJumps = 1
+
+    if isinstance(layerGeom, HatchGeometry):
+        numJumps = coords.shape[0] / 2
+
+    if isinstance(layerGeom, PointsGeometry):
+        numJumps = 1
+
+    return numJumps
+
 
 def getIntraLayerGeometryJumpLength(layer: Layer) -> float:
     """
@@ -77,6 +104,7 @@ def getIntraLayerGeometryJumpLength(layer: Layer) -> float:
         lastCoord = (layerGeom.coords[0,:])
 
     return intraJumpDistance
+
 
 def getLayerJumpLength(layer: Layer) -> float:
     """
@@ -147,7 +175,7 @@ def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
             pointJumpTime = float(bstyle.pointDistance) * 1e-3 / bstyle.jumpSpeed
 
         # Point distance [microns), point exposure time (mu s)
-        return float(bstyle.pointDistance) * 1e-3 / (float(bstyle.pointExposureTime)*1e-6 + pointJumpTime + bstyle.jumpDelay * 1e-6)
+        return float(bstyle.pointDistance) * 1e-3 / (float(bstyle.pointExposureTime)*1e-6 + pointJumpTime + float(bstyle.pointDelay) * 1e-6)
 
     else:
         # Return the laser speed
@@ -155,13 +183,14 @@ def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
 
 
 def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
-                         includeJumpTime: Optional[bool] = False) -> float:
+                         includeJumpTime: Optional[bool] = False,
+                         jumpDelay: Optional[float] = 0.0) -> float:
     """
     Returns the total time taken to scan across a :class:`~pyslm.geometry.LayerGeometry`.
 
     :param layerGeom: The :class:`~pyslm.geometry.LayerGeometry` to process
     :param models: A list of :class:`~pyslm.geometry.Model` which is used by the :class:`geometry.LayerGeometry`
-    :param includeJumpTime: Include the jump time between scan vectors in the calculation (default = False)
+    :param includeJumpTime: Include the jump time between scan vectors in the calculation (default = `False`)
     :return: The time taken to scan across the :class:`~pyslm.geometry.LayerGeometry`
     """
 
@@ -174,12 +203,17 @@ def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
     if isinstance(layerGeom, HatchGeometry) or isinstance(layerGeom, ContourGeometry):
         scanTime = getLayerGeometryPathLength(layerGeom) / getEffectiveLaserSpeed(bstyle)
     elif isinstance(layerGeom, PointsGeometry):
-        scanTime = layerGeom.coords * bstyle.pointExposureTime * 1e-6
+        scanTime = layerGeom.coords * float(bstyle.pointExposureTime) * 1e-6
     else:
         raise Exception('Invalid LayerGeometry object passed as an argument')
 
     if includeJumpTime:
+
+        # Add distance to transverse across each scan vector (if applicable)
         totalJumpTime = getLayerGeometryJumpDistance(layerGeom) / bstyle.jumpSpeed
+
+        # Add a jump delay (optional) between scan vectors (if applicable)
+        totalJumpTime += getLayerGeomTotalJumps(layerGeom) * float(bstyle.jumpDelay) * 1e-6
 
     return scanTime + totalJumpTime
 
@@ -206,5 +240,15 @@ def getLayerTime(layer: Layer, models: List[Model],
 
     if includeJumpTime:
         layerTime += getIntraLayerGeometryJumpLength(layer) / laserJumpSpeed
+
+        # Include jump times between layer geometry groups
+        intraGeomJumpDelayTime = 0.0
+
+        # Include the jump time between layer geometry groups
+        for layerGeom in layer.geometry:
+            bstyle = utils.getBuildStyleById(models, layerGeom.mid, layerGeom.bid)
+            intraGeomJumpDelayTime += bstyle.jumpDelay
+
+        layerTime += intraGeomJumpDelayTime
 
     return layerTime
