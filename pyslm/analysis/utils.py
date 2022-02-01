@@ -3,8 +3,6 @@ import numpy as np
 
 from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model, utils
 
-LaserJumpSpeed: float = 5000
-""" The overall laser jump speed used whilst scanning layers """
 
 def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
     """
@@ -124,7 +122,9 @@ def getLayerPathLength(layer: Layer) -> float:
 
 def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
     """
-    Returns the effective laser speed given a BuildStyle using the point distance and point exposure time
+    Returns the effective laser speed given a BuildStyle using the point distance and point exposure time. This includes
+    the dwell time between pulse :attr:`BuildStyle.jumpDelay` and the jump speed :attr:`BuildStyle.jumpSpeed` assigned
+    to each individual :class:`BuildStyle`.
 
     :param bstyle: The :class:`~pyslm.geometry.BuildStyle` containing a valid point exposure
     :return: The laser speed [mm/s]
@@ -154,12 +154,12 @@ def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
         return bstyle.laserSpeed
 
 
-def getLayerGeometryTime(layerGeometry: LayerGeometry, models: List[Model],
+def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
                          includeJumpTime: Optional[bool] = False) -> float:
     """
     Returns the total time taken to scan across a :class:`~pyslm.geometry.LayerGeometry`.
 
-    :param layerGeometry: The :class:`~pyslm.geometry.LayerGeometry` to process
+    :param layerGeom: The :class:`~pyslm.geometry.LayerGeometry` to process
     :param models: A list of :class:`~pyslm.geometry.Model` which is used by the :class:`geometry.LayerGeometry`
     :param includeJumpTime: Include the jump time between scan vectors in the calculation (default = False)
     :return: The time taken to scan across the :class:`~pyslm.geometry.LayerGeometry`
@@ -169,28 +169,34 @@ def getLayerGeometryTime(layerGeometry: LayerGeometry, models: List[Model],
     scanTime = 0.0
     totalJumpTime = 0.0
 
-    bstyle = utils.getBuildStyleById(models, layerGeometry.mid, layerGeometry.bid)
+    bstyle = utils.getBuildStyleById(models, layerGeom.mid, layerGeom.bid)
 
-    if isinstance(layerGeometry, HatchGeometry) or isinstance(layerGeometry, ContourGeometry):
-        scanTime = getLayerGeometryPathLength(layerGeometry) / getEffectiveLaserSpeed(bstyle)
-    elif isinstance(layerGeometry, PointsGeometry):
-        scanTime = layerGeometry.coords * bstyle.pointExposureTime * 1e-6
+    if isinstance(layerGeom, HatchGeometry) or isinstance(layerGeom, ContourGeometry):
+        scanTime = getLayerGeometryPathLength(layerGeom) / getEffectiveLaserSpeed(bstyle)
+    elif isinstance(layerGeom, PointsGeometry):
+        scanTime = layerGeom.coords * bstyle.pointExposureTime * 1e-6
     else:
         raise Exception('Invalid LayerGeometry object passed as an argument')
 
     if includeJumpTime:
-        totalJumpTime = getLayerGeometryJumpDistance(layerGeometry) / bstyle.jumpSpeed
+        totalJumpTime = getLayerGeometryJumpDistance(layerGeom) / bstyle.jumpSpeed
 
     return scanTime + totalJumpTime
 
 def getLayerTime(layer: Layer, models: List[Model],
-                 includeJumpTime: Optional[bool] = True) -> float:
+                 includeJumpTime: Optional[bool] = True,
+                 laserJumpSpeed: Optional[float] = 5000) -> float:
     """
-    Returns the total time taken to scan a :class:`Layer`.
+    Returns the total time taken to scan across a :class:`Layer`. This includes the additional dwell time
+    laser pulses :attr:`BuildStyle.jumpDelay` and the jump time between both scan vectors and consecutive
+    :class:`LayerGeometry` groups. The time taken between adjacent scan vectors and layer geometries is assumed to have
+    an instantaneous acceleration at constant velocity.
 
     :param layer: The layer to process
     :param models: The list of :class:`Model` containing the :class:`BuildStyle` used
     :param includeJumpTime: Include the jump time between and within each :class:`LayerGeometry`
+    :param laserJumpSpeed: The default laser jump speed used whilst scanning between layer geometry [mm/s]
+
     :return: The time taken to scan across the layer
     """
     layerTime = 0.0
@@ -199,6 +205,6 @@ def getLayerTime(layer: Layer, models: List[Model],
         layerTime += getLayerGeometryTime(layerGeom, models, includeJumpTime)
 
     if includeJumpTime:
-        layerTime += getIntraLayerGeometryJumpLength(layer) / LaserJumpSpeed
+        layerTime += getIntraLayerGeometryJumpLength(layer) / laserJumpSpeed
 
     return layerTime
