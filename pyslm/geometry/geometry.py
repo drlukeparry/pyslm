@@ -60,6 +60,7 @@ class BuildStyle:
         self._laserMode = 1
         self._pointDistance = 0
         self._pointExposureTime = 0
+        self._pointDelay = 0
         self._jumpDelay = 0
         self._jumpSpeed = 0
 
@@ -175,16 +176,27 @@ class BuildStyle:
         self._pointDistance = pointDistance
 
     @property
-    def jumpDelay(self) ->int:
-        """ The jump delay time (usually expressed as an integer :math:`\\mu m`) """
+    def pointDelay(self) -> int:
+        """
+        The delay added between individual point exposure (usually expressed as an integer [:math:`\\mu s]`).
+        This must be set to zero (default) if it is not explicitly used.
+        """
+        return self._pointDelay
+
+    @pointDelay.setter
+    def pointDelay(self, delay: int):
+        self._pointDelay = delay
+
+    @property
+    def jumpDelay(self) -> int:
+        """
+        The jump delay between scan vectors (usually expressed as an integer [:math:`\mu s`]). This must be set to
+        zero (default) if it is not explicitly used.
+        """
         return self._jumpDelay
 
     @jumpDelay.setter
     def jumpDelay(self, delay: int):
-        """
-        The jump speed between scan vectors (usually expressed as an integer :math:`mm/s`). This must be set to
-        zero (default) if it is not explicitly used.
-        """
         self._jumpDelay = delay
 
     @property
