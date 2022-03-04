@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.5.0] - 2022-01-23
+## [0.5.0] - 2022-03-04
 
-- Added the Support Module: `pyslm.support`
+- Added the Support Module: `pyslm.support` [9ee1f6668b56e76137c3dade178dc837460fc056](https://github.com/drlukeparry/pyslm/commit/9ee1f6668b56e76137c3dade178dc837460fc056) [0f6e29815a5d6a65789d27c49131d49486415d31](https://github.com/drlukeparry/pyslm/commit/0f6e29815a5d6a65789d27c49131d49486415d31)
     - Added generic abstract class `support.SupportStructure` for providing the generic infrastructure for defining support structures (e.g. block, grid, tree) and common methods
     - Introduced Various Classes - `BaseSupportGenerator` and `BlockSupportGenerator` for Generating BlockSupports
     - Introduced `support.geometry.extrudeFace` method for extruding block faces with variable height
@@ -14,7 +14,18 @@ All notable changes to this project will be documented in this file.
     - Introduced a method `support.render.projectHeightMap` for projecting height/depth maps using OpenGL to calculate the depth map for projecting supports
     - Introduced classes `GridBlockSupport`, `GridBlockSupportGenerator` and associating mapping function for generating polygon truss grid supports
     - Introduced classes for identifying and generating conforming support volume
-    - Self-intersecting support volumes are generated via pycork
+    - Self-intersecting support volumes are generated via the [pycork](https://github.com/drlukeparry/pycork) library [e438bef493553b18dd1ee5031a226d04b63a5c67](https://github.com/drlukeparry/pyslm/commit/e438bef493553b18dd1ee5031a226d04b63a5c67)
+- Added point delay and jump speed in `pyslm.geometry` and these are used in calculations performed in `pyslm.analysis` [55cc7e79c9e6f1f5f8b25d38dd6a48639b422fd2](https://github.com/drlukeparry/pyslm/commit/55cc7e79c9e6f1f5f8b25d38dd6a48639b422fd2)
+
+### Fixed
+- Fix `pyslm.analysis` tools to use jump speed and jump delay parameters [3bce788b5362062755e0fb7f17757b4174d1e877](https://github.com/drlukeparry/pyslm/commit/3bce788b5362062755e0fb7f17757b4174d1e877)
+- Fixed `plotSequential` showing an invalid scan vector at the end of the contour scanning [c46ae70980ac652d30ce7e3a2aa6667246752744](https://github.com/drlukeparry/pyslm/commit/c46ae70980ac652d30ce7e3a2aa6667246752744)
+- Fixed the offsetting applied to contour/border scans. An overall offset is not applied if a contour scan is not used [40fb789164aa76e25222e1c822e3462eb1c6fd82](https://github.com/drlukeparry/pyslm/commit/40fb789164aa76e25222e1c822e3462eb1c6fd82)
+- Updated compatability for Python 3.9 [01f79a6dcfb9625d05e3d12a5b1901d32324c7ca](https://github.com/drlukeparry/pyslm/commit/01f79a6dcfb9625d05e3d12a5b1901d32324c7ca)
+
+#### Changed
+
+- Added a requirement for PyQt5 in the dependencies needed for support generation [2ced797da62f9b8099c8c9f30c4ff7c6677b2b6d](https://github.com/drlukeparry/pyslm/commit/2ced797da62f9b8099c8c9f30c4ff7c6677b2b6d)
 
 ## [0.4.0] - 2021-07-23
 
