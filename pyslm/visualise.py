@@ -164,7 +164,7 @@ def plotSequential(layer: Layer,
         if isinstance(geom, HatchGeometry):
             coords = geom.coords.reshape(-1, 2, 2)
         elif isinstance(geom, ContourGeometry):
-            coords = np.hstack([geom.coords, np.roll(geom.coords, -1, axis=0)]).reshape(-1,2,2)
+            coords = np.hstack([geom.coords, np.roll(geom.coords, -1, axis=0)])[:-1,:].reshape(-1,2,2)
 
         scanVectors.append(coords)
 
