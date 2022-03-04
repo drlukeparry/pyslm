@@ -105,30 +105,80 @@ def extrudeFace(extrudeMesh: trimesh.Trimesh,
     return extMesh
 
 
-def boolUnion(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
+def boolUnion(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh:
+    """
+    Performs a Boolean CSG union operation using the `pycork <https://github.com/drlukeparry/pycork>`_ library  between
+    two meshes.
 
+    .. note::
+        The meshes provided should ideally be watertight (manifold) and have no-self intersecting faces to ensure that
+        the underlying Cork Library can correctly perform the operation. The resultant mesh is processed natively
+        using Trimesh to merge coincident vertices and remove degenerate faces.
+
+
+    :param meshA: Mesh A
+    :param meshB: Mesh B
+    :return: The Boolean union between Mesh A and Mesh B.
+    """
     vertsOut, facesOut = pycork.union(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
     return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
 
 def boolIntersect(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
+    """
+      Performs a Boolean CSG intersection operation using the `pycork <https://github.com/drlukeparry/pycork>`_ library
+      between two meshes.
 
+      .. note::
+          The meshes provided should ideally be watertight (manifold) and have no-self intersecting faces to ensure that
+          the underlying Cork Library can correctly perform the operation. The resultant mesh is processed natively
+          using Trimesh to merge coincident vertices and remove degenerate faces.
+
+
+      :param meshA: Mesh A
+      :param meshB: Mesh B
+      :return: The Boolean intersection between Mesh A and Mesh B.
+      """
     vertsOut, facesOut = pycork.intersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
     return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
 
-def boolDiff(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
+def boolDiff(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh:
+    """
+    Performs a Boolean CSG difference operation using the `pycork <https://github.com/drlukeparry/pycork>`_ library
+    between two meshes.
 
+    .. note::
+        The meshes provided should ideally be watertight (manifold) and have no-self intersecting faces to ensure that
+        the underlying Cork Library can correctly perform the operation. The resultant mesh is processed natively
+        using Trimesh to merge coincident vertices and remove degenerate faces.
+
+
+    :param meshA: Mesh A
+    :param meshB: Mesh B
+    :return: The Boolean difference between Mesh A and Mesh B.
+    """
     vertsOut, facesOut = pycork.difference(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
     return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 
 
-def resolveIntersection(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
+def resolveIntersection(meshA: trimesh.Trimesh) -> trimesh.Trimesh:
+    """
+    Resolves all self-intersections within a meshn using the `pycork <https://github.com/drlukeparry/pycork>`_ library.
 
-    vertsOut, facesOut = pycork.resolveIntersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
+    .. note::
+        The meshes provided should ideally be watertight (manifold) and have no-self intersecting faces to ensure that
+        the underlying Cork Library can correctly perform the operation. The resultant mesh is processed natively
+        using Trimesh to merge coincident vertices and remove degenerate faces.
+
+
+    :param meshA: Mesh A
+    :return: Mesh with all intersections resolved
+    """
+    vertsOut, facesOut = pycork.resolveIntersection(meshA.vertices, meshA.faces)
 
     return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
 

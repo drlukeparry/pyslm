@@ -9,6 +9,7 @@ import trimesh
 from . import geometry
 from ..core import Part
 
+
 def getAdjacentFaces(mesh: trimesh.Trimesh):
     """
     Returns a list of connected faces
@@ -53,12 +54,13 @@ def getSupportAngles(part: Part, unitNormal: np.ndarray = None, useConnectivity:
     else:
         return theta
 
+
 def getFaceZProjectionWeight(mesh: trimesh.Trimesh,
                              useConnectivity: Optional[bool] = False) -> np.ndarray:
     """
     Utility which returns the inverse projection of the faces relative to the +ve Z direction in order to isolate side
     faces. This could be considered the inverse component of the overhang angle. It is calculated by using the
-    following trigonometric identify :math:`\sin(\theta) = \sqrt{1-\cos^2(\theta)`.
+    following trigonometric identify :math:`\sin(\\theta) = \sqrt{1-\cos^2(\\theta)`.
 
     :param mesh: The mesh to identify the projection weights
     :param useConnectivity: Uses mesh connectivity to interpolate the surface normals across
@@ -85,8 +87,8 @@ def getOverhangMesh(part: Part, overhangAngle: float,
                     useConnectivity: Optional[bool] = False) -> trimesh.Trimesh:
     """
     Gets the overhang mesh from a :class:`Part`. If the individual regions for the overhang mesh require separating,
-    the parameter :code:`splitMesh` should be set to True. This will split regions by their network connectivity using
-    Trimesh.
+    the parameter :code:`splitMesh` should be set to `True`. This will split mesh regions by their facial connectivity
+    using Trimesh.
 
     :param part: The part to extract the overhang mesh from
     :param overhangAngle: The overhang angle in degrees
@@ -223,6 +225,7 @@ def approximateProjectionSupportCost(part: Part, overhangAngle: float,
 
     return np.sum(faceAreas * heightMap), heightMap
 
+
 def generateHeightMap(mesh: trimesh.Trimesh,
                        upVec = [0,0,1.0],
                        resolution: Optional[float] = 0.5,
@@ -341,4 +344,3 @@ def generateHeightMap2(mesh: trimesh.Trimesh,
         heightMap[hitLocIdx[:, 0], hitLocIdx[:, 1]] = hitLoc[:, 2]
 
     return heightMap
-
