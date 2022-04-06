@@ -19,11 +19,15 @@ with open(version_file, 'r') as f:
 # note that `pip` requires setuptools itself
 requirements_default = set([
     'numpy',  # all data structures
+    'scipy',
+    'scikit-image',
     'setuptools',  # used for packaging
     'shapely',
-    'trimesh',
     'cython',
-    'triangle'
+    'Rtree',
+    'networkx',
+    'matplotlib',
+    'trimesh'
 ])
 
 # "easy" requirements should install without compiling
@@ -31,7 +35,7 @@ requirements_default = set([
 requirements_easy = set([
     'setuptools',  # do setuptools stuff
     'shapely',
-    'rtree',
+    'Rtree',
     'scikit-image',
     'networkx',
     'trimesh',  # Required for meshing geometry
@@ -42,7 +46,7 @@ requirements_easy = set([
 requirements_supports = set([
     'setuptools',  # do setuptools stuff
     'shapely',
-    'rtree',
+    'Rtree',
     'scikit-image',
     'networkx',
     'trimesh',  # Required for meshing geometry
