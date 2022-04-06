@@ -1,9 +1,10 @@
 """
-A simple example showing how t use PySLM for generating a Stripe Scan Strategy across a single layer.
+A simple example showing how to use PySLM for generating a Stripe Scan Strategy across a single layer.
 """
 import numpy as np
 import pyslm
-import pyslm.analysis.utils as analysis
+import pyslm.visualise
+import pyslm.analysis
 from pyslm import hatching as hatching
 
 # Imports the part and sets the geometry to  an STL file (frameGuide.stl)
@@ -24,7 +25,7 @@ print(solidPart.boundingBox)
 # Set te slice layer position
 z = 1.0
 
-# Create a BasicIslandHatcher object for performing any hatching operations (
+# Create a BasicIslandHatcher object for performing any hatching operations
 myHatcher = hatching.BasicIslandHatcher()
 myHatcher.islandWidth = 3.0
 myHatcher.stripeWidth = 5.0
@@ -72,8 +73,9 @@ for layerGeom in layer.geometry:
 
 bstyle = pyslm.geometry.BuildStyle()
 bstyle.bid = 1
-bstyle.laserSpeed = 200 # [mm/s]
-bstyle.laserPower = 200 # [W]
+bstyle.laserSpeed = 200  # [mm/s]
+bstyle.laserPower = 200  # [W]
+bstyle.jumpSpeed  = 5000 # [mm/s]
 
 model = pyslm.geometry.Model()
 model.mid = 1
@@ -83,7 +85,6 @@ model.buildStyles.append(bstyle)
 Analyse the layers using the analysis module. The path distance and the estimate time taken to scan the layer can be
 predicted.
 """
-print('Total Path Distance: {:.1f} mm'.format(analysis.getLayerPathLength(layer)))
-print('Total jump distance {:.1f} mm'.format(analysis.getLayerJumpLength(layer)))
-print('Time taken {:.1f} s'.format(analysis.getLayerTime(layer, model)) )
-
+print('Total Path Distance: {:.1f} mm'.format(pyslm.analysis.getLayerPathLength(layer)))
+print('Total jump distance {:.1f} mm'.format(pyslm.analysis.getLayerJumpLength(layer)))
+print('Time taken {:.1f} s'.format(pyslm.analysis.getLayerTime(layer, [model])) )

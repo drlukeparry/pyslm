@@ -25,7 +25,6 @@ solidPart.origin = [5.0, 10.0, 0.0]
 solidPart.rotation = np.array([0, 0, 30])
 solidPart.dropToPlatform()
 
-print(solidPart.boundingBox)
 
 class WavyHatcher(pyslm.hatching.Hatcher):
 
@@ -153,8 +152,6 @@ class WavyHatcher(pyslm.hatching.Hatcher):
 
                     layer.geometry.append(contourGeom)
 
-
-
         else:
             # Iterate through each closed polygon region in the slice. The currently individually sliced.
             for contour in curBoundary:
@@ -188,7 +185,6 @@ class WavyHatcher(pyslm.hatching.Hatcher):
                 clippedLines = clippedLines[id, :, :]
 
                 scanVectors.append(clippedLines)
-
 
         return layer
 
@@ -296,7 +292,6 @@ The boundaries of the slice can be automatically simplified if desired.
 geomSlice = solidPart.getVectorSlice(z, simplificationFactor=0.1)
 layer = myHatcher.hatch(geomSlice)
 
-
 """
 Plot the layer geometries using matplotlib
 The order of scanning for the hatch region can be displayed by setting the parameter (plotOrderLine=True)
@@ -318,8 +313,9 @@ for layerGeom in layer.geometry:
 
 bstyle = pyslm.geometry.BuildStyle()
 bstyle.bid = 1
-bstyle.laserSpeed = 200 # [mm/s]
-bstyle.laserPower = 200 # [W]
+bstyle.laserSpeed = 200  # [mm/s]
+bstyle.laserPower = 200  # [W]
+bstyle.jumpSpeed  = 5000 # [mm/s]
 
 model = pyslm.geometry.Model()
 model.mid = 1
@@ -331,5 +327,5 @@ predicted.
 """
 print('Total Path Distance: {:.1f} mm'.format(pyslm.analysis.getLayerPathLength(layer)))
 print('Total jump distance {:.1f} mm'.format(pyslm.analysis.getLayerJumpLength(layer)))
-print('Time taken {:.1f} s'.format(pyslm.analysis.getLayerTime(layer, [model])) )
+print('Time taken {:.1f} s'.format(pyslm.analysis.getLayerTime(layer, [model])))
 

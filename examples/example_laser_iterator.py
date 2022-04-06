@@ -1,5 +1,5 @@
 """
-A simple example showing how to use PySLM for generating slices across a 3D model
+A simple example showing how to iterate across a part using the analysis.Iterator classes
 """
 import numpy as np
 import pyslm
