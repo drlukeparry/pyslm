@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 *$py.class
 
+.DS_Store
 # C extensions
 *.so
 
@@ -25,6 +26,9 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Pycharm Project Information
+.idea/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
