@@ -2,13 +2,12 @@ import numpy as np
 import trimesh
 from vispy import app, gloo
 from vispy.util.transforms import translate, rotate, ortho
-from vispy.gloo.util import _screenshot
 
 from matplotlib import pyplot as plt
-
 app.use_app('pyqt5')  # Set backend
 
 vert = """
+
 uniform   mat4 u_model;
 uniform   mat4 u_view;
 uniform   mat4 u_projection;
@@ -26,15 +25,12 @@ void main()
 """
 
 frag = """
-#version 330 core
-
 varying vec4 v_color;
-out vec4 fragColor;
 
 void main()
 {
-    //gl_FragColor = vec4( gl_FragCoord.z,gl_FragCoord.z,gl_FragCoord.z,1.0);
-    fragColor = vec4( v_color.z,v_color.z,v_color.z,1.0);
+    //gl_FragColor = vec4( (gl_FragCoord.z / 1e5)+0.,(gl_FragCoord.z / 1e5)+0.,(gl_FragCoord.z / 1e5)+0.5,1.0);
+    gl_FragColor = vec4( v_color.z,v_color.z,v_color.z,1.0);
 }
 """
 
@@ -95,8 +91,11 @@ class Canvas(app.Canvas):
 
         self._visSize = (meshExtents / self.resolution).flatten()
 
-        app.Canvas.__init__(self, 'interactive', show=False, resizable=False,autoswap=True,
+        app.Canvas.__init__(self, 'interactive', show=False, resizable=True, autoswap=False, decorate=False,
                             size=(self.visSize[0], self.visSize[1]))
+
+        print('size', self._visSize)
+        print('dpi', self.dpi)
 
         self.filled = self.filled.astype(np.uint32).flatten()
         self.filled_buf = gloo.IndexBuffer(self.filled)
@@ -121,20 +120,19 @@ class Canvas(app.Canvas):
 
 
         self.model = np.eye(4, dtype=np.float32)
-
-        shape = self.physical_size[1], self.physical_size[0]
+        shape = int(self._visSize[1]), int(self._visSize[0])
 
         # Create the render texture
         self._rendertex = gloo.Texture2D((shape + (4,)), format='rgba', internalformat='rgba32f')
         # self._colorBuffer = gloo.RenderBuffer(self.shape, format='color')
         self._depthRenderBuffer = gloo.RenderBuffer(shape, format='depth')
-        self._depthRenderBuffer.resize(shape, format=gloo.gl.GL_DEPTH_COMPONENT16)
+        #self._depthRenderBuffer.resize(shape, format=gloo.gl.GL_DEPTH_COMPONENT16)
 
         # Create FBO, attach the color buffer and depth buffer
-        self._fbo = gloo.FrameBuffer(self._rendertex, self._depthRenderBuffer)
+        self._fbo = gloo.FrameBuffer(self._rendertex)#, self._depthRenderBuffer)
 
         gloo.set_viewport(0, 0, self.physical_size[0], self.physical_size[1])
-
+        gloo.set_viewport(0, 0, self._visSize[0], self._visSize[1])
         self.projection = ortho(self.bbox[1, 0], self.bbox[0, 0], self.bbox[1, 1], self.bbox[0, 1], 2, 40)
 
         # Set MVP variables for shaders
@@ -150,8 +148,10 @@ class Canvas(app.Canvas):
     def on_resize(self, event):
 
         # TODO - find a better way to set the bounds for the orthographic projection
-        gloo.set_viewport(0, 0, event.physical_size[0], event.physical_size[1])
 
+        gloo.set_viewport(0, 0, self._visSize[0]*2, self._visSize[1]*2)
+        self.finalSize = (event.physical_size[0], event.physical_size[1])
+        print('event physical size', event.physical_size[0], event.physical_size[1])
         # Zself.projection = ortho(self.box[0, 0], self.box[1, 0], self.box[0, 1], self.box[1, 1], -10, 40)
         self.projection = ortho(self.bbox[1, 0], self.bbox[0, 0],
                                 self.bbox[1, 1], self.bbox[0, 1],
@@ -168,14 +168,15 @@ class Canvas(app.Canvas):
         with self._fbo:
             gloo.clear()
             gloo.set_clear_color((0.0, 0.0, 0.0, 0.0))
-            gloo.set_viewport(0, 0, *self.physical_size)
+
+            gloo.set_viewport(0, 0, *self.finalSize)
+            gloo.set_viewport(0, 0, self._visSize[0], self._visSize[1])
             gloo.set_state(blend=True, depth_test=True, polygon_offset_fill=False, cull_face=False)
 
-            #self.program['u_color'] = 1, 1, 1, 1
             self.program.draw('triangles', self.filled_buf)
             # self.rgb = np.copy(self._fbo.read('color')) #_screenshot((0, 0, self.size[0], self.size[1]))  #self._fbo.read('color')
-            # self.rgb =     gloo.read_pixels((0, 0, *self.physical_size), True)
-            self.rgb = _screenshot((0, 0, *self.physical_size))
+            self.rgb = gloo.read_pixels((0, 0, self._visSize[0], self._visSize[1]), True, out_type='float')
+            #self.rgb = _screenshot((0, 0, *self.physical_size))
 
 
 def projectHeightMap(mesh: trimesh.Trimesh,
@@ -186,6 +187,6 @@ def projectHeightMap(mesh: trimesh.Trimesh,
     c = Canvas(mesh, resolution, flipDir, bbox)
 
     c.show(visible=True)
-    # c.render()
     c.close()
+
     return c.rgb[:, :, 1]
