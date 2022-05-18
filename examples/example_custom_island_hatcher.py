@@ -1,5 +1,5 @@
 """
-A simple example showing how to use PySLM  with the IslandHatcher approach, which decomposes the layer into several
+A simple example showing how to use PySLM with the IslandHatcher approach, which decomposes the layer into several
 island regions, which are tested for intersection and then the hatches generated are more efficiently clipped.
 """
 
@@ -60,7 +60,6 @@ class HexIsland(hatching.Island):
 
         return HexIsland._boundary
 
-
     def generateInternalHatch(self, isOdd = True) -> np.ndarray:
         """
         Generates a set of hatches orthogonal to the island's coordinate system :math:`(x\\prime, y\\prime)`.
@@ -117,8 +116,6 @@ class HexIsland(hatching.Island):
         return coordsUp
 
 
-
-    
 class HexIslandHatcher(hatching.IslandHatcher):
 
     def __init__(self):
@@ -137,7 +134,6 @@ class HexIslandHatcher(hatching.IslandHatcher):
         # Get the bounding box of the boundary
         bbox = self.boundaryBoundingBox(paths)
 
-        print('bounding box bbox', bbox)
         # Expand the bounding box
         bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
 
@@ -160,15 +156,14 @@ class HexIslandHatcher(hatching.IslandHatcher):
         islands = []
         id = 0
 
-        print('island width', self._islandWidth)
-
+        print('Island width:', self._islandWidth)
 
         for i in np.arange(0, numIslandsX):
             for j in np.arange(0, numIslandsY):
 
                 # gGenerate the island position
                 startX = -bboxRadius + i * self._islandWidth + np.mod(j, 2) * self._islandWidth / 2
-                startY = -bboxRadius + j * (self._islandWidth) * np.sin(2*np.pi/numPoints)
+                startY = -bboxRadius + j * self._islandWidth * np.sin(2*np.pi/numPoints)
 
                 pos = np.array([(startX, startY)])
 
@@ -190,7 +185,6 @@ class HexIslandHatcher(hatching.IslandHatcher):
         return islands
 
 
-
 # Imports the part and sets the geometry to  an STL file (frameGuide.stl)
 solidPart = pyslm.Part('inversePyramid')
 solidPart.setGeometry('../models/frameGuide.stl')
@@ -200,7 +194,6 @@ solidPart.origin[0] = 5.0
 solidPart.origin[1] = 2.5
 solidPart.scaleFactor = 2.0
 solidPart.rotation = [0, 0.0, np.pi]
-print(solidPart.boundingBox)
 
 # Set te slice layer position
 z = 14.99

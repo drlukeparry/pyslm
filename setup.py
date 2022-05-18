@@ -19,11 +19,15 @@ with open(version_file, 'r') as f:
 # note that `pip` requires setuptools itself
 requirements_default = set([
     'numpy',  # all data structures
+    'scipy',
+    'scikit-image',
     'setuptools',  # used for packaging
     'shapely',
-    'trimesh',
     'cython',
-    'triangle'
+    'Rtree',
+    'networkx',
+    'matplotlib',
+    'trimesh'
 ])
 
 # "easy" requirements should install without compiling
@@ -31,11 +35,26 @@ requirements_default = set([
 requirements_easy = set([
     'setuptools',  # do setuptools stuff
     'shapely',
-    'rtree',
+    'Rtree',
     'scikit-image',
     'networkx',
     'trimesh',  # Required for meshing geometry
     'triangle',
+    'colorlog'])  # log in pretty colors
+
+
+requirements_supports = set([
+    'setuptools',  # do setuptools stuff
+    'shapely',
+    'Rtree',
+    'scikit-image',
+    'networkx',
+    'trimesh',  # Required for meshing geometry
+    'triangle',
+    'vispy',
+    'pycork'
+    'PyQt5',
+    'mapbox-earcut'
     'colorlog'])  # log in pretty colors
 
 # requirements for building documentation
@@ -89,7 +108,7 @@ setup(
     version=__version__,
     description='Python Package for Additive Manufacturing Development',
     long_description=readme,
-    long_description_content_type = 'text/x-rst',
+    long_description_content_type='text/x-rst',
     author='Luke Parry',
     author_email='dev@lukeparry.uk',
     url='https://github.com/drlukeparry/pyslm',
@@ -106,12 +125,14 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Natural Language :: English',
         'Topic :: Scientific/Engineering'],
     license="",
     packages=find_packages(exclude=('tests', 'docs', 'examples')),
     install_requires=list(requirements_default),
     extras_require={'easy': list(requirements_easy),
+                    'support': list(requirements_supports),
                     'docs': list(requirements_docs)},
 
     project_urls = {

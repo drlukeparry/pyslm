@@ -21,8 +21,6 @@ solidPart.origin = [5.0, 10.0, 0.0]
 solidPart.rotation = np.array([0, 0, 30])
 solidPart.dropToPlatform()
 
-print(solidPart.boundingBox)
-
 # Set te slice layer position
 z = 23.
 
@@ -54,9 +52,9 @@ for layerGeom in layer.geometry:
 bstyle = pyslm.geometry.BuildStyle()
 bstyle.bid = 1
 bstyle.laserSpeed = 200.0 # [mm/s]
-bstyle.laserPower = 200 # [W]#
-bstyle.pointDistance = 60 # (60 microns)
-bstyle.pointExposureTime = 30 #
+bstyle.laserPower = 200 # [W]
+bstyle.pointDistance = 60 # [μm]
+bstyle.pointExposureTime = 30 # [μs]
 
 model = pyslm.geometry.Model()
 model.mid = 1

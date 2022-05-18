@@ -1,6 +1,11 @@
 PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 =============================================================================
 
+.. https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
+
+.. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
+    :alt:  PySLM - Library for  Additive Manufacturing and 3D Printing including Selective Laser Melting
+
 .. image:: https://github.com/drlukeparry/pyslm/actions/workflows/pythonpublish.yml/badge.svg
     :target: https://github.com/drlukeparry/pyslm/actions
 .. image:: https://readthedocs.org/projects/pyslm/badge/?version=latest
@@ -27,12 +32,14 @@ and related analysis tools (e.g. overhang analysis, build-time estimation).
 
 PySLM is built-upon python libraries `Trimesh <https://github.com/mikedh/trimesh>`_ and based on some custom modifications
 to the `PyClipper <https://pypi.org/project/pyclipper/>`_ libraries, which are leveraged to provide the slicing and
-manipulation of polygons, such as offsetting and clipping of lines. Additional functionality will be added to provide
-basic capabilities.
+manipulation of polygons, such as offsetting and clipping of lines.
 
-The aims is this library provides especially for an academic environment, a useful set of tools for prototyping and used
-in-conjunction with simulation and analytic studies.
-
+The aims of this library is to provide a useful set of tools for prototyping novel pre-processing approaches to aid
+research and development of Additive Manufacturing processes, amongst an academic environment. The tools aim to compliment
+experimental and analytical studies that can enrich scientific understanding of the process. This includes data-fusion
+from expeirments and sensors within the process but also enahcning the capability of the process by providing greater control
+over the process. Furthermore, the open nature of the library intends to inform and educate those interested in the
+underlying algorithms of preparing toolpaths in Additive Manufacturing.
 
 Current Features
 ******************
@@ -41,10 +48,6 @@ PySLM is building up a core feature set aiming to provide the basic blocks for p
 additional design features used for AM and 3D printing systems typically (SLM/SLS/SLA) systems which consolidate material
 using a single/multi point exposure by generating a series of scan vectors in a region.
 
-**Support Structure Generation**
-
-* [TODO] A prototype for support structure generation
-
 **Slicing:**
 
 * Slicing of triangular meshes supported via the `Trimesh <https://github.com/mikedh/trimesh>`_ library.
@@ -52,16 +55,38 @@ using a single/multi point exposure by generating a series of scan vectors in a 
 * Bitmap slicing for SLA, DLP, Inkjet Systems
 
 **Hatching:**
-The following operations are provided as a convenience to aid developing the scan strategies:
+The following operations are provided as a convenience to aid the development of novel scan strategies in Selective
+Laser Melting:
 
 * Offsetting of contours and boundaries
-* Trimming of lines and hatch vectors (sequentially ordered)
+* Trimming of lines and hatch vectors (sequentially ordered and sorted)
 
-The following scan strategies have been implemented as reference on platforms:
+The following scan strategies have been implemented as reference for AM platforms:
 
-* Standard 'Alternating' hatching
-* Stripe Scan Strategy
-* Island or Checkerboard Scan Strategy
+* Standard 'alternating' hatching
+* Stripe scan strategy
+* Island or checkerboard scan strategy
+
+**Support Structure Generation**
+
+PySLM provides underlying tools and a framework for identifying and generating support structures suitable for SLM.
+Tools are provided identifying overhang areas based on their mesh and connectivity information, but also
+usingprojection based method. The projection method takes advantage of GPU GLSL shaders for providing an efficient
+raytracing approach. Using the `PyCork <https://github.com/drlukeparry/pycork>`_ boolean CSG library, an algorithm for
+extracting precise defintion of volumetric support regions. These regions are segmented based on self-intersections with
+the mesh. From these volumes, porous grid-truss structure suitable for SLM based process can be generated.
+
+.. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslmSupportStructures.png
+    :alt: The tools available in PySLM for locating overhang regions and support regions for 3D Printing and
+          generating volumetric block supports alongside grid-truss based support structures suitable for SLM.
+    :width: 80%
+    :align: center
+
+* Extracting overhang surfaces from meshes with optional connectivity information
+* Projection based block and truss support structure generation
+    * 3D intersected support volumes are generated from overhang regions using OpenGL ray-tracing approach
+    * Generate a truss grid using support volumes suitable for Metal AM processes
+    * Exact support volume generation using the `pycork <https://github.com/drlukeparry/pycork>`_ library
 
 **Visualisation:**
 
@@ -69,27 +94,36 @@ The laser scan vectors can be visualised using ``Matplotlib``. The order of the 
 development of the scan strategies, but additional information such length, laser parameter information associated
 with each scan vector can be shown.
 
+.. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslmVisualisationTools.png
+    :alt: The tools available in PySLM for visualising analyisng collections of scan vectors used in SLM.
+    :width: 80%
+    :align: center
+
 * Scan vector plots (including underlying BuildStyle information and properties)
 * Exposure point visualisation
 * Exposure (effective heat) map generation
 * Overhang visualisation
 
 **Analysis:**
-* Build time estimation tools (based on scan strategy and geometry)
-* Iterators (Scan Vector and Exposure Point) for Simulation
+
+* Build time estimation tools
+    * Based on scan strategy and geometry
+    * Time estimation based on LayerGeometry
+* Iterators (Scan Vector and Exposure Points) useful for simulation studies
 
 **Export to Machine Files:**
 
 Currently the capability to enable translation to commercial machine build platforms is being providing through a
 supporting library called `libSLM <https://github.com/drlukeparry/libSLM>`_ . This is a c++ library to enable efficient
-import and export across various commercial machine build files. Work is underway to support the following file formats.
-If you would like to support implementing a custom format, please raise a `request <https://github.com/drlukeparry/pyslm/issues>`_.
+import and export across various commercial machine build files. With support from individuals the following machine
+build file formats have been developed.
 
 * Renishaw MTT (**.mtt**),
 * DMG Mori Realizer (**.rea**),
-* EOS SLI formats (**.sli**) - WIP,
+* EOS SLI formats (**.sli**)
 * SLM Solutions (**.slm**).
 
+If you would like to support implementing a custom format, please raise a `request <https://github.com/drlukeparry/pyslm/issues>`_.
 For further information, see the latest `release notes <https://github.com/drlukeparry/pyslm/blob/dev/CHANGELOG.md>`_.
 
 Installation
@@ -109,7 +143,6 @@ translators available.
 
 .. code:: bash
 
-    pip install libSLM
     pip install PythonSLM
 
 Alternatively, PySLM may be compiled directly from source. Currently the prerequisites are the cython package and a compliant c++
@@ -132,7 +165,7 @@ length generated in a region.
     import pyslm.visualise
     from pyslm import hatching as hatching
 
-    # Imports the part and sets the geometry to  an STL file (frameGuide.stl)
+    # Imports the part and sets the geometry to an STL file (frameGuide.stl)
     solidPart = pyslm.Part('myFrameGuide')
     solidPart.setGeometry('../models/frameGuide.stl')
 
@@ -150,14 +183,20 @@ length generated in a region.
     myHatcher.numInnerContours = 2
     myHatcher.numOuterContours = 1
 
-    # Slice the object
+    # Slice the object at Z and get the boundaries
     geomSlice = solidPart.getVectorSlice(z)
 
-    #Perform the hatching operations
+    # Perform the hatching operations
     layer = myHatcher.hatch(geomSlice)
 
-    # Plot the layer geometries
+    # Plot the layer geometries generated
     pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
 
+The result of the script output is shown here
+
+.. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/stripe_scan_strategy_example.png
+   :width: 50%
+   :align: center
+   :alt:  PySLM - Illustration of a Stripe Scan Strategy employed in 3D printing
 
 For further guidance please look at documented examples are provided in `examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .

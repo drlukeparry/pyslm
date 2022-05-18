@@ -8,6 +8,7 @@ from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, Poi
 from ..geometry import utils as geomUtils
 from .utils import *
 
+
 class LaserState:
     """
     The LaserState Class is a simple structure used for storing the state of the current exposure point at
@@ -28,7 +29,7 @@ class TimeNode:
     and static and changes are not dynamically propagated, therefore caution is advised that the entire Cache tree
     is updated after a known change.
     """
-    def __init__(self, parent=None, id:Optional[int]=0, value:Optional[Any] = None):
+    def __init__(self, parent=None, id: Optional[int]=0, value: Optional[Any] = None):
 
         self.parent = parent
         self.id = id
@@ -39,6 +40,7 @@ class TimeNode:
     def getChildrenTime(self) -> float:
         """
         Get the total time taken by the children
+
         :return: The total time taken
 
         """
@@ -50,6 +52,10 @@ class TimeNode:
 
 
 class ScanVectorIterator:
+    """
+    ScanVectorIterator provides an iterator that will traverse across every scan vector (linear) across both hatch
+    and contour scan vectors for all layers passed into the constructor.
+    """
     def  __init__(self,  layers: List[Layer]):
 
         self._vectors = []
@@ -64,7 +70,11 @@ class ScanVectorIterator:
         return self._vectors
 
     def initialise(self):
+        """
+        Initialises the iterator based on the input of collection of layers.
 
+        :return: The list of reshaped vectors
+        """
         layerVecs = []
         for layer in self._layers:
             layerVecs += self.getLayerVectors(layer)
@@ -76,12 +86,17 @@ class ScanVectorIterator:
         return np.vstack(vectorList).reshape([-1, 2, 2])
 
     @staticmethod
-    def getLayerVectors(layer: Layer):
+    def getLayerVectors(layer: Layer) -> List[np.ndarray]:
+        """
+        Returns a list of scan vectors groups from a :class:`Layer`.
 
-        layerGeoms = layer.geometry
+        :param layer: The Layer to obtain the scan vectors from
+        :return:  The scan vector list
+        """
 
         layerVecs = []
-        for geom in layerGeoms:
+
+        for geom in layer.geometry:
             if isinstance(geom, ContourGeometry):
                 """ Trick to change contour vectors to normal lines """
                 layerVecs.append(np.tile(geom.coords, (1, 2)).reshape(-1, 2)[1:-1])
@@ -473,12 +488,12 @@ class LayerGeometryIterator(Iterator):
 class ScanIterator(Iterator):
     """
     The Scan Iterator class provides a  method to iterate at a variable :attr:`timestep` across a BuildFile
-    consisting of list of :class:`Layer` and :class`Model` provided as the input. Typically this is used in
+    consisting of list of :class:`Layer` and :class:`Model` provided as the input. Typically this is used in
     numerical simulation of powder-bed fusion processes and also its temporal visualisation. Properties include the
     current position are available via :meth:`getCurrentLaserPosition` and the current laser parameters in
     :meth:`getCurrentBuildStyle` and if the laser is currently active :meth:`isLaserOn`.
 
-    :note:
+    .. note::
         The Iterator classes *assumes* that the laser position during rastering is linearly interpolated across each scan
         vector, based on the :attr:`timestep`, which can be modulated during the iterator.
 

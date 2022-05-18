@@ -1,7 +1,8 @@
 """
 A simple example showing how to use PySLM for calculating the build time estimate.
-THis example takes advantage of the multi-processing module to run across more threads.
+This example takes advantage of the multi-processing module to run across more threads.
 """
+
 import pyslm
 import shapely
 from pyslm import hatching as hatching
@@ -17,9 +18,9 @@ Constants
 """
 layerThickness = 0.03  # [mm]
 rotation = [60, 0.0, 45]
-layerRecoatTime = 30 # [s]
-contourLaserScanSpeed = 250 # [mm/s]
-hatchLaserScanSpeed = 1000 # [mm/s]
+layerRecoatTime = 30.0 # [s]
+contourLaserScanSpeed = 250.0 # [mm/s]
+hatchLaserScanSpeed = 1000.0 # [mm/s]
 eos_m280_alsi10mg_brate = 4.8*3600/1000 # [cm3/hr]
 hatchDistance = 0.16
 numCountourOffsets = 1
@@ -34,7 +35,7 @@ def calculateLayer(input):
 
     # Slice the boundary
     geomSlice = solidPart.getVectorSlice(zid*layerThickness, returnCoordPaths=False)
-    #print(geomSlice)
+
     if len(geomSlice) > 0:
         return geomSlice
     else:
@@ -52,7 +53,6 @@ def main():
     solidPart.scaleFactor = 1.0
     solidPart.rotation = rotation
     solidPart.dropToPlatform()
-    print(solidPart.boundingBox)
 
     # Create the multi-threaded map function  using the Python multiprocessing library
     layers = []
@@ -80,7 +80,7 @@ def main():
     layers = p.map(calculateLayer, processList)
     p.close()
 
-    print('\t Multiprocessing time', time.time() - startTime)
+    print('\t Multiprocessing time {:.1f}'.format(time.time() - startTime))
     print('Slicing Finished')
 
     polys = []
@@ -134,7 +134,7 @@ def main():
     approxScanTime = solidPart.volume/(hatchDistance * hatchLaserScanSpeed * layerThickness) + solidPart.surfaceArea / (contourLaserScanSpeed*layerThickness)
     approxProjectedScanTime = solidPart.volume / (hatchDistance * hatchLaserScanSpeed * layerThickness) + projectedArea / (
                 contourLaserScanSpeed * layerThickness)
-    print('\tApprox scan time *surface) {:.2f} hr'.format(approxScanTime/3600))
+    print('\tApprox scan time (surface) {:.2f} hr'.format(approxScanTime/3600))
     print('\tApprox scan time (using projected area):  {:.2f} hr'.format(approxProjectedScanTime/3600))
 
 

@@ -17,7 +17,11 @@ class LaserMode:
 class Header:
     """
     The Header provides basic information about the machine build file, such as the name of the file
-    (:class:`~Header.filename`), version and the zUnit used for calculating the actual Layer z position in the machine.
+    (:attr:`filename`), version and the :attr:`zUnit` used for calculating the actual Layer z position in the machine.
+
+    Typically the :attr:`zUnit` is set to 1000 :math:`\mu m` corresponding to a conversion factor from mm to microns.
+    The :attr:`version` tuple is set corresponding to the chosen machine build format specification available in libSLM
+    and what is compatible with the firmware of the SLM system.
     """
     def __init__(self):
         self.filename = ""
@@ -28,10 +32,21 @@ class Header:
 class BuildStyle:
     """
     A :class:`BuildStyle` represents a collection of laser parameters used for scanning across a single
-    :class:`LayerGeometry`. This consists of essential laser parameters including :attr:`~BuildStyle.laserPower`,
-    :attr:`~BuildStyle.laserSpeed`and for pulsed mode lasers - :attr:`~BuildStyle.pointDistance` and
-    :attr:`~BuildStyle.pointExposureTime`. A unique buildstyle id (:attr:`~BuildStyle.bid`) must be within each
-    :class:`Model` group that it is stored in and later used for each :class:`LayerGeometry` group.
+    :class:`LayerGeometry`. This consists of essential laser parameters including
+
+    * :attr:`laserPower`,
+    * :attr:`laserSpeed`,
+    * :attr:`.pointDistance` and :attr:`pointExposureTime` - (required for pulsed mode lasers).
+
+    A unique buildstyle id (:attr:`bid`) must be set within each
+    :class:`Model` group that it is stored in and later assigned for each :class:`LayerGeometry` group. Additional,
+    metadata can be set that for some Machine Build File formats are used such as :attr:`name` and :attr:`description`.
+    For single and multi-laser systems, :attr:` laserId` corresponds with the parameter set associated with the laser.
+    This offers opportunity to tailor the behavior of multiple beams applied to the same area such as providing
+    a pre-heating or annealing exposure pass.
+
+    .. note::
+        For single laser systems the :attr:`laserId` is set to `1`
     """
 
     def __init__(self):
@@ -45,6 +60,7 @@ class BuildStyle:
         self._laserMode = 1
         self._pointDistance = 0
         self._pointExposureTime = 0
+        self._pointDelay = 0
         self._jumpDelay = 0
         self._jumpSpeed = 0
 
@@ -58,7 +74,7 @@ class BuildStyle:
     @property
     def bid(self) -> int:
         """
-        A unique id used for each BuildStyle object within each Model that can be referenced by
+        A unique id used for each :class:`BuildStyle` object within each :class:`Model` that can be referenced by
         a :class:`LayerGeometry`
         """
         return self._bid
@@ -78,7 +94,9 @@ class BuildStyle:
 
     @property
     def description(self) -> str:
-        """ The description of the :class:`BuildStyle`"""
+        """
+        The description of the :class:`BuildStyle`. This is usually not export by most machine build file formats
+        but is useful to assign to help differentiate each build-style."""
         return self._description
 
     @description.setter
@@ -126,7 +144,11 @@ class BuildStyle:
 
     @property
     def laserSpeed(self) -> float:
-        """ The laser speed typically expresses as :math:`mm/s` """
+        """
+        The laser speed typically expresses as :math:`mm/s.
+
+        .. note::
+            For pulsed laser mode systems this is typically ignored. """
         return self._laserSpeed
 
     @laserSpeed.setter
@@ -154,16 +176,27 @@ class BuildStyle:
         self._pointDistance = pointDistance
 
     @property
-    def jumpDelay(self) ->int:
-        """ The jump delay time (usually expressed as an integer :math:`\\mu m`) """
+    def pointDelay(self) -> int:
+        """
+        The delay added between individual point exposure (usually expressed as an integer [:math:`\\mu s]`).
+        This must be set to zero (default) if it is not explicitly used.
+        """
+        return self._pointDelay
+
+    @pointDelay.setter
+    def pointDelay(self, delay: int):
+        self._pointDelay = delay
+
+    @property
+    def jumpDelay(self) -> int:
+        """
+        The jump delay between scan vectors (usually expressed as an integer [:math:`\mu s`]). This must be set to
+        zero (default) if it is not explicitly used.
+        """
         return self._jumpDelay
 
     @jumpDelay.setter
     def jumpDelay(self, delay: int):
-        """
-        The jump speed between scan vectors (usually expressed as an integer :math:`mm/s`). This must be set to
-        zero (default) if it is not explicitly used.
-        """
         self._jumpDelay = delay
 
     @property
@@ -197,8 +230,33 @@ class BuildStyle:
 
 class Model:
     """
-    A Model represents a parametric group or in practice a part which contains a set of :class:`BuildStyle` used across
-    the :class:`LayerGeometry`.
+    A Model represents a parametric group or in practice a part which contains a set unique
+    and assignable :class:`BuildStyle` used a specific :class:`LayerGeometry`. The buildstyles are stored in
+    :attr:`buildStyles`.
+
+    Each Model must have a unique model-id (:attr:`mid`). Additionally, for some build formats, the top layer id
+    (:attr:`topLayerId`) should correspond :attr:`Layer.id` value of the last layer's :class:`LayerGeometry` that
+    uses this Model. It is recommended that :class:`ModelValidator` should
+    be used to verify that all Models have a unique model-id and that the correct :attr:`topLayerId` is set, using the
+    following methods
+
+    .. code-block:: python
+
+        pyslm.geometry.ModelValidator.validateModel(model)
+
+    or
+
+    .. code-block:: python
+
+        models = [modelA, modelB]
+        pyslm.geometry.ModelValidator.validateBuild(models, layer_list)
+
+    Additional generic metadata can be stored for reference and describing the Model that are not necessarily
+    used when exporting to build file including
+
+    * :attr:`name` - Name of the Model
+    * :attr:`buildStyleName` - Name of the Build Style Used for this Model (e.g. parameter set)
+    * :attr:`buildStyleDescription`- Description of the Model Build Style set.
     """
     def __init__(self, mid: Optional[int] = 0):
         self._mid = mid
@@ -276,8 +334,10 @@ class LayerGeometryType(Enum):
 class LayerGeometry(abc.ABC):
     """
     A Layer Geometry is the base class type used for storing a group of scan vectors or exposures. This is assigned a
-    model id (:attr:`~LayerGeometry.mid`) and a build style (:attr:`~LayerGeometry.bid`). A set of coordinates are always
-    available via :attr:`~LayerGeometry.coords`.
+    model id (:attr:`mid`) and a build style (:attr:`bid`).
+
+    A set of coordinates are always available via :attr:`coords`. The coordinates should always be a numpy array that
+    with a shape of Nx2 corresponding to the LayerGeometry type.
     """
 
     def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0, coords: Optional[np.ndarray] = None):
@@ -349,7 +409,6 @@ class HatchGeometry(LayerGeometry):
 
         super().__init__(mid, bid, coords)
 
-
     def __str__(self):
         return 'Hatch Geometry <bid, {:d}, mid, {:d}>'.format(self._bid, self._mid)
 
@@ -373,12 +432,9 @@ class ContourGeometry(LayerGeometry):
      efficiently follow a path without jumping,  unlike :class:`HatchGeometry`. Typically, the scan vectors are used for
      generated the boundaries of a part across a layer.
      """
-    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0,
-                       coords: Optional[np.ndarray] = None):
+    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0, coords: Optional[np.ndarray] = None):
 
         super().__init__(mid, bid, coords)
-
-    # print('Constructed Contour Geometry')
 
     def numContours(self) -> int:
         """
@@ -398,13 +454,16 @@ class ContourGeometry(LayerGeometry):
 
 class PointsGeometry(LayerGeometry):
     """
-     PointsGeometry represents a :class:`LayerGeometry` consisting of a series of discrete or disconnected exposure points
-     :math:`[(x_0,y_0), ..., (x_{n-1},x_{n-1})]` . This allows the user to prescribe very specific exposures to the bed,
-     for very controlled and articulated scan styles. Typically, the exposure points are used either for lattice structures,
-     or support structures. It is impracticable and inefficient to use these for generated very large aerial regions.
+     PointsGeometry represents a :class:`LayerGeometry` consisting of a series of discrete or disconnected exposure
+     points :math:`[(x_0,y_0), ..., (x_{n-1},x_{n-1})]` . This allows the user to prescribe very specific exposures
+     to the bed, for very controlled and articulated scan styles. Typically, the exposure points are used either for
+     lattice structures or support structures.
+
+     .. warning::
+        It is impracticable and inefficient to use these for large aerial regions.
+
      """
-    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0,
-                 coords: Optional[np.ndarray] = None):
+    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0, coords: Optional[np.ndarray] = None):
 
         super().__init__(mid, bid, coords)
 
@@ -436,10 +495,10 @@ class Layer:
     """
     Slice Layer is a simple class structure for containing a set of SLM :class:`LayerGeometry` including specific
     derivatives including: :class:`ContourGeometry`, :class:`HatchGeometry`, :class:`PointsGeometry` types stored in
-    :attr:`~Layer.geometry` and also the current slice or layer position in :attr:`~Layer.z`.
+    :attr:`geometry` and also the current slice or layer position in :attr:`z`.
 
-    The layer z position is stored in an integer format to remove any specific rounding - typically this is the number
-    of microns.
+    The layer z position is stored in an integer format to remove any specific rounding - typically this is specified
+    as the number of microns.
     """
 
     def __init__(self, z: Optional[int] = 0, id: Optional[int] = 0):

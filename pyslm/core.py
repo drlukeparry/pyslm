@@ -161,16 +161,16 @@ class Part(DocumentObject):
     Part represents a solid geometry within the document object tree. Currently, this just represents a single part that
     will eventually be later sliced as part of a document tree structure.
 
-    The part can be transformed and has a position (:attr:`~Part.origin`),
-    rotation (:attr:`~Part.rotation`) and additional scale factor (:attr:`~Part.scaleFactor`), which are collectively
+    The part can be transformed and has a position (:attr:`origin`),
+    rotation (:attr:`rotation`) and additional scale factor (:attr:`scaleFactor`), which are collectively
     applied to the geometry in its local coordinate system :math:`(x,y,z)`. Changing the geometry using
-    :meth:`~Part.setGeometryByMesh` or :meth:`~Part.setGeometry` along with any of the transformation attributes will
+    :meth:`setGeometryByMesh` or :meth:`setGeometry` along with any of the transformation attributes will
     set the part dirty and forcing the transformation and geometry to be re-computed on the next call in order to obtain
-    the :attr:`Part.geometry`.
+    the :attr:`geometry`.
 
     The part is currently based off a faceted mesh, internally building on capabilities of the Trimesh packages.
 
-    Generally for AM and 3D printing the following function :meth:`~Part.getVectorSlice` is the most useful. This method
+    Generally for AM and 3D printing the following function :meth:`getVectorSlice` is the most useful. This method
     provides the user with a slice for a given z-plane containing the boundaries consisting of a series of polygons.
     The output from this function is either a list of closed paths (coordinates) or a list of
     :class:`shapely.geometry.Polygon`. A bitmap slice can alternatively be obtained for certain AM process using
@@ -271,13 +271,13 @@ class Part(DocumentObject):
         :param zPos: The position the bottom of the part should be suspended above :math:`z=0`
         """
 
-        self.origin[2] = -1.0* self.boundingBox[2] + zPos
+        self.origin[2] = -1.0 * self.boundingBox[2] + zPos
         self._dirty = True
 
     def getTransform(self) -> np.ndarray:
         """
         Returns the transformation matrix (3x3 numpy matrix) used for the :class:`Part` consisting of a translation
-        (:attr:`~Part.origin`), a :attr:`~Part.rotation` and a :attr:`~Part.scaleFactor`
+        (:attr:`origin`), a :attr:`rotation` and a :attr:`scaleFactor`
         """
 
         Sx = trimesh.transformations.scale_matrix(factor=self._scaleFactor[0], direction=[1,0,0])
@@ -294,14 +294,14 @@ class Part(DocumentObject):
 
         return M
 
-    def setGeometry(self, geometry,
+    def setGeometry(self, geometry: Any,
                     fixGeometry: Optional[bool] = True,
                     mergeVertices: Optional[bool] = True) -> None:
         """
         Sets the Part geometry based on a mesh filename. The mesh must have a compatible file that can be
-        imported via `trimesh` - see .
+        imported via `trimesh`.
 
-        :param filename: The mesh filename
+        :param geometry: The geometry (can be a trimesh or filename to load from)
         :param fixGeometry: Use Trimesh's utilities to fix the mesh: Default = `True`
         :param mergeVertices:  Merges the vertices of the mesh: Default = `True`
         """
@@ -329,6 +329,9 @@ class Part(DocumentObject):
 
         if not self.geometry.is_watertight:
             logging.warning('The geometry for {:s} is not watertight'.format(self.name))
+            return False
+        else:
+            return True
 
     def setGeometryByMesh(self, mesh: trimesh.Trimesh) -> None:
         """
@@ -417,7 +420,7 @@ class Part(DocumentObject):
     @property
     def surfaceArea(self) -> float:  # const
         """ Surface area of the part geometry"""
-        return self.geometry.area
+        return float(self.geometry.area)
 
     @property
     def geometry(self) -> trimesh.Trimesh:
@@ -432,7 +435,7 @@ class Part(DocumentObject):
 
         return self._geometryCache
 
-    def regenerate(self):
+    def regenerate(self) -> None:
         """
         Regenerate the geometry
         """

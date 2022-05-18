@@ -3,26 +3,28 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to PySLM's documentation!
-=====================================
+
+.. include:: ../README.rst
 
 Links
 ==========
 .. toctree::
+   :maxdepth: 3
+
+   changelog
    PySLM On Github <http://github.com/drlukeparry/pyslm>
 
-Install
-==========
 .. toctree::
+   :caption: Installation
    :maxdepth: 2
 
-Module Reference
-==================
+   install
+
 .. toctree::
+   :caption: Modules
    :maxdepth: 2
 
    modules
-
 
 ==================
 * :ref:`genindex`

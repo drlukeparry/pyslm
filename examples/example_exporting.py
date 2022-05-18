@@ -27,7 +27,7 @@ header.filename = "MachineBuildFile"
 # Depending on the file format the version should be provided as a tuple
 header.version = (1,2)
 
-# The zUnit is the uniform layer thickness as an integer unit in microns
+# The zUnit is the uniform layer thickness as an integer unit in microns. Normally should be set to 1000
 header.zUnit = 1000 # μm
 
 """
@@ -106,7 +106,7 @@ Import the MTT (Renishaw SLM) Exporter
 """
 from libSLM import mtt
 
-"Create the initial object"
+"Create the initial MTT Writer Object and set the filename"
 mttWriter = mtt.Writer()
 mttWriter.setFilePath("build.mtt")
 mttWriter.write(header, models, layers)
