@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ## [0.5.0] - 2022-04-26
 
 ### Added
-- Added support for Mac OS X (Monterey 12.3)
+- Added support for Mac OS X (Monterey 12.3) [3b4103bf2e01f3e7175adcf0f1bed5a429bad361](https://github.com/drlukeparry/pyslm/commit/3b4103bf2e01f3e7175adcf0f1bed5a429bad361)
 - Added the Support Module: `pyslm.support` [9ee1f6668b56e76137c3dade178dc837460fc056](https://github.com/drlukeparry/pyslm/commit/9ee1f6668b56e76137c3dade178dc837460fc056) [0f6e29815a5d6a65789d27c49131d49486415d31](https://github.com/drlukeparry/pyslm/commit/0f6e29815a5d6a65789d27c49131d49486415d31)
     - Added generic abstract class `support.SupportStructure` for providing the generic infrastructure for defining support structures (e.g. block, grid, tree) and common methods
     - Introduced Various Classes - `BaseSupportGenerator` and `BlockSupportGenerator` for Generating BlockSupports
@@ -27,7 +27,6 @@ All notable changes to this project will be documented in this file.
 - Updated examples [639e042575e019d3b3d6f3a6272cb5f140f45606](https://github.com/drlukeparry/pyslm/commit/639e042575e019d3b3d6f3a6272cb5f140f45606)
 
 ### Changed
-
 - Added soft dependency for PyQt5 in the dependencies needed for support generation [2ced797da62f9b8099c8c9f30c4ff7c6677b2b6d](https://github.com/drlukeparry/pyslm/commit/2ced797da62f9b8099c8c9f30c4ff7c6677b2b6d)
 
 ## [0.4.0] - 2021-07-23
