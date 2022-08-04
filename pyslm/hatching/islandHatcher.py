@@ -326,6 +326,10 @@ class IslandHatcher(Hatcher):
 
         curBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
+        if len(curBoundary) < 1:
+            # No internal regions to hatch
+            return layer
+
         scanVectors = []
 
         # Iterate through each closed polygon region in the slice. The currently individually sliced.
@@ -371,27 +375,34 @@ class IslandHatcher(Hatcher):
             # ISSUE - the max coordinate id should be used to update this but it adds additional computiatonal complexity
             idx += coords.shape[0] / 2
 
-        clippedCoords = np.vstack(clippedCoords)
-        unclippedCoords = np.vstack(unclippedCoords).reshape(-1,2,3)
+        if len(unclippedCoords) < 1:
+            unclippedCoords = np.array([]).reshape(-1,2,3)
+        else:
+            unclippedCoords = np.vstack(unclippedCoords).reshape(-1, 2, 3)
 
-        # Clip the hatches of the boundaries to fill to the boundary
-        clippedPaths = self.clipLines(curBoundary, clippedCoords)
-        clippedPaths = np.array(clippedPaths)
+        if len(clippedCoords) > 0:
+            clippedCoords = np.vstack(clippedCoords)
+
+
+            # Clip the hatches of the boundaries to fill to the boundary
+            clippedPaths = self.clipLines(curBoundary, clippedCoords)
+            clippedPaths = np.array(clippedPaths)
+        else:
+            clippedPaths = np.array([]).reshape(-1,2,3)
 
         # Merge hatches from both groups together
         hatches = np.vstack([clippedPaths, unclippedCoords])
         clippedLines = self.clipperToHatchArray(hatches)
 
         # Merge the lines together
-        if len(clippedPaths) > 0:
+        if len(clippedLines) > 0:
 
             # Extract only x-y coordinates and sort based on the pseudo-order stored in the z component.
             clippedLines = clippedLines[:, :, :3]
             id = np.argsort(clippedLines[:, 0, 2])
+
             clippedLines = clippedLines[id, :, :]
-
             scanVectors.append(clippedLines)
-
 
         if len(clippedLines) > 0:
             # Scan vectors have been created for the hatched region
