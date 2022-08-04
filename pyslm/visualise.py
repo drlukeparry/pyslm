@@ -12,7 +12,7 @@ import numpy as np
 from shapely.geometry import Polygon, MultiPolygon
 
 from .core import Part
-from .geometry import Layer, HatchGeometry, ContourGeometry
+from .geometry import Layer, HatchGeometry, ContourGeometry, PointsGeometry
 
 
 def getContoursFromShapelyPolygon(poly, mergeRings: Optional[bool] = True) -> Tuple[np.ndarray, np.ndarray]:
@@ -31,7 +31,7 @@ def getContoursFromShapelyPolygon(poly, mergeRings: Optional[bool] = True) -> Tu
         return outerRings, innerRings
 
 
-def plotPolygon(polygons: List[Any], zPos=0.0,
+def plotPolygon(polygons: List[Any], zPos = 0.0,
                 lineColor: Optional[Any] = 'k', lineWidth: Optional[float] = 0.7, fillColor: Optional[Any] = 'r',
                 plot3D: Optional[bool] = False, plotFilled: Optional[bool] = False,
                 handle: Tuple[plt.Figure, plt.Axes] = None) -> Tuple[plt.Figure, plt.Axes]:
@@ -125,7 +125,7 @@ def plotLayers(layers: List[Layer],
         ax = plt.axes(projection='3d')
 
     for layer in layers:
-        fig, ax = plot(layer, layer.z/1000,
+        fig, ax = plot(layer, float(layer.z)/1000,
                        plot3D=True, plotContours=plotContours, plotHatches=plotHatches, plotPoints=plotPoints,
                        handle=(fig, ax))
 
@@ -159,12 +159,16 @@ def plotSequential(layer: Layer,
     plotNormalize = matplotlib.colors.Normalize()
 
     scanVectors = []
+
     for geom in layer.geometry:
 
         if isinstance(geom, HatchGeometry):
             coords = geom.coords.reshape(-1, 2, 2)
         elif isinstance(geom, ContourGeometry):
             coords = np.hstack([geom.coords, np.roll(geom.coords, -1, axis=0)])[:-1,:].reshape(-1,2,2)
+        elif isinstance(geom, PointsGeometry):
+            # Note that we duplicate the coordinates to represent emulate hatch vectors
+            coords = np.tile(geom.coords.reshape(-1, 2), (1,2)).reshape(-1,2,2)
 
         scanVectors.append(coords)
 
@@ -175,6 +179,13 @@ def plotSequential(layer: Layer,
     scanVectors = np.vstack(scanVectors)
 
     lc = mc.LineCollection(scanVectors, cmap=plt.cm.rainbow, linewidths=1.0)
+
+    pointsGeom = layer.getPointsGeometry()
+
+    if len(pointsGeom) > 0:
+        coords = np.vstack([geom.coords for geom in pointsGeom])
+        print('coords shape', coords.shape)
+        ax.scatter(coords[:,0], coords[:,1], color='#000', s=1.0)
 
     if plotOrderLine:
         midPoints = np.mean(scanVectors, axis=1)
