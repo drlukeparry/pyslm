@@ -374,7 +374,12 @@ def plot(layer: Layer, zPos:Optional[float] = 0,
                 # Plot the sequential index of the hatch vector
                 pntColors =  np.arange(len(scatterPoints))
 
-            scaterObj = ax.scatter(scatterPoints[:, 0], scatterPoints[:, 1], c=pntColors)
+            if plot3D:
+                scatterObj = ax.scatter3D(scatterPoints[:, 0], scatterPoints[:, 1], zPos, c=pntColors)
+            else:
+
+                scatterObj = ax.scatter(scatterPoints[:, 0], scatterPoints[:, 1], c=pntColors)
+
             #axcb = fig.colorbar(scaterObj)
 
             #for pointsGeom in layer.getPointsGeometry():
