@@ -232,7 +232,7 @@ def plotSequential(layer: Layer,
 
 def plot(layer: Layer, zPos:Optional[float] = 0,
          plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
-         plot3D: Optional[bool] = True, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
+         plot3D: Optional[bool] = False, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
          plotColorbar: Optional[bool] = False,
          index: Optional[str] = '',
          handle: Optional[Tuple[plt.Figure, plt.Axes]] = None) -> Tuple[plt.Figure, plt.Axes]:
