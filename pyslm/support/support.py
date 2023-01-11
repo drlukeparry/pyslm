@@ -984,7 +984,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                         continue
 
                 # Create a surface from the Ray intersection
-                surf2 = trimesh.Trimesh(vertices=coords2, faces=poly_tri[1])
+                surf2 = trimesh.Trimesh(vertices=coords2, faces=poly_tri[1], process= False)
 
                 # Extrude the surface based on the heights from the second ray cast
                 extrudedBlock = extrudeFace(surf2, None, hitLoc2[:, 2] - self.lowerProjectionOffset)
