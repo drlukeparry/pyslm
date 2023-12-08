@@ -7,9 +7,9 @@ pypandoc
 m2r2
 numpy
 scipy
-shapely
+shapely>=2.0
 networkx
-trimesh
+trimesh>=4.0.0
 triangle
 matplotlib
 vispy
@@ -17,5 +17,6 @@ mapbox_earcut
 pyclipper
 scikit-image
 cython
-pycork
 PyQt5
+pyclipr
+manifold3d

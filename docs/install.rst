@@ -17,10 +17,14 @@ repository as it allows the user to see and execute the examples within the sour
 
     git clone https://github.com/drlukeparry/pyslm.git
 
-PySLM may be compiled directly from source. This requires compiling the code rather than pure vanilla installation of
-the source. Currently the prerequisites are the cython package and a compliant c++ build environment.
-In order to compile, it is necessary to have a valid c++ compiler environment depending on the user's
-platform and additionally cython in order to compile the ClipperLib module. For Windows this is likely to be MSVC
+PySLM (version >0.6) and onwards is now source only, and the ClipperLib library originally bundled with PySLM is not
+required therefore internal compiliation via cython is not required. Thus, this simplifies the distribution and
+installation of PySLM.
+
+Legacy versions of PySLM (version <= 0.5) require compiling directly from source. This requires compiling the code
+rather than pure vanilla installation of the source. Currently the prerequisites are the cython package and a compliant
+c++ build environment. In order to compile, it is necessary to have a valid c++ compiler environment depending on the
+user's platform and additionally cython in order to compile the ClipperLib module. For Windows this is likely to be MSVC
 compiler, Linux - GCC/Clang, Mac OS X - Clang.
 
 The compilation of PySLM can be done using the following command
@@ -40,7 +44,7 @@ The pre-requisites for using PySLM can be installed via PyPi and/or Anaconda dis
 are contained within the
 `requirements.txt <https://github.com/drlukeparry/pyslm/blob/master/requirements.txt>`_
 file, however, the predominant dependencies are those required by `Trimesh <https://github.com/mikedh/trimesh>`_ -
-the library for loading,and manipulating and working with popular mesh formats.
+the library for loading and manipulating and working with popular mesh formats.
 
 .. code:: bash
 
@@ -56,11 +60,19 @@ and should only be installed using *PythonSLM* package only.
 
 .. code:: bash
 
-    pip install shapely, Rtree, networkx, scikit-image, cython
+    pip install shapely, Rtree, networkx, scikit-image, pyclipr
     pip install trimesh
+
+If you are interested using the support generation module, there are additional dependencies that
+are required to be installed. These are not required for the core functionality of PySLM such as slicing and hatching.
+These require a working OpenGL environment to work via vispy - the PyQt5 module provides the backend for this currently.
+
+.. code:: bash
+
+    pip install vispy pyqt5 triangle pycork mapbox-earcut
+
     
-    
-You can download the precompiled binaries as a Python package from PyPI using Pip. Just use:
+You can download the precompiled binaries as a Python package from PyPI using pip. Just use:
 
 .. code-block:: bash
 
@@ -92,9 +104,9 @@ The remaining dependencies are required for the support module to function:
 
 .. code-block:: bash
 
-    pip install triangle, pycork, mapbox-earcut
+    pip install triangle, pyclipr, manifold3d, mapbox-earcut
 
-The `Pycork <http://github.com/drlukeparry/pycork>`_ library provides the boolean CSG operations used for intersecting
+The `manifold <https://github.com/elalish/manifold>`_ library provides the boolean CSG operations used for intersecting
 meshes between the part model and the support structures.
 
 Installing the support library (libSLM)
