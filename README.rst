@@ -30,9 +30,10 @@ to prototype and develop new algorithms.
 This library provides design tools for use in Additive Manufacturing including the slicing, hatching, support generation
 and related analysis tools (e.g. overhang analysis, build-time estimation).
 
-PySLM is built-upon python libraries `Trimesh <https://github.com/mikedh/trimesh>`_ and based on some custom modifications
-to the `PyClipper <https://pypi.org/project/pyclipper/>`_ libraries, which are leveraged to provide the slicing and
-manipulation of polygons, such as offsetting and clipping of lines.
+PySLM is built-upon `Trimesh <https://github.com/mikedh/trimesh>`_ for mesh handling and manipulation
+and the polygon clipping and offsetting provided by ClipperLib2 library via `Pyclipr <https://github.com/drlukeparry/pyclipr>`_,
+which together leveraged to provide the slicing and manipulation of polygons, such as offsetting and clipping of
+scan vectors used.
 
 The aims of this library is to provide a useful set of tools for prototyping novel pre-processing approaches to aid
 research and development of Additive Manufacturing processes, amongst an academic environment. The tools aim to compliment

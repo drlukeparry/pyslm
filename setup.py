@@ -24,6 +24,7 @@ requirements_default = set([
     'setuptools',  # used for packaging
     'shapely',
     'cython',
+    'pyclipr',
     'Rtree',
     'networkx',
     'matplotlib',
@@ -65,6 +66,7 @@ requirements_docs = set([
     'sphinx_rtd_theme',
     'sphinx-paramlinks'
     'pypandoc',
+    'pyclipr'
     'autodocsumm',
     'numpy',
     'shapely',

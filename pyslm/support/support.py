@@ -43,13 +43,15 @@ import trimesh
 import trimesh.path
 import trimesh.path.traversal
 
+import pyslm.support.geometry
 import pyslm.support.render
-from pyslm import pyclipper
+import pyclipr
 
 from ..core import Part
 from .utils import *
 from .geometry import *
 from ..hatching import BaseHatcher, utils
+import pyslm.hatching.utils as hatchingUtils
 
 
 class SupportStructure(abc.ABC):

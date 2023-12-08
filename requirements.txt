@@ -1,4 +1,5 @@
 sphinx
+pyclipr >= 0.1.4
 numpy
 matplotlib
 scipy

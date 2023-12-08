@@ -20,9 +20,6 @@ from triangle import triangulate
 
 import pycork
 
-from pyslm import pyclipper
-
-
 def extrudeFace(extrudeMesh: trimesh.Trimesh,
                 height: Optional[float] = None,
                 heightArray: Optional[np.ndarray] = None) -> trimesh.Trimesh:
@@ -237,21 +234,19 @@ def sortExteriorInteriorRings(polyNode,
     exteriorRings = []
     interiorRings = []
 
-    if polyNode.Contour:
+    if len(polyNode.polygon) > 0:
 
-        contour = pyslm.hatching.BaseHatcher.scaleFromClipper(polyNode.Contour)
+        contour = polyNode.polygon
 
         if closePolygon:
-            contour.append(contour[0])
+            contour = np.vstack([contour, contour[-1]])
 
-        contour = np.array(contour)[:, :2]
-
-        if polyNode.IsHole:
+        if polyNode.isHole:
             interiorRings.append(contour)
         else:
             exteriorRings.append(contour)
 
-    for node in polyNode.Childs:
+    for node in polyNode.children:
 
         exteriorChildRings, interiorChildRings = sortExteriorInteriorRings(node, closePolygon)
 

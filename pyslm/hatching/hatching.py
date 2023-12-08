@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 
-from pyslm import pyclipper
+import pyclipr
 
 from shapely.geometry import Polygon as ShapelyPolygon
 from .sorting import AlternateSort, BaseSort, LinearSort
@@ -164,10 +164,10 @@ class BaseHatcher(abc.ABC):
 
     PYCLIPPER_SCALEFACTOR = 1e5
     """ 
-    The scaling factor used for polygon clipping and offsetting in `PyClipper <https://pypi.org/project/pyclipper/>`_ 
+    The scaling factor used for polygon clipping and offsetting in `PyClipr <https://pypi.org/project/pyclipr/>`_ 
     for the decimal component of each polygon coordinate. This should be set to inverse of the required decimal 
     tolerance i.e. 0.01 requires a minimum scale factor of 100. This scaling factor is used 
-    in :meth:`~BaseHatcher.scaleToClipper` and :meth:`~BaseHatcher.scaleFromClipper`. 
+    in internally in ClipperLib2. 
     
     :note:
         From experience, 1e4, mostly works, however, there are some artefacts generated during clipping hatch vectors.
@@ -181,31 +181,10 @@ class BaseHatcher(abc.ABC):
         return 'BaseHatcher <{:s}>'.format(self.name)
 
     @staticmethod
-    def scaleToClipper(feature: Any):
-        """
-        Transforms geometry created **to pyclipper**  by upscaling into the integer coordinates  **from** the original
-        floating point coordinate system.
-
-        :param feature: The geometry to scale to pyclipper
-        :return: The scaled geometry
-        """
-        return pyclipper.scale_to_clipper(feature, BaseHatcher.PYCLIPPER_SCALEFACTOR)
-
-    @staticmethod
-    def scaleFromClipper(feature: Any):
-        """
-        Transforms geometry created **from pyclipper** upscaled integer coordinates back **to** the original
-        floating-point coordinate system.
-
-        :param feature: The geometry to scale to pyclipper
-        :return: The scaled geometry
-        """
-        return pyclipper.scale_from_clipper(feature, BaseHatcher.PYCLIPPER_SCALEFACTOR)
-
-    @staticmethod
     def clipperToHatchArray(coords: np.ndarray) -> np.ndarray:
         """
-        A helper method which converts the raw polygon edge lists returned by `PyClipper <https://pypi.org/project/pyclipper/>`_
+        A helper method which converts the raw polygon edge lists returned by
+        `PyClipr <https://pypi.org/project/pyclipr/>`_
         into a numpy array.
 
         :param coords: The list of hatches generated from pyclipper
@@ -268,26 +247,19 @@ class BaseHatcher(abc.ABC):
         :param offset: The offset applied to the poylgon
         :return: A list of boundaries offset from the subject
         """
-        pc = pyclipper.PyclipperOffset()
 
-        clipperOffset = BaseHatcher.scaleToClipper(offset)
+        pc = pyclipr.ClipperOffset()
+        pc.scaleFactor = int(BaseHatcher.PYCLIPPER_SCALEFACTOR)
 
-        # Append the paths to libClipper offsetting algorithm
-        for path in paths:
-            pc.AddPath(BaseHatcher.scaleToClipper(path),
-                       pyclipper.JT_ROUND,
-                       pyclipper.ET_CLOSEDPOLYGON)
+        #for path in paths:
+        #    pc.addPath(path, pyclipr.JoinType.Round, pyclipr.EndType.Polygon)
+        pc.addPaths(paths, pyclipr.JoinType.Round)
 
         # Perform the offseting operation
-        boundaryOffsetPolys = pc.Execute2(clipperOffset)
-
-        offsetContours = []
-        # Convert these nodes back to paths
-        for polyChild in boundaryOffsetPolys.Childs:
-            offsetContours += BaseHatcher._getChildPaths(polyChild)
-
+        offsetContours = pc.execute(offset)
 
         return offsetContours
+
 
     @staticmethod
     def polygonBoundingBox(obj: Any) -> np.ndarray:
@@ -330,87 +302,12 @@ class BaseHatcher(abc.ABC):
 
         return bbox
 
-    def clipLines2(paths, lines):
-        #from  _martinez import Contour
-        #from _martinez import Point
-        #from _martinez import Polygon
-        #from _martinez import OperationType, compute
-
-        from martinez.contour import Contour
-        from martinez.point import Point
-        from martinez.polygon import Polygon
-        from martinez.boolean import OperationType, compute
-
-        import matplotlib.pyplot as plt
-
-        left_line = Polygon([Contour([Point(1.0, -100.0), Point(1.0, 100.0)], [], True),
-                             Contour([Point(1.1, -100.0), Point(1.1, 100.0)], [], True)])
-
-        contours = []
-        paths2 = [paths[0]]
-        pyPoints = []
-        for path in paths2:
-            for boundary in path:
-                points =  []
-
-                for point in boundary:
-                    points.append(Point(point[0], point[1]))
-                    pyPoints.append(point[:2])
-
-                #points.append(Point(boundary[0][0], boundary[0][1]))
-
-                contours.append(Contour(points,[],True))
-                #pc.AddPath(BaseHatcher.scaleToClipper(boundary), pyclipper.PT_CLIP, True)
-
-        #plt.plot(lines[:,0], lines[:,1])
-        pyPoints = np.vstack(pyPoints)
-        plt.plot(pyPoints[:,0], pyPoints[:,1])
-        polygon = Polygon(contours)
-
-        # Reshape line list to create n lines with 2 coords(x,y,z)
-        #lineList = lines.reshape(-1, 2, 3)
-        #lineList = tuple(map(tuple, lineList))
-        #lineList = BaseHatcher.scaleToClipper(lineList)
-
-
-        edges = []
-
-        lineList =  lines.reshape([-1, 2, 3])
-
-        i = 0
-
-        results = []
-
-
-        for i in np.arange(0,lineList.shape[0]):
-            #i += 1
-            point = lineList[i]
-
-            edge = Contour([Point(point[0,0], point[0,1]),
-                            Point(point[1,0], point[1,1])], [], True)
-            edges.append(edge)
-
-            #edgePoly = Polygon([edge])
-            #results.append(compute(polygon, edgePoly, OperationType.INTERSECTION))
-
-        edgesPoly = Polygon(edges)
-        result = compute(polygon, edgesPoly, OperationType.INTERSECTION)
-
-
-        #for result in results:
-        for r in result.contours:
-            points = [(p.x,p.y) for p in r.points]
-            points = np.vstack(points)
-
-            plt.plot(points[:,0], points[:,1])
-
-        return results
-
 
     @staticmethod
     def clipLines(paths, lines):
         """
-        This function clips a series of lines (hatches) across a closed polygon using `Pyclipper <https://pypi.org/project/pyclipper/>`_.
+        This function clips a series of lines (hatches) across a closed set of polygons using
+        `Pyclipr <https://pypi.org/project/pyclipr/>`_.
 
         .. note ::
             The order is guaranteed from the list of lines used, so these do not require sorting usually. However,
@@ -420,38 +317,27 @@ class BaseHatcher(abc.ABC):
         :param lines: The un-trimmed lines to clip from the boundary
         :return: A list of trimmed lines (open paths)
         """
-        #clipLines = BaseHatcher.clipLines2(paths, lines)
 
         if len(lines) == 0:
             # Input from generateHatching is empty so return empty
             return None
 
-        pc = pyclipper.Pyclipper()
+        pc2 = pyclipr.Clipper()
+        pc2.scaleFactor = int(BaseHatcher.PYCLIPPER_SCALEFACTOR)
 
-        for path in paths:
-            for boundary in path:
-                pc.AddPath(BaseHatcher.scaleToClipper(boundary), pyclipper.PT_CLIP, True)
+        pc2.addPaths(lines.reshape(-1,2,3), pyclipr.Subject, True)
+        pc2.addPaths(paths, pyclipr.Clip)
+        out = pc2.execute(pyclipr.Intersection, pyclipr.FillRule.NonZero, returnOpenPaths=True, returnZ=True)
+        lineXY = np.array(out[1])
+        lineZ  = np.array(out[3])
 
-        # Reshape line list to create n lines with 2 coords(x,y,z)
-        lineList = lines.reshape(-1, 2, 3)
-        lineList = tuple(map(tuple, lineList))
-        lineList = BaseHatcher.scaleToClipper(lineList)
-
-        pc.AddPaths(lineList, pyclipper.PT_SUBJECT, False)
-
-        # Note open paths (lines) have to used PyClipper::Execute2 in order to perform trimming
-        result = pc.Execute2(pyclipper.CT_INTERSECTION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
-
-        # Cast from PolyNode Struct from the result into line paths since this is not a list
-        lineOutput = pyclipper.PolyTreeToPaths(result)
-
-        return BaseHatcher.scaleFromClipper(lineOutput)
+        return np.dstack([lineXY, lineZ])
 
     @staticmethod
     def clipContourLines(paths, contourPaths: List[np.ndarray]):
         """
         This function clips a series of (contour paths) across a closed polygon using
-        `Pyclipper <https://pypi.org/project/pyclipper/>`_.
+        `Pyclipr <https://pypi.org/project/pyclipr/>`_.
 
         .. note ::
             The order is guaranteed from the list of lines used, so these do not require sorting. However,
@@ -462,28 +348,24 @@ class BaseHatcher(abc.ABC):
         :return: A list of trimmed lines (open paths)
         """
 
-        pc = pyclipper.Pyclipper()
+        pc2 = pyclipr.Clipper()
+        pc2.scaleFactor = int(BaseHatcher.PYCLIPPER_SCALEFACTOR)
+        lineList = np.array(contourPaths)
+        lineList = tuple(map(tuple, lineList))
 
-        for path in paths:
-            for boundary in path:
-                pc.AddPath(BaseHatcher.scaleToClipper(boundary), pyclipper.PT_CLIP, True)
+        pc2.addPaths(lineList, pyclipr.Subject, True)
+        pc2.addPaths(paths, pyclipr.Clip, False)
+        out = pc2.execute(pyclipr.Intersection, pyclipr.FillRule.NonZero, returnOpenPaths=True, returnZ=True)
 
-        # Reshape line list to create n lines with 2 coords(x,y,z)
-        #lineList = lines.reshape(-1, 2, 3)
-        #lineList = tuple(map(tuple, lineList))
-        #lineList = BaseHatcher.scaleToClipper(lineList)
+        outPaths = []
 
-        for contour in contourPaths:
-            path = BaseHatcher.scaleToClipper(contour)
-            pc.AddPath(path, pyclipper.PT_SUBJECT, False)
+        for i, path in enumerate(out[1]):
+            lineXY = np.array(path)
+            lineZ = np.array(out[3][i]).reshape(-1,1)
+            outPaths.append(np.hstack([lineXY, lineZ]))
 
-        # Note open paths (lines) have to used PyClipper::Execute2 in order to perform trimming
-        result = pc.Execute2(pyclipper.CT_INTERSECTION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
+        return outPaths
 
-        # Cast from PolyNode Struct from the result into line paths since this is not a list
-        lineOutput = pyclipper.PolyTreeToPaths(result)
-
-        return BaseHatcher.scaleFromClipper(lineOutput)
 
     def generateHatching(self, paths, hatchSpacing: float, hatchAngle: Optional[float] = 90.0) -> np.ndarray:
         """
@@ -851,7 +733,7 @@ class Hatcher(BaseHatcher):
         return self._hatchingEnabled
 
     @hatchingEnabled.setter
-    def hatchingEnabled(self, value):
+    def hatchingEnabled(self, value: bool):
         self._hatchingEnabled = value
 
     def hatch(self, boundaryFeature) -> Union[Layer, None]:
@@ -881,14 +763,12 @@ class Hatcher(BaseHatcher):
 
             offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
-            for poly in offsetBoundary:
-                for path in poly:
-                    contourGeometry = ContourGeometry()
-                    contourGeometry.coords = np.array(path)[:, :2]
-                    contourGeometry.subType = "outer"
-                    contourLayerGeometries.append(contourGeometry)  # Append to the layer
-
-
+            for path in offsetBoundary:
+                contourGeometry = ContourGeometry()
+                coords = np.vstack([path, path[0]])
+                contourGeometry.coords = coords
+                contourGeometry.subType = "outer"
+                contourLayerGeometries.append(contourGeometry)  # Append to the layer
 
         # Repeat for inner contours
         for i in range(self._numInnerContours):
@@ -898,12 +778,13 @@ class Hatcher(BaseHatcher):
 
             offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
-            for poly in offsetBoundary:
-                for path in poly:
-                    contourGeometry = ContourGeometry()
-                    contourGeometry.coords = np.array(path)[:, :2]
-                    contourGeometry.subType = "inner"
-                    contourLayerGeometries.append(contourGeometry)  # Append to the layer
+            for path in offsetBoundary:
+
+                contourGeometry = ContourGeometry()
+                coords = np.vstack([path, path[0]])
+                contourGeometry.coords = coords
+                contourGeometry.subType = "inner"
+                contourLayerGeometries.append(contourGeometry)  # Append to the layer
 
         # The final offset is applied to the boundary if there has been existing contour offsets applied
         if self._numInnerContours + self._numOuterContours > 0:
