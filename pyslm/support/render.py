@@ -129,7 +129,7 @@ class Canvas(app.Canvas):
         #self._depthRenderBuffer.resize(shape, format=gloo.gl.GL_DEPTH_COMPONENT16)
 
         # Create FBO, attach the color buffer and depth buffer
-        self._fbo = gloo.FrameBuffer(self._rendertex)#, self._depthRenderBuffer)
+        self._fbo = gloo.FrameBuffer(self._rendertex, self._depthRenderBuffer)
 
         gloo.set_viewport(0, 0, self.physical_size[0], self.physical_size[1])
         gloo.set_viewport(0, 0, self._visSize[0], self._visSize[1])
@@ -140,7 +140,7 @@ class Canvas(app.Canvas):
         self.program['u_model'] = self.model
         self.program['u_view'] = self.view
 
-        gloo.set_clear_color('white')
+        gloo.set_clear_color((0.0, 0.0, 0.0, 0.0))
         gloo.set_state('opaque')
 
         self.update()
