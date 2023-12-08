@@ -82,52 +82,25 @@ with open('README.rst') as f:
 
 with open('LICENSE') as f:
     license = f.read()
- 
-ext = Extension("pyclipper",
-                sources=["external/pyclipper/pyclipper.pyx", "external/pyclipper/clipper.cpp"],
-                language="c++",
-                # define extra macro definitions that are used by clipper
-                #la Available definitions that can be used with pyclipper:
-                # use_lines, use_int32
-                # See pyclipper/clipper.hpp
-                define_macros=[('use_lines', 1),
-                               ('use_xyz', 1)]
-                )
-
-extB = Extension("pyslm.pyclipper",
-                 sources=["external/pyclipper/pyclipper.cpp", "external/pyclipper/clipper.cpp"],
-                 language="c++",
-                 # define extra macro definitions that are used by clipper
-                 # Available definitions that can be used with pyclipper:
-                 # use_lines, use_int32
-                 # See pyclipper/clipper.hpp
-                 define_macros=[('use_lines', 1),
-                                ('use_xyz', 1)]
-                 )
 
 setup(
     name='PythonSLM',
     version=__version__,
-    description='Python Package for Additive Manufacturing Development',
+    description='Python Package for Additive Manufacturing and 3D Printing Development',
     long_description=readme,
     long_description_content_type='text/x-rst',
     author='Luke Parry',
     author_email='dev@lukeparry.uk',
     url='https://github.com/drlukeparry/pyslm',
-    keywords=['3D Printing', 'AM', 'Additive Manufacturing', 'Geometry', 'SLM', 'Selective Laser Melting'],
-    ext_modules=cythonize([ext, extB]),
-    setup_requires=[
-        'cython>=0.28'
-    ],
-
-    python_requires='>=3.5',
+    keywords=['3D Printing', 'AM', 'Additive Manufacturing', 'Geometry', 'SLM', 'Selective Laser Melting', 'L-PBF'],
+    python_requires='>=3.7',
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11'
         'Natural Language :: English',
         'Topic :: Scientific/Engineering'],
     license="",
