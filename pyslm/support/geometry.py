@@ -205,7 +205,11 @@ def path2DToPathList(shapes: List[shapely.geometry.polygon.Polygon]) -> List[np.
 
     paths = []
 
+    if shapes is None:
+        return []
+
     for poly in shapes:
+
         coords = np.array(poly.exterior.coords)
         paths.append(coords)
 
