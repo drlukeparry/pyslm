@@ -719,6 +719,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
         return heightMap, heightMapUpper, heightMapLower
 
+
     def identifySupportRegions(self, part: Part, overhangAngle: float,
                                findSelfIntersectingSupport: Optional[bool] = True) -> List[BlockSupportBase]:
         """
@@ -735,8 +736,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
         :return: A list of BlockSupports
         """
-
-        import time
 
         overhangSubregions = getOverhangMesh(part, overhangAngle, True)
 

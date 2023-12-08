@@ -1,6 +1,7 @@
 sphinx
 pyclipr >= 0.1.4
 numpy
+manifold3d
 matplotlib
 networkx
 Rtree

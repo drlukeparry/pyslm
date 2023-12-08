@@ -25,6 +25,7 @@ requirements_default = set([
     'shapely',
     'cython',
     'pyclipr',
+    'manifold3d',
     'Rtree',
     'networkx',
     'matplotlib',
@@ -53,7 +54,6 @@ requirements_supports = set([
     'trimesh',  # Required for meshing geometry
     'triangle',
     'vispy',
-    'pycork'
     'PyQt5',
     'mapbox-earcut'
     'colorlog'])  # log in pretty colors
