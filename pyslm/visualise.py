@@ -72,6 +72,9 @@ def plotPolygon(polygons: List[Any], zPos = 0.0,
 
     contourCoords = []
 
+    if  isinstance(polygons, MultiPolygon):
+        polygons = list(polygons.geoms)
+
     if not isinstance(polygons, Iterable):
         polygons = [polygons]
 
