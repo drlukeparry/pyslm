@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple, Union
 import numpy as np
 import trimesh.path.polygons
 import shapely.geometry
@@ -85,4 +85,36 @@ def from3DHatchArray(hatchVectors: np.ndarray) -> np.ndarray:
         raise ValueError('Hatch Vector Shape should be a 3D array')
 
     return hatchVectors.reshape(-1, 2)
+
+def poly2Paths(polygons: Union[shapely.geometry.Polygon, shapely.geometry.MultiPolygon]):
+
+    paths = []
+
+    if isinstance(polygons, shapely.geometry.MultiPolygon):
+        paths = [np.array(path.exterior.coords.xy).T for path in list(polygons.geoms)]
+    elif isinstance(polygons, shapely.geometry.Polygon):
+        pathsExterior = [np.array(polygons.exterior.coords.xy).T]
+        pathsInterior = [np.array(interior.coords.xy).T for interior in polygons.interiors]
+
+        paths = pathsExterior + pathsInterior
+
+    else:
+        raise ValueError('Type of polygons is not supported')
+
+    return paths
+
+
+def paths2clipper(paths: Any):
+    return [np.hstack([path, np.arange(len(path)).reshape(-1, 1)]) for path in paths]
+
+def clipper2Paths(paths, scaleFactor: float, close:bool = False):
+    out = [np.array(path)[:,:2]/scaleFactor for path in paths]
+
+    if close:
+        outPaths = []
+        for path in out:
+            outPaths.append(np.vstack([out, out[0,:]]))
+        out = outPaths
+
+    return out
 
