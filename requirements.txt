@@ -2,12 +2,11 @@ sphinx
 pyclipr >= 0.1.4
 numpy
 matplotlib
-scipy
-shapely
 networkx
 Rtree
-trimesh
+scipy
+shapely >= 2.0.0
+trimesh >= 4.0.0
 triangle
 scikit-image
-cython
 
