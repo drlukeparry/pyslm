@@ -184,6 +184,7 @@ def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
 
 def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
                          includeJumpTime: Optional[bool] = False,
+                         jumpSpeed: Optional[float] = 5000.0,
                          jumpDelay: Optional[float] = 0.0) -> float:
     """
     Returns the total time taken to scan across a :class:`~pyslm.geometry.LayerGeometry`.
@@ -191,6 +192,8 @@ def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
     :param layerGeom: The :class:`~pyslm.geometry.LayerGeometry` to process
     :param models: A list of :class:`~pyslm.geometry.Model` which is used by the :class:`geometry.LayerGeometry`
     :param includeJumpTime: Include the jump time between scan vectors in the calculation (default = `False`)
+    :param jumpSpeed: The default jump speed used to scan between scan vectors [mm/s]
+    :param jumpDelay: The default jump delay used to scan between scan vectors [s]
     :return: The time taken to scan across the :class:`~pyslm.geometry.LayerGeometry`
     """
 
@@ -209,8 +212,14 @@ def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
 
     if includeJumpTime:
 
-        # Add distance to transverse across each scan vector (if applicable)
-        totalJumpTime = getLayerGeometryJumpDistance(layerGeom) / bstyle.jumpSpeed
+        if float(bstyle.jumpSpeed) > 1e-6:
+
+            # Add distance to transverse across each scan vector (if applicable)
+            print(bstyle.jumpSpeed)
+            totalJumpTime = getLayerGeometryJumpDistance(layerGeom) / float(bstyle.jumpSpeed)
+        else:
+            # Add distance to transverse across each scan vector and assume a constant jump speed
+            totalJumpTime = getLayerGeometryJumpDistance(layerGeom) / float(jumpSpeed)
 
         # Add a jump delay (optional) between scan vectors (if applicable)
         totalJumpTime += getLayerGeomTotalJumps(layerGeom) * float(bstyle.jumpDelay) * 1e-6
