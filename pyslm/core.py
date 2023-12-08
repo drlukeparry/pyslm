@@ -489,9 +489,9 @@ class Part(DocumentObject):
         return planarSection
 
     def getVectorSlice(self, z: float, returnCoordPaths: bool = True,
-                       fixPolygons: bool = True,
-                       simplificationFactor:float = None, simplificationPreserveTopology: Optional[bool] = True,
-                       simplificationFactorMode:str = 'absolute') -> Any:
+                       fixPolygons: Optional[bool] = True,
+                       simplificationFactor: Optional[float] = None, simplificationPreserveTopology: Optional[bool] = True,
+                       simplificationFactorMode: Optional[str] = 'absolute') -> Any:
         """
         The vector slice is created by using `trimesh` to slice the mesh into a polygon
 
@@ -546,11 +546,12 @@ class Part(DocumentObject):
             polygons = fixPolys
 
         if returnCoordPaths:
-            return self.path2DToPathList(polygons)
+            return Part.path2DToPathList(polygons)
         else:
             return polygons
 
-    def path2DToPathList(self, shapes: List[Polygon]) -> List[np.ndarray]:
+    @staticmethod
+    def path2DToPathList(shapes: List[Polygon]) -> List[np.ndarray]:
         """
         Returns the list of paths and coordinates from a cross-section (i.e. Trimesh Path2D). This is required to be
         done for performing boolean operations and offsetting with the internal PyClipper package.
@@ -585,7 +586,7 @@ class Part(DocumentObject):
 
         vectorSlice = self.getTrimeshSlice(z)
 
-        bitmapOrigin =  self.boundingBox[:2] if origin is None else origin
+        bitmapOrigin = self.boundingBox[:2] if origin is None else origin
 
         sliceImage = vectorSlice.rasterize(pitch=resolution, origin=bitmapOrigin)
         return np.array(sliceImage)
