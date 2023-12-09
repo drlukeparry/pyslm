@@ -1437,6 +1437,33 @@ class GridBlockSupport(BlockSupportBase):
 
         return bboxPoly
 
+    def toothProfile(self) -> np.array:
+        """
+        Returns a 2D profile of a tooth used along the edge profile when generating the profile for the skin and 
+        the planar truss structure.
+        """
+
+        p_a = self._supportTeethHeight
+        p_b = self._supportTeethTopLength
+        p_c = self._supportTeethBottomLength
+        p_d = self._supportTeethBaseInterval
+
+        # Generate a pattern
+        toothPattern = [(0.0, 0.0),
+                       ((p_c - p_b) / 2.0, p_a),
+                       ((p_c - p_b) / 2.0 + p_b, p_a),
+                       (p_c, 0.0),
+                       (p_c + p_d, 0.0)]
+
+        toothPattern = np.array(toothPattern)
+
+        """
+        Offset the pattern using the tooth height parameter with the additional upper penetration distance into the part
+        """
+        toothPattern[:, 1] -= p_a
+        toothPattern[:, 1] += self._supportTeethUpperPenetration
+        return toothPattern
+
     def generateSliceGeometry(self, section: trimesh.path.Path2D):
         """
         Generates a truss grid used as a 2D slice used for generating a section as part of a support structures.
