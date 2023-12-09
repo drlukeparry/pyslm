@@ -1094,6 +1094,7 @@ class GridBlockSupport(BlockSupportBase):
         self._useSupportSkin = True
         self._supportWallThickness = 0.5
         self._supportBorderDistance = 3.0
+        self._generateTrussGrid = True
         self._trussWidth = 1.0
         self._trussAngle = 45
         self._mergeMesh = False
@@ -1367,6 +1368,17 @@ class GridBlockSupport(BlockSupportBase):
 
         return coords
 
+    @property
+    def borderGeometry(self):
+        return self.generateSupportSkins()
+
+    @property
+    def sliceGeometry(self):
+
+        slicesX, slicesY = self.generateSupportSlices()
+
+        return slicesX, slicesY
+
     def geometry(self) -> trimesh.Trimesh:
         """
         The geometry for the support structure. This resolve sthe  entire connectivity of the support truss
@@ -1401,7 +1413,12 @@ class GridBlockSupport(BlockSupportBase):
             isectMesh += supportSkins
         else:
             logging.info('\t Concatenating Support Geometry Meshes Together')
-            isectMesh = slicesX + slicesY + supportSkins
+            maxId = np.max(getattr(slicesY.face_attributes, 'order', 0))
+
+            for i in range(len(supportSkins)):
+                supportSkins[i].face_attributes['order'] = np.ones(len(supportSkins[i].faces)) * (maxId + i + 1)
+            isectMesh = self.concatenateMeshes([slicesX, slicesY] + supportSkins)
+            #isectMesh = slicesX + slicesY + supportSkins
 
         # Assign a random colour to the support geometry generated
         isectMesh.visual.face_colors[:, :3] = np.random.randint(254, size=3)
@@ -2369,15 +2386,18 @@ class GridBlockSupport(BlockSupportBase):
             # Append a Z coordinate in order to transform to mesh
             vx = np.insert(vx, 2, values=0.0, axis=1)
             secX = trimesh.Trimesh(vertices=vx, faces=fx)
-
+            secX.face_attributes['order'] = np.ones(len(fx)) * i
             # Transform using the original transformation matrix generated during slicing
-            secX.apply_transform(sectionX.metadata['to_3D'])
+            #secX.apply_transform(sectionX.metadata['to_3D'])
+            secX.apply_transform(sectionX[1])
             xSectionMeshList.append(secX)
 
         logging.info('Compounding X Grid meshes')
         # Concatenate all the truss meshes for the x-slices together in a single pass
-        xSectionMesh = trimesh.util.concatenate(xSectionMeshList)
+        #xSectionMesh = trimesh.util.concatenate(xSectionMeshList)
+        xSectionMesh = self.concatenateMeshes(xSectionMeshList)
 
+        maxId = len(xSectionMeshList)
         # Process the Section Y
         for i, sectionY in enumerate(sectionsY):
 
@@ -2422,22 +2442,75 @@ class GridBlockSupport(BlockSupportBase):
             # Append a z coordinate in order to transform to mesh
             vy = np.insert(vy, 2, values=0.0, axis=1)
             secY = trimesh.Trimesh(vertices=vy, faces=fy)
+            secY.face_attributes['order'] = np.ones(len(fy)) * (maxId + i)
 
             # Transform using the original transformation matrix generated during slicing
-            secY.apply_transform(sectionY.metadata['to_3D'])
-
+            #secY.apply_transform(sectionY.metadata['to_3D'])
+            secY.apply_transform(sectionY[1])
             ySectionMeshList.append(secY)
 
         logging.info('\tCompounding Y Grid meshes')
 
         # Concatenate all the truss meshes for the y-slices together in a single pass
-        ySectionMesh = trimesh.util.concatenate(ySectionMeshList)
-
+        ySectionMesh = self.concatenateMeshes(ySectionMeshList)
         return xSectionMesh, ySectionMesh
+
+    def concatenateMeshes(self, meshList):
+
+        idxLen = [len(mesh.vertices) for mesh in meshList]
+        idxCumSum = np.hstack([0, np.cumsum(idxLen)])
+
+        newVerts = np.vstack([mesh.vertices for mesh in meshList])
+        newFaces = np.vstack([mesh.faces + idxCumSum[i] for i, mesh in enumerate(meshList)])
+
+        faceAttr = {}
+        for i, mesh in enumerate(meshList):
+            for key, value in mesh.face_attributes.items():
+                if key not in faceAttr:
+                    faceAttr[key] = []
+
+                faceAttr[key].append(value)
+
+        # Merge the face attributes
+        for key, value in faceAttr.items():
+            faceAttr[key] = np.hstack(value)
+
+        return trimesh.Trimesh(vertices=newVerts, faces=newFaces, face_attributes=faceAttr)
+
+    def section_multiplane(self, volume, plane_origin, plane_normal, heights):
+
+        # turn line segments into Path2D/Path3D objects
+        from trimesh.exchange.load import load_path
+        import trimesh.exchange
+
+        # do a multiplane intersection
+        lines, transforms, faces = trimesh.intersections.mesh_multiplane(mesh=volume,
+                                                                         plane_normal=plane_normal,
+                                                                         plane_origin=plane_origin,
+                                                                         heights=heights)
+
+        out = zip(lines, transforms, faces)
+        return list(out)
+
+        if False:
+
+            # turn the line segments into Path2D objects
+            paths = [None] * len(lines)
+            for i, faces, segments, T in zip(range(len(lines)),
+                                             faces,
+                                             lines,
+                                             transforms):
+                if len(segments) > 0:
+                    paths[i] = load_path(
+                        segments,
+                        metadata={'to_3D': T, 'face_index': faces})
+            return paths
+
+        return lines, transforms, faces
 
     def generateGridSlices(self) -> Tuple[List[trimesh.path.Path2D], List[trimesh.path.Path2D]]:
         """
-        Slices the support volume (:attr:`~BlockSupportBase.supportVolume`) in an grid based on :attr:`gridSpacing`.
+        Slices the support volume (:attr:`~BlockSupportBase.supportVolume`) in a grid based on :attr:`gridSpacing`.
 
         :return: Returns a tuple of the X and Y Grid Slice
         """
@@ -2459,16 +2532,18 @@ class GridBlockSupport(BlockSupportBase):
         topX = 1. * np.ceil((bx[1] - midX) / spacingX) * spacingX + 1e-8
 
         # Generate the support slices of the section
-        sectionsX = supportGeom.section_multiplane(plane_origin=[midX, 0.0, 0.0],
-                                                   plane_normal=[1.0, 0.0, 0.0],
-                                                   heights=np.arange(bottomX, topX, spacingX))
+        sectionsX = self.section_multiplane(supportGeom,
+                                            plane_origin=[midX, 0.0, 0.0],
+                                            plane_normal=[1.0, 0.0, 0.0],
+                                            heights=np.arange(bottomX, topX, spacingX))
         midY = (by[0] + by[1]) / 2.0
         bottomY = -1.0 * np.ceil((midY - by[0]) / spacingY) * spacingY
         topY = 1.0 * np.ceil((by[1] - midY) / spacingY) * spacingY + 1e-8
 
-        sectionsY = supportGeom.section_multiplane(plane_origin=[0.0, midY, 0.0],
-                                                   plane_normal=[0.0, 1.0, 0.0],
-                                                   heights=np.arange(bottomY, topY, spacingY))
+        sectionsY = self.section_multiplane(supportGeom,
+                                            plane_origin=[0.0, midY, 0.0],
+                                            plane_normal=[0.0, 1.0, 0.0],
+                                            heights=np.arange(bottomY, topY, spacingY))
 
         return sectionsX, sectionsY
 
