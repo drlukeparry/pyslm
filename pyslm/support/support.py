@@ -726,6 +726,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         uses a combination of boolean operations and ray intersection/projection to discriminate support regions.
         If :code:`findSelfIntersectingSupport` is to set :code:`True` (default), the algorithm will process and
         separate overhang regions that by downward projection self-intersect with the part.
+
         This provides more refined behavior than simply projected support material downwards into larger support
         block regions and separates an overhang surface between intersecting and non-intersecting regions.
 
@@ -894,19 +895,10 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
                 mergedPoly = mergedPoly.simplify_spline(self._splineSimplificationFactor)
 
-                outPolygons = mergedPoly.polygons_full
-
-                #outPolygons = hatchUtils.pathsToClosedPolygons([outline])
-
-                #if len(outPolygons)  == 0:
-                 #   print('no polygons')
-                  #  continue
-
-
-                #outPolygons = outPolygons[0].simplify(self.simplifyPolygonFactor*self.rayProjectionResolution).buffer(1e-4)
-
-                #if outPolygons.area < 1e-3:
-                #    continue
+                try:
+                    outPolygons = mergedPoly.polygons_full
+                except:
+                    raise Exception('Incompatible Shapely version used')
 
                 if not mergedPoly.is_closed or len(outPolygons) == 0 or outPolygons[0] is None:
                     continue
@@ -1176,24 +1168,15 @@ class GridBlockSupport(BlockSupportBase):
         :return: A list of trimmed lines (open paths)
         """
 
-        pc = pyclipper.Pyclipper()
+        pc = pyclipr.Clipper()
+        pc.scaleFactor = int(BaseHatcher.PYCLIPPER_SCALEFACTOR)
 
-        pc.AddPaths(paths, pyclipper.PT_CLIP, True)
+        pc.addPaths(lines.reshape(-1,2,3), pyclipr.Subject, True)
+        pc.addPaths(paths, pyclipr.Clip, False)
+        out = pc.execute(pyclipr.Intersection, pyclipr.FillRule.NonZero, returnOpenPaths=True, returnZ=False)
+        lineXY = np.array(out[1])
 
-        # Reshape line list to create n lines with 2 coords(x,y,z)
-        lineList = lines.reshape(-1, 2, 3)
-        lineList = tuple(map(tuple, lineList))
-        lineList = BaseHatcher.scaleToClipper(lineList)
-
-        pc.AddPaths(lineList, pyclipper.PT_SUBJECT, False)
-
-        # Note open paths (lines) have to used PyClipper::Execute2 in order to perform trimming
-        result = pc.Execute2(pyclipper.CT_INTERSECTION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
-
-        # Cast from PolyNode Struct from the result into line paths since this is not a list
-        lineOutput = pyclipper.PolyTreeToPaths(result)
-
-        return BaseHatcher.scaleFromClipper(lineOutput)
+        return lineXY
 
     @staticmethod
     def generateMeshGrid(poly: shapely.geometry.polygon.Polygon,
@@ -1345,24 +1328,41 @@ class GridBlockSupport(BlockSupportBase):
         bboxPoly = self.generateSliceBoundingBoxPolygon(section)
 
         """
-        In order to improve performance we resort to using PyClipper rather than Shapely library routines, as from
+        In order to improve performance we resort to using pyclipr rather than Shapely library routines, as from
         experience this tends to perform slowly during clipping and offset operations, despite a more convenient
         API.
         """
 
         # Convert the shapley polygons to a path list
-        paths = path2DToPathList(polys)
+        convPolys = []
+        for poly in polys:
+            if isinstance(poly, shapely.geometry.MultiPolygon):
+                convPolys += poly.geoms
+            else:
+                convPolys.append(poly)
+        paths = path2DToPathList(convPolys)
 
-        # Offset the outer path to provide a clean boundary to work with
-        pc = pyclipper.PyclipperOffset()
-        clipPaths = BaseHatcher.scaleToClipper(paths)
-        pc.AddPaths(clipPaths, pyclipper.JT_SQUARE, pyclipper.ET_CLOSEDPOLYGON)
-        outerPaths = pc.Execute(BaseHatcher.scaleToClipper(1e-6))
+        pc = pyclipr.ClipperOffset()
+        pc.addPaths(paths, pyclipr.JoinType.Square, pyclipr.EndType.Polygon)
 
-        # Offset the outer boundary to generate the interior boundary
-        pc.Clear()
-        pc.AddPaths(clipPaths, pyclipper.JT_ROUND, pyclipper.ET_CLOSEDPOLYGON)
-        offsetPathInner = pc.Execute(BaseHatcher.scaleToClipper(-self._supportBorderDistance))
+        if not self._generateTrussGrid:
+            """
+            Only generate the polygon section. This requires processing within pyclipr to process each path
+            into the correct order.
+            """
+
+            # Perform the offseting operation
+            outerPaths = pc.execute(1e-6)
+
+            return outerPaths
+
+        else:
+            outerPaths = pc.execute(1e-6)
+
+            # Offset the outer boundary to generate the interior boundary
+            pc.clear()
+            pc.addPaths(paths, pyclipr.JoinType.Round, pyclipr.EndType.Polygon)
+            offsetPathInner = pc.execute(-self._supportBorderDistance)
 
         if len(offsetPathInner) < 1:
             return None
@@ -1385,50 +1385,59 @@ class GridBlockSupport(BlockSupportBase):
         """
         Offset the hatches to form a truss structure
         """
-        pc.Clear()
-
-        for hatch in hatches2:
-            hatchPath = BaseHatcher.scaleToClipper(hatch)
-            pc.AddPath(hatchPath, pyclipper.JT_SQUARE, pyclipper.ET_CLOSEDLINE)
-
-        trussPaths = pc.Execute(BaseHatcher.scaleToClipper(self._trussWidth / 2.0))
-
-        pc2 = pyclipper.Pyclipper()
+        pc.clear()
+        pc.addPaths(hatches2, pyclipr.JoinType.Square, pyclipr.EndType.Joined)
+        trussPaths = pc.execute(self._trussWidth / 2.0)
 
         """
         Clip or trim the Truss Paths with the exterior of the support slice boundary
         """
-        pc2.AddPaths(trussPaths, pyclipper.PT_SUBJECT)
-        pc2.AddPaths(outerPaths, pyclipper.PT_CLIP)
+        pc2 = pyclipr.Clipper()
+        pc2.addPaths(trussPaths, pyclipr.Subject, False)
+        pc2.addPaths(outerPaths, pyclipr.Clip, False)
 
         if self._useSupportBorder:
 
-            trimmedTrussPaths = pc2.Execute(pyclipper.CT_INTERSECTION)
+            trimmedTrussPaths = pc2.execute(pyclipr.Intersection, pyclipr.FillRule.NonZero, returnOpenPaths=False, returnZ=False)
 
             """
             Generate the support skin
             """
-            pc2.Clear()
-            pc2.AddPaths(outerPaths, pyclipper.PT_SUBJECT)
-            pc2.AddPaths(offsetPathInner, pyclipper.PT_CLIP)
-            skinSolutionPaths = pc2.Execute(pyclipper.CT_DIFFERENCE)
+            pc2.clear()
+            pc2.addPaths(outerPaths, pyclipr.Subject, False)
+            pc2.addPaths(offsetPathInner,  pyclipr.Clip, False)
+            skinSolutionPaths = pc2.execute(pyclipr.Difference, returnOpenPaths=False, returnZ=False)
 
             """
             Merge all the paths together
             """
-            pc2.Clear()
-            pc2.AddPaths(trimmedTrussPaths, pyclipper.PT_SUBJECT)
-            pc2.AddPaths(skinSolutionPaths, pyclipper.PT_CLIP)
-            solution = pc2.Execute2(pyclipper.CT_UNION)
+            pc2.clear()
+            pc2.addPaths(trimmedTrussPaths, pyclipr.Subject, False)
+            pc2.addPaths(skinSolutionPaths, pyclipr.Clip, False)
+            solution = pc2.execute(pyclipr.Union)
         else:
             # Use only the truss paths. This simply exports ClipperLib PolyNode Tree
 
-            trimmedTrussPaths = pc2.Execute2(pyclipper.CT_INTERSECTION)
-
+            trimmedTrussPaths = pc2.execute(pyclipr.Intersection)
             solution = trimmedTrussPaths
 
-        trussPaths = solution
-        return trussPaths
+        if self._supportWallThickness > 1e-5:
+
+            pc2 = pyclipr.Clipper()
+            pc2.addPaths(solution, pyclipr.Clip)
+
+            clippingPaths = []
+            for mPoly in offsetPaths:
+                clippingPaths += hatchingUtils.poly2Paths(mPoly)
+
+            pc2.addPaths(clippingPaths, pyclipr.Subject, False)
+
+            # Note open paths (lines) have to used pyclipr::Execute2 in order to perform trimming
+            solution = pc2.execute2(pyclipr.Union)
+
+        result = solution
+
+        return result
 
     def generateSliceGeometryDepr(self, section):
         """
@@ -1489,26 +1498,44 @@ class GridBlockSupport(BlockSupportBase):
 
         return sectionPath
 
-    def generateSupportSkinInfill(self, myPolyVerts: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def generateSupportSkinInfill(self, myPolyVerts: np.ndarray,
+                                  returnPolyNodes: Optional[bool] =False) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Generates a standard truss grid infill a support border boundary has has been previously
-        flattened  prior to a 'wrapping' transformation back into 3D.
+        Generates a standard truss grid infill for a support border boundary  has been previously
+        flattened prior to applying a 'wrapping' transformation projecting the 2D skin into the 3D support
 
         :param myPolyVerts: A single boundary of coordinates representing the
         :return: A mesh (vertices, faces) of the triangulated truss support order.
         """
-        pc = pyclipper.PyclipperOffset()
-
+        pc = pyclipr.ClipperOffset()
+        pc.scaleFactor = int(1e4)
         # Offset the outer path to provide a clean boundary to work with
-        paths2 = np.hstack([myPolyVerts, np.arange(len(myPolyVerts)).reshape(-1, 1)])
-        paths2 = list(map(tuple, paths2))
-        clipPaths = BaseHatcher.scaleToClipper(paths2)
+        #paths2 = np.hstack([myPolyVerts, np.arange(len(myPolyVerts)).reshape(-1, 1)])
+        #paths2 = list(map(tuple, paths2))
+        #clipPaths = BaseHatcher.scaleToClipper(paths2)
 
         """
         Offset the paths interior
         """
-        pc.AddPath(clipPaths, pyclipper.JT_SQUARE, pyclipper.ET_CLOSEDPOLYGON)
-        outerPaths = pc.Execute(BaseHatcher.scaleToClipper(1e-6))
+        pc.addPath(myPolyVerts, pyclipr.JoinType.Square, pyclipr.EndType.Polygon)
+
+        if not self._generateTrussGrid:
+            """
+            Only generate the polygon section. This requires processing within pyclipr to process each path
+            into the correct order.
+            """
+            outerPaths = pc.execute2(1e-6)
+
+            # Process the paths and create valid path rings to form a polygon for triangulation
+            exterior, interior = sortExteriorInteriorRings(outerPaths, closePolygon=True)
+
+            # Triangulate the surface for re-mapping the mesh to the boundary
+            vy, fy = pyslm.support.geometry.triangulatePolygonFromPaths(exterior[0], interior,
+                                                                        triangle_args='pa{:.3f}'.format(2.0))
+
+            return vy, fy
+        else:
+            outerPaths = pc.execute(1e-6)
 
         if False:
             import trimesh.path.traversal
@@ -1520,10 +1547,10 @@ class GridBlockSupport(BlockSupportBase):
                 # outerPaths.append(subdivide_polygon(p, degree=1, preserve_ends=True))
 
         # Offset the outer boundary to make the outside
-        pc.Clear()
+        pc.clear()
 
-        pc.AddPaths(outerPaths, pyclipper.JT_ROUND, pyclipper.ET_CLOSEDPOLYGON)
-        offsetPathInner = pc.Execute(BaseHatcher.scaleToClipper(-self._supportBorderDistance))
+        pc.addPaths(outerPaths, pyclipr.JoinType.Round, pyclipr.EndType.Polygon)
+        offsetPathInner = pc.execute(-self._supportBorderDistance)
 
         diag = self._gridSpacing[0] * np.sin(np.deg2rad(self._trussAngle))
 
@@ -1546,52 +1573,51 @@ class GridBlockSupport(BlockSupportBase):
         """
         Generate the truss by expanding the lines accordingly
         """
-        pc.Clear()
+        pc.clear()
 
-        for hatch in hatches:
-            hatchPath = BaseHatcher.scaleToClipper(hatch)
-            pc.AddPath(hatchPath, pyclipper.JT_SQUARE, pyclipper.ET_CLOSEDLINE)
-
-        trussPaths = pc.Execute(BaseHatcher.scaleToClipper(self._trussWidth / 2.0))
+        pc.addPaths(hatches, pyclipr.JoinType.Square, pyclipr.EndType.Joined)
+        trussPaths = pc.execute(self._trussWidth / 2.0)
 
         """
         Clip or trim the Truss Paths with the exterior of the support slice boundary
         """
-        pc2 = pyclipper.Pyclipper()
+        pc2 = pyclipr.Clipper()
 
         if self._useSupportBorder and len(offsetPathInner) > 0:
 
-            pc2.AddPaths(trussPaths, pyclipper.PT_SUBJECT)
-            pc2.AddPaths(outerPaths, pyclipper.PT_CLIP)
+            pc2.addPaths(trussPaths, pyclipr.Subject)
+            pc2.addPaths(outerPaths, pyclipr.Clip)
 
-            trimmedTrussPaths = pc2.Execute(pyclipper.CT_INTERSECTION)
+            trimmedTrussPaths = pc2.execute(pyclipr.Intersection)
 
             """
             Generate the support skin
             """
-            pc2.Clear()
-            pc2.AddPaths(outerPaths, pyclipper.PT_SUBJECT)
-            pc2.AddPaths(offsetPathInner, pyclipper.PT_CLIP)
-            skinSolutionPaths = pc2.Execute(pyclipper.CT_DIFFERENCE)
+            pc2.clear()
+            pc2.addPaths(outerPaths, pyclipr.Subject)
+            pc2.addPaths(offsetPathInner, pyclipr.Clip)
+            skinSolutionPaths = pc2.execute(pyclipr.Difference)
 
             """
             Merge all the paths together
             """
-            pc2.Clear()
-            pc2.AddPaths(trimmedTrussPaths, pyclipper.PT_SUBJECT)
-            pc2.AddPaths(skinSolutionPaths, pyclipper.PT_CLIP)
-            solution = pc2.Execute2(pyclipper.CT_UNION)
+            pc2.clear()
+            pc2.addPaths(trimmedTrussPaths, pyclipr.Subject)
+            pc2.addPaths(skinSolutionPaths, pyclipr.Clip)
+
+            if returnPolyNodes:
+                solution = pc2.execute2(pyclipr.Union)
+            else:
+                solution = pc2.execute(pyclipr.Union)
         else:
             # Use only the truss paths. This simply exports ClipperLib PolyNode Tree
-            pc2.AddPaths(trussPaths, pyclipper.PT_SUBJECT)
-            pc2.AddPaths(outerPaths, pyclipper.PT_CLIP)
+            pc2.addPaths(trussPaths, pyclipr.Subject)
+            pc2.addPaths(outerPaths, pyclipr.Clip)
 
-            solution = pc2.Execute2(pyclipper.CT_INTERSECTION)
-
-        """
-        Create the polygon  and triagulate using the triangle library to provide a precise controlled conformal mesh.
-        """
-        exterior, interior = sortExteriorInteriorRings(solution, closePolygon=True)
+            if returnPolyNodes:
+                solution = pc2.execute2(pyclipr.Intersection, pyclipr.FillRule.NonZero)
+            else:
+                solution = pc2.execute(pyclipr.Intersection, pyclipr.FillRule.NonZero)
 
         # vy, fy = geometry.triangulatePolygon(bufferPoly)
 
@@ -1861,10 +1887,10 @@ class GridBlockSupport(BlockSupportBase):
                 fx = []
 
                 idx = 0
-                for sect in section.Childs:
+                for sect in section.children:
                     exterior, interior = sortExteriorInteriorRings(sect, closePolygon=True)
                     vertsx, facesx = pyslm.support.geometry.triangulatePolygonFromPaths(exterior[0], interior,
-                                                                                triangle_args='pa{:.3f}'.format(4.0))
+                                                                                        triangle_args='pa{:.3f}'.format(4.0))
 
                     vx.append(vertsx)
                     fx.append(facesx + idx)
