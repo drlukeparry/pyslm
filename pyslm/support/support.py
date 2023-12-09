@@ -438,8 +438,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
         self._minimumAreaThreshold = 5.0  # mm2 (default = 10)
         self._rayProjectionResolution = 0.2  # mm (default = 0.5)
 
-        self._lowerProjectionOffset = 0.1 # mm
-        self._upperProjectionOffset = 0.1 # mm
+        self._lowerProjectionOffset = 0.05 # mm
+        self._upperProjectionOffset = 0.05 # mm
 
         self._innerSupportEdgeGap = 0.2  # mm (default = 0.1)
         self._outerSupportEdgeGap = 0.5  # mm  - offset between part supports and baseplate supports
@@ -449,7 +449,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
         self._overhangAngle = 45.0  # [deg]
 
-        self._splineSimplificationFactor = 100.0
+        self._useApproxBasePlateSupport = False  # default is false
+        self._splineSimplificationFactor = 20.0
 
     def __str__(self):
         return 'BlockSupportGenerator'
@@ -493,7 +494,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         """
         An internal parameter used for defining an offset applied to the upper projection used to provide a clean
         intersection when performing the final boolean intersection between the original geometry and the extruded
-         support volume geometry.
+        support volume geometry.
         """
         return self._upperProjectionOffset
 
@@ -510,7 +511,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         return self._lowerProjectionOffset
 
     @lowerProjectionOffset.setter
-    def lowerProjectionOffset(self, offset) -> None:
+    def lowerProjectionOffset(self, offset: float) -> None:
         self._lowerProjectionOffset = offset
 
     @property
@@ -578,7 +579,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
         The resolution should be selected to appropriately capture the complexity of the features within the part.
 
         .. note::
-            There is a restriction based on the maximum framebuffer size available in OpenGL.
+            There is a restriction on the maximum size based on the framebuffer memory available in the OpenGL context
+            provided by the chosen Operating System and drivers
         """
         return self._rayProjectionResolution
 
@@ -748,7 +750,15 @@ class BlockSupportGenerator(BaseSupportGenerator):
         for subregion in overhangSubregions:
 
             logging.info('Processing subregion')
-            polygon = SupportStructure.flattenSupportRegion(subregion)
+            try:
+                polygon = SupportStructure.flattenSupportRegion(subregion)
+            except:
+                logging.warning('PySLM: Could not flatten region')
+                continue
+
+            #mergedPoly = trimesh.load_path(outline)
+            #mergedPoly.merge_vertices(1)
+            #mergedPoly = mergedPoly.simplify_spline(self._splineSimplificationFactor)
 
             # Simplify the polygon to ease simplify extrusion
 
@@ -786,23 +796,10 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
             logging.info('\t - start intersecting mesh')
 
-            if False:
-
-                # Intersect the projection of the support face with the original part using the Cork Library
-                extruMesh.export('downProjExtr.off')
-                subprocess.call([self.CORK_PATH, '-isct', 'part.off', 'downProjExtr.off', 'c.off'])
-                logging.info('\t - finished intersecting mesh')
-
-                """
-                Note the cutMesh is the project down from the support surface with the original mesh
-                """
-
-                cutMesh = trimesh.load_mesh('c.off', process=True, validate=True)
-
             bbox = extruMesh.bounds
             cutMesh = boolIntersect(part.geometry, extruMesh)
             logging.info('\t\t - Mesh intersection time using Cork: {:.3f}s'.format(time.time() - timeIntersect))
-            logging.info('\t -  intersecting mesh')
+            logging.info('\t -  Finished intersecting mesh')
             totalBooleanTime += time.time() - timeIntersect
 
             # Note this a hard tolerance
@@ -857,7 +854,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
             vx, vy = np.gradient(heightMap)
             grads = np.sqrt(vx ** 2 + vy ** 2)
 
-            grads = scipy.ndimage.filters.gaussian_filter(grads, sigma=BlockSupportGenerator._gausian_blur_sigma)
+            grads = scipy.ndimage.filters.gaussian_filter(grads, sigma=BlockSupportGenerator._gaussian_blur_sigma)
 
             """
             Find the outlines of any regions of the height map which deviate significantly
@@ -919,7 +916,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
                 bufferPolyA = mergedPoly.polygons_full[0].simplify(self.simplifyPolygonFactor*self.rayProjectionResolution)
 
-
                 bufferPoly = bufferPolyA.buffer(-self.innerSupportEdgeGap)
 
                 if isinstance(bufferPoly, shapely.geometry.MultiPolygon):
@@ -936,7 +932,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                 Triangulate the polygon into a planar mesh
                 """
                 poly_tri = trimesh.creation.triangulate_polygon(bufferPoly,
-                                                                triangle_args='pa{:.3f}'.format(self.triangulationSpacing))
+                                                                triangle_args='pa{:.3f}'.format(self.triangulationSpacing),
 
                 """
                 Project upwards to intersect with the upper surface
@@ -958,14 +954,14 @@ class BlockSupportGenerator(BaseSupportGenerator):
                 """
                 Intersecting with cutmesh is more efficient when projecting downwards
                 """
-                #
+
                 if cutMesh.volume > BlockSupportGenerator._intersectionVolumeTolerance:
 
                     hitLoc2, index_ray2, index_tri2 = cutMeshUpper.ray.intersects_location(ray_origins=coords2,
                                                                                            ray_directions=ray_dir,
                                                                                            multiple_hits=False)
                 else:
-                    # Base plate support
+                    # Base-plate support
                     hitLoc2 = []
 
                 if len(hitLoc) != len(coords) or len(hitLoc2) != len(hitLoc):
@@ -1013,7 +1009,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                 # Draw the support structures generated
                 blockSupportMesh.visual.face_colors[:,:3] = np.random.randint(254, size=3)
 
-                # Create a support block object
+                # Create a BlockSupport Object
                 baseSupportBlock = BlockSupportBase(supportObject=part,
                                                     supportVolume=blockSupportMesh,
                                                     supportSurface=subregion,
@@ -1042,10 +1038,23 @@ class GridBlockSupport(BlockSupportBase):
 
     A truss network is generated to reduce the amount of support material processed, but additionally provides internal
     perforations which aid powder support removal after production. The truss network in 2D is generated
-    along with supporting functions for creating a mesh.
+    along with supporting functions for creating a mesh. The generation of the truss grid is relatively expensive to
+    generated compared to the polygon intersection and may be disabled by setting
+    :attr:`~GridBlockSupport.generateTrussGrid`).
+
+    Furthermore, penetrating teeth located at the upper and lower intersection of the support volume can be generated
+    to ease support removal for metal AM processes. A variety of configurable options are included to vary the geometry.
+    The tooth sizes may be specified using :attr:`~GridBlockSupport.supportTeethHeight`,
+    :attr:`~GridBlockSupport.supportTeethTopLength`, :attr:`~GridBlockSupport.supportTeethBottomLength`,
+    :attr:`~GridBlockSupport.supportTeethBaseInterval` and an additional self-penetration distance
+    :attr:`~GridBlockSupport.supportTeethUpperPenetration` to enhance the strength of the support by over-
+    scanning material within the solid part internally. The tooth profile is repeated across the upper edge of the
+    intersected support volume using an internal overrideable function :meth:`toothProfile`. The generation of support
+    teeth on the upper and lower surfaces may be individually toggled by setting
+    :attr:`~GridBlockSupport.useUpperSupportTeeth` and :attr:`~GridBlockSupport.useLowerSupportTeeth` respectively.
 
     The truss is designed to self-intersect at set distance based on both the :attr:`trussAngle` and
-    the :attr:`gridSpacing` so that they combine together as a consistently connected support mesh. Upon
+    the :attr:`gridSpacing` so that they combine as a consistently connected support mesh. Upon
     generating a polygon for each support slice, this is triangulated via :meth:`triangulatePolygon`
     to create a mesh which may be sliced and hatched later. Optionally these may be combined into a single mesh, for
     exporting externally.
@@ -1263,17 +1272,9 @@ class GridBlockSupport(BlockSupportBase):
         print('merging geometry', self._mergeMesh)
         # Use the Cork library to merge meshes
         if self._mergeMesh:
-            logging.info('\t - Performing Boolean Union of all Intersection Meshes')
+            logging.info('\t - Resolving Boolean Intersections betwee all support meshes')
             # Intersect the projection of the support face with the original part using the Cork Library
 
-            if False:
-                slicesX.export('secX.off')
-                slicesY.export('secY.off')
-
-                subprocess.call([BlockSupportGenerator.CORK_PATH, '-resolve', 'secY.off', 'secX.off', 'merge.off'])
-                isectMesh = trimesh.load_mesh('merge.off')
-
-            print('merging mesh')
             isectMesh = slicesX + slicesY
 
             if len(isectMesh.faces) > 0:
@@ -1380,11 +1381,6 @@ class GridBlockSupport(BlockSupportBase):
         """
         hatches2 = self.clipLines(outerPaths, hatches)
 
-        if False:
-            for hatch in hatches:
-                plt.plot(hatch[:, 0], hatch[:, 1])
-            plt.scatter(centroid[0], centroid[1])
-            plt.plot(box[:, 0], box[:, 1])
 
         """
         Offset the hatches to form a truss structure
@@ -1436,7 +1432,6 @@ class GridBlockSupport(BlockSupportBase):
 
     def generateSliceGeometryDepr(self, section):
         """
-
         Exists as a reference to how this can be performed using Shapely.Geometry.Polygon Objects
 
         :param section:
@@ -1640,24 +1635,8 @@ class GridBlockSupport(BlockSupportBase):
         mask3 = np.logical_and(mask, mask2)
         blockSupportSides.update_faces(mask3)
 
-        if False:
-
-            blockSupportSides.update_faces(mask)
-            blockSupportSides.remove_unreferenced_vertices()
-            blockSupportSides.merge_vertices()
-
-            blockSupportSides.update_faces(sin_theta > BlockSupportGenerator._supportSkinSideTolerance)
-
         # Split the top and bottom surfaces to a path - guaranteed to be a manifold 2D polygon
         supportSurfCpy = blockSupportSides.split(only_watertight=False)
-
-        if False:
-
-            blockSupportMesh.face_adjacency_edges
-            edges = blockSupportMesh.face_adjacency_angles * 360 / np.pi-90 > -1
-            cor = blockSupportMesh.face_adjacency_edges[edges]
-            corV = blockSupportMesh.vertices[cor]
-            trimesh.load_path(corV).show()
 
         supportSurf = []
         for surf in supportSurfCpy:
@@ -1668,10 +1647,12 @@ class GridBlockSupport(BlockSupportBase):
             return []
 
         if len(supportSurf) > 2:
-            print('Warning: number of isolated curves')
-            blockSupportSides.show()
-            #warnings.warn('Warning: number of isolated curves ')
+
+            # Uncomment below to identify issues with support generation
+            #blockSupportSides.show()
+            warnings.warn('Warning: number of isolated curves')
             return []
+
         (top, bottom) = (supportSurf[0], supportSurf[1])
 
         """
@@ -1707,12 +1688,12 @@ class GridBlockSupport(BlockSupportBase):
                 if np.abs(pathLen - botPathLen) / botPathLen < pairTolerance:
                     pairs.append((i, j))
 
-
-
         # remove isolated edges in poly
         if len(pairs) < 1:
             print('len < 1', len(pairs), topPathLengths, bottomPathLengths)
-            blockSupportSides.show()
+
+            # Uncomment to visualise the support if there any issues with the support generation
+            #blockSupportSides.show()
             return []
 
         topPaths = topPoly3D.paths
