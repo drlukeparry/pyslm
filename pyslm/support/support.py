@@ -1092,11 +1092,21 @@ class GridBlockSupport(BlockSupportBase):
         self._gridSpacing = [3, 3] # mm
         self._useSupportBorder = True
         self._useSupportSkin = True
+        self._supportWallThickness = 0.5
         self._supportBorderDistance = 3.0
         self._trussWidth = 1.0
         self._trussAngle = 45
         self._mergeMesh = False
         self._numSkinMeshSubdivideIterations = int(2)
+
+        self._supportTeethHeight = 1.5  # mm
+        self._supportTeethTopLength = 0.1 # mm
+        self._supportTeethBottomLength = 1.5 # mm
+        self._supportTeethBaseInterval = 0.2 # mm
+        self._supportTeethUpperPenetration = 0.2 # mm
+
+        self._useUpperSupportTeeth = True
+        self._useLowerSupportTeeth = False
 
     def __str__(self):
         return 'GridBlockSupport'
@@ -1112,6 +1122,86 @@ class GridBlockSupport(BlockSupportBase):
     @numSkinMeshSubdivideIterations.setter
     def numSkinMeshSubdivideIterations(self, iterations: int):
         self._numSkinMeshSubdivideIterations = int(iterations)
+
+    @property
+    def supportWallThickness(self):
+        """
+        An offset thickness applied to the lower and upper edges adjacent to the perforated teeth of the supports to
+        provide additional strength
+        """
+        return self._supportWallThickness
+
+    @supportWallThickness.setter
+    def supportWallThickness(self, wallThickness: float ):
+        self._supportWallThickness = wallThickness
+
+    @property
+    def useLowerSupportTeeth(self):
+        return self._useLowerSupportTeeth
+
+    @useLowerSupportTeeth.setter
+    def useLowerSupportTeeth(self, state):
+        self._useLowerSupportTeeth = state
+
+    @property
+    def useUpperSupportTeeth(self):
+        return self._useUpperSupportTeeth
+
+    @useUpperSupportTeeth.setter
+    def useUpperSupportTeeth(self, state):
+        self._useUpperSupportTeeth = state
+
+    @property
+    def supportTeethHeight(self) -> float:
+        """
+        The height of the perforated support teeth
+        """
+        return self._supportTeethHeight
+
+    @supportTeethHeight.setter
+    def supportTeethHeight(self, teethHeight: float):
+        self._supportTeethHeight = teethHeight
+
+    @property
+    def supportTeethTopLength(self):
+        """
+        The upper span or length of the perforated support teeth
+        """
+        return self._supportTeethTopLength
+
+    @supportTeethTopLength.setter
+    def supportTeethTopLength(self, topLength: float):
+        self._supportTeethTopLength = topLength
+
+    @property
+    def supportTeethBottomLength(self) -> float:
+        """
+        The bottom span or length of the perforated support teeth
+        """
+        return self._supportTeethTopLength
+
+    @supportTeethBottomLength.setter
+    def supportTeethBottomLength(self, bottomLength: float):
+        self._supportTeethBottomLength = bottomLength
+
+    @property
+    def supportTeethBaseInterval(self) -> float:
+        return self._supportTeethBaseInterval
+
+    @supportTeethBaseInterval.setter
+    def supportTeethBaseInterval(self, baseInterval: float):
+        self._supportTeethBaseInterval = baseInterval
+
+    @property
+    def supportTeethUpperPenetration(self) -> float:
+        """
+        Vertical (+z) penetration of the support teeth into the intersecting mesh
+        """
+        return self._supportTeethUpperPenetration
+
+    @supportTeethUpperPenetration.setter
+    def supportTeethUpperPenetration(self, distance: float):
+        self._supportTeethUpperPenetration = distance
 
     @property
     def mergeMesh(self) -> bool:
@@ -2077,6 +2167,17 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         self._gridSpacing = [3, 3]
         self._useSupportSkin = True
         self._useSupportBorder = True
+        self._useLowerSupportTeeth = True
+        self._useUpperSupportTeeth = True
+        self._numSkinMeshSubdivideIterations = 2
+
+        # Support teeth parameters
+        self._supportTeethHeight = 1.5  # mm
+        self._supportTeethTopLength = 0.1 # mm
+        self._supportTeethBottomLength = 1.5 # mm
+        self._supportTeethBaseInterval = 0.2 # mm
+        self._supportTeethUpperPenetration = 0.2 # mm
+
         self._mergeMesh = False
         self._supportBorderDistance = 3.0
         self._trussWidth = 1.0
@@ -2118,13 +2219,28 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
 
     @property
     def useSupportBorder(self):
-        """ Generates a border around the each truss grid """
+        """ Generates a border around each truss grid """
         return self._useSupportBorder
 
     @useSupportBorder.setter
     def useSupportBorder(self, value):
         self._useSupportBorder = value
 
+    @property
+    def useUpperSupportTeeth(self):
+        return self._useUpperSupportTeeth
+
+    @useUpperSupportTeeth.setter
+    def useUpperSupportTeeth(self, value):
+        self._useUpperSupportTeeth = value
+
+    @property
+    def useLowerSupporTeeth(self):
+        return self._useUpperSupportTeeth
+
+    @useLowerSupporTeeth.setter
+    def useLowerSupporTeeth(self, value):
+        self._useLowerSupportTeeth = value
     @property
     def supportBorderDistance(self) -> float:
         """
@@ -2155,6 +2271,59 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         """ The Grid Spacing used for the support structure """
         self._gridSpacing = spacing
 
+
+    @property
+    def supportTeethHeight(self) -> float:
+        """
+        The height of the perforated support teeth
+        """
+        return self._supportTeethHeight
+
+    @supportTeethHeight.setter
+    def supportTeethHeight(self, teethHeight: float):
+        self._supportTeethHeight = teethHeight
+
+    @property
+    def supportTeethTopLength(self):
+        """
+        The upper span or length of the perforated support teeth
+        """
+        return self._supportTeethTopLength
+
+    @supportTeethTopLength.setter
+    def supportTeethTopLength(self, topLength: float):
+        self._supportTeethTopLength = topLength
+
+    @property
+    def supportTeethBottomLength(self) -> float:
+        """
+        The bottom span or length of the perforated support teeth
+        """
+        return self._supportTeethTopLength
+
+    @supportTeethBottomLength.setter
+    def supportTeethBottomLength(self, bottomLength: float):
+        self._supportTeethBottomLength = bottomLength
+
+    @property
+    def supportTeethBaseInterval(self) -> float:
+        return self._supportTeethBaseInterval
+
+    @supportTeethBaseInterval.setter
+    def supportTeethBaseInterval(self, baseInterval: float):
+        self._supportTeethBaseInterval = baseInterval
+
+    @property
+    def supportTeethUpperPenetration(self) -> float:
+        """
+        Vertical (+z) penetration of the support teeth into the intersecting mesh
+        """
+        return self._supportTeethUpperPenetration
+
+    @supportTeethUpperPenetration.setter
+    def supportTeethUpperPenetration(self, distance: float):
+        self._supportTeethUpperPenetration = distance
+
     def identifySupportRegions(self, part: Part, overhangAngle: float,
                                findSelfIntersectingSupport: Optional[bool] = True) -> List[GridBlockSupport]:
         """
@@ -2181,12 +2350,26 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
 
             # Assign the GridBlock Parameters
             gridBlock.gridSpacing = self._gridSpacing
-            gridBlock.useSupportSkin = self._useSupportSkin
-            gridBlock.useSupportBorder = self._useSupportBorder
+            gridBlock.numSkinMeshSubdivideIterations = self._numSkinMeshSubdivideIterations
+
+            # Support Teeth Parameters
+            gridBlock.supportTeethHeight = self._supportTeethHeight
+            gridBlock.supportTeethTopLength = self._supportTeethHeight
+            gridBlock.supportTeethBottomLength     = self._supportTeethBottomLength
+            gridBlock.supportTeethBaseInterval     = self._supportTeethBaseInterval
+            gridBlock.supportTeethUpperPenetration = self._supportTeethUpperPenetration
+
+            # Options for generating the truss
+            gridBlock.useSupportSkin        = self._useSupportSkin
+            gridBlock.useSupportBorder      = self._useSupportBorder
+            gridBlock.useLowerSupportTeeth  = self._useLowerSupportTeeth
+            gridBlock.useUpperSupportTeeth  = self._useUpperSupportTeeth
+
             gridBlock.supportBorderDistance = self._supportBorderDistance
             gridBlock.trussWidth = self._trussWidth
             gridBlock.trussAngle = self._trussAngle
-            gridBlock.mergeMesh = self._mergeMesh
+            gridBlock.mergeMesh  = self._mergeMesh
+            gridBlock._upperSurface = block._upperSurface
 
             gridBlocks.append(gridBlock)
 
