@@ -1089,16 +1089,29 @@ class GridBlockSupport(BlockSupportBase):
 
         super().__init__(supportObject, supportVolume, supportSurface, intersectsPart)
 
-        self._gridSpacing = [3, 3]
+        self._gridSpacing = [3, 3] # mm
         self._useSupportBorder = True
         self._useSupportSkin = True
         self._supportBorderDistance = 3.0
         self._trussWidth = 1.0
         self._trussAngle = 45
         self._mergeMesh = False
+        self._numSkinMeshSubdivideIterations = int(2)
 
     def __str__(self):
         return 'GridBlockSupport'
+
+    @property
+    def numSkinMeshSubdivideIterations(self) -> int:
+        """
+        Number of times to subidivde the support skin mesh to increase the resolution of the mesh when conforming to
+        the boundary of the support block volume. Default is 2.
+        """
+        return self._numSkinMeshSubdivideIterations
+
+    @numSkinMeshSubdivideIterations.setter
+    def numSkinMeshSubdivideIterations(self, iterations: int):
+        self._numSkinMeshSubdivideIterations = int(iterations)
 
     @property
     def mergeMesh(self) -> bool:
@@ -1872,8 +1885,14 @@ class GridBlockSupport(BlockSupportBase):
             tmpMesh = trimesh.Trimesh(vertices=vy, faces=fy, process=True, validate=True)
             tmpMesh.merge_vertices()
 
-            vy, fy = trimesh.remesh.subdivide(tmpMesh.vertices, tmpMesh.faces)
-            # vy, fy = trimesh.remesh.subdivide(vy,fy)
+            vy, fy = tmpMesh.vertices, tmpMesh.faces
+
+            """
+            Subdivide the generated skin mesh to increase the mesh resolution prior to re-mapping the generated 
+            2D polygon back to the conforming 3D skin 
+            """
+            for i in range(self._numSkinMeshSubdivideIterations):
+                vy, fy = trimesh.remesh.subdivide(vy,fy)
 
             """
             Interpolate or map the planar 2D mesh using the existing boundary path to generate the 3D support volume
