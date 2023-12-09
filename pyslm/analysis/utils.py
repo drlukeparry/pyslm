@@ -101,7 +101,7 @@ def getIntraLayerGeometryJumpLength(layer: Layer) -> float:
             intraJumpDistance += np.hypot(delta[0], delta[1])
             lastCoord = None
 
-        lastCoord = (layerGeom.coords[0,:])
+        lastCoord = (layerGeom.coords[0, :])
 
     return intraJumpDistance
 
@@ -126,7 +126,7 @@ def getLayerJumpLength(layer: Layer) -> float:
             intraJumpDistance += np.hypot(delta[0], delta[1])
             lastCoord = None
 
-        lastCoord = (layerGeom.coords[0,:])
+        lastCoord = (layerGeom.coords[0, :])
 
     totalJumpDistance += intraJumpDistance
 
@@ -193,7 +193,8 @@ def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
     :param models: A list of :class:`~pyslm.geometry.Model` which is used by the :class:`geometry.LayerGeometry`
     :param includeJumpTime: Include the jump time between scan vectors in the calculation (default = `False`)
     :param jumpSpeed: The default jump speed used to scan between scan vectors [mm/s]
-    :param jumpDelay: The default jump delay used to scan between scan vectors [s]
+    :param jumpDelay: The default jump delay used to scan between scan vectors [mu s]
+
     :return: The time taken to scan across the :class:`~pyslm.geometry.LayerGeometry`
     """
 
@@ -215,16 +216,20 @@ def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
         if float(bstyle.jumpSpeed) > 1e-6:
 
             # Add distance to transverse across each scan vector (if applicable)
-            print(bstyle.jumpSpeed)
             totalJumpTime = getLayerGeometryJumpDistance(layerGeom) / float(bstyle.jumpSpeed)
         else:
             # Add distance to transverse across each scan vector and assume a constant jump speed
             totalJumpTime = getLayerGeometryJumpDistance(layerGeom) / float(jumpSpeed)
 
         # Add a jump delay (optional) between scan vectors (if applicable)
-        totalJumpTime += getLayerGeomTotalJumps(layerGeom) * float(bstyle.jumpDelay) * 1e-6
+
+        if bstyle.jumpDelay > 1e-6:
+            totalJumpTime += getLayerGeomTotalJumps(layerGeom) * float(bstyle.jumpDelay) * 1e-6
+        else:
+            totalJumpTime += getLayerGeomTotalJumps(layerGeom) * float(jumpDelay) * 1e-6
 
     return scanTime + totalJumpTime
+
 
 def getLayerTime(layer: Layer, models: List[Model],
                  includeJumpTime: Optional[bool] = True,
