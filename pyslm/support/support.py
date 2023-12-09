@@ -1419,7 +1419,9 @@ class GridBlockSupport(BlockSupportBase):
         """
 
         supportGeom = self._supportVolume
-        bbox = np.dot(np.linalg.inv(section.metadata['to_3D'][:3, :3]), supportGeom.bounds.T).T
+        sliceTransform = section[1]
+        #bbox = np.dot(np.linalg.inv(section.metadata['to_3D'][:3, :3]), supportGeom.bounds.T).T
+        bbox = np.dot(np.linalg.inv(sliceTransform[:3, :3]), supportGeom.bounds.T).T
 
         bx = bbox[:, 0]
         by = bbox[:, 1]
@@ -1477,6 +1479,112 @@ class GridBlockSupport(BlockSupportBase):
 
         sin_theta = getFaceZProjectionWeight(self._supportVolume, useConnectivity=False)
 
+        topIdx = np.argwhere(sin_theta < BlockSupportGenerator._supportSkinSideTolerance)
+
+        newIdx = section[2]
+        fndIdx = np.isin(newIdx,topIdx, invert=False)
+        sideIdx = np.invert(fndIdx)
+        segs = section[0]#[fndIdx]
+        segs = section[0]  # [fndIdx]
+        unique, inverse = trimesh.grouping.unique_rows(segs.reshape(-1,2), digits=4)
+        out = trimesh.path.exchange.misc.edges_to_path(edges=inverse.reshape((-1, 2)),
+                                                       vertices=segs.reshape(-1,2)[unique])
+        ad = trimesh.load_path(out)
+        paths = ad.discrete
+        slicePaths = []
+
+        """
+        Multiple polygon intersection may be generated and require processing seperately
+        """
+
+        offsetPaths = []
+
+        for path in paths:
+
+            coords = np.hstack([path,np.roll(path,-1,axis=0)]).reshape(-1,2,2)[:-1]
+
+            """
+            Identify the upper and lower edges of the polygon. This is guaranteed for extruded supports because the
+            sides edges are always vertically orientated in (+z). Also note order is sequentially guaranteed since
+            the polygons edges have been pre-sorted and correctly orientated.
+            """
+
+            idx = np.abs(np.diff(coords, axis=1).reshape(-1,2)[:,1]) > 1e-4
+            splitIdx = np.split(np.arange(0, len(idx)), np.argwhere(np.diff(idx)).ravel()+1)
+            partsIdx = np.argwhere(np.array([np.any(idx[split]) for split in splitIdx])) # Locate only masked edges
+
+            newPaths = []
+
+            upperPaths = []
+            lowerPaths = []
+            """ Iterate through the identified upper and lower edges found """
+            for segIdx in partsIdx:
+
+                id = int(segIdx)
+
+                seg = np.vstack([coords[splitIdx[id]][:, 0, :],
+                                 coords[splitIdx[id]][-1, 1, :]])
+                ps = trimesh.path.traversal.PathSample(seg)
+
+                """
+                The bottom vertex of the path is lower than top indicates (counter-clockwise) when
+                the polygon has its paths correctly sorted internally using pyclipr or Shapely. This orientation 
+                gives an indication if the geometry lies at the top or the bottom of the support volume
+                """
+                isccw = seg[-1,1] < seg[0,1]
+                dir = -1.0 if isccw else 1.0
+
+                repPattern = self.toothProfile()
+
+                patternLen = repPattern[-1, 0]
+
+                numCycles = int(np.ceil(ps.length / patternLen))
+                patternList = []
+
+                for i in range(numCycles):
+                    tPattern = repPattern.copy()
+                    tPattern[:,0] += patternLen * i
+                    patternList.append(tPattern)
+
+                patternList = np.vstack(patternList)
+
+                """
+                Clip the interpolate positions. Trimesh PathSampler clips and repeats values, therefore only unique
+                values are selected and used for generating the teeth profile
+                """
+                xPos, idx = np.unique(np.clip(patternList[:, 0], 0, ps.length), return_index=True)
+                teethFinal = ps.sample(xPos)
+
+                teethFinal[:,0] += dir * patternList[idx,1]
+
+                """
+                If the number of teeth profiles is beyond the length of the support edge, then exclude the use of a 
+                tooth and use the original edge
+                """
+                if numCycles == 1:
+                    teethFinal = seg
+
+                # Prevent the generation of lower or upport support teeth
+                if not self._useLowerSupportTeeth and dir > 0:
+                    teethFinal = seg
+
+                if dir > 0:
+                    lowerPaths.append(teethFinal)
+
+                # Prevent the generation of lower support teeth
+                if not self._useUpperSupportTeeth and dir < 0:
+                    teethFinal = seg
+
+                if dir < 0:
+                    upperPaths.append(teethFinal)
+
+                newPaths.append(teethFinal)
+
+
+            nPaths = np.vstack(newPaths)
+            nPaths = np.vstack([nPaths, nPaths[0,:]])
+            nPathPoly = shapely.geometry.Polygon(nPaths).buffer(1e-5)
+            slicePaths.append(nPathPoly)
         if len(polys) == 0:
             return None
 
@@ -1728,8 +1836,8 @@ class GridBlockSupport(BlockSupportBase):
         """
         Generate the mesh grid used for the support trusses and merge the lines together
         """
-        hatchesA = self.generateMeshGrid(bboxPoly, hatchAngle=self._trussAngle, hatchSpacing=diag).reshape(-1, 2, 3)
-        hatchesB = self.generateMeshGrid(bboxPoly, hatchAngle=180 - self._trussAngle, hatchSpacing=diag).reshape(-1, 2, 3)
+        hatchesA = self.generateMeshGrid(bboxPoly, hatchSpacing=diag, hatchAngle=self._trussAngle).reshape(-1, 2, 3)
+        hatchesB = self.generateMeshGrid(bboxPoly, hatchSpacing=diag, hatchAngle=180 - self._trussAngle).reshape(-1, 2, 3)
         hatches = np.vstack([hatchesA, hatchesB])
 
         """
@@ -1965,15 +2073,94 @@ class GridBlockSupport(BlockSupportBase):
             bottomPolyX = np.cumsum(dist)
             bottomPolyY = bottomZ
             bottomPolyVerts = np.hstack([bottomPolyX.reshape(-1, 1), bottomPolyY.reshape(-1, 1)])
+            bottomPolyVerts = np.flip(bottomPolyVerts, axis=0)
 
             """
             Form the polygon for the support boundary
             """
-            bottomPolyVerts = np.flip(bottomPolyVerts, axis=0)
+            if self._useLowerSupportTeeth:
+                # Provide a path interpolator to resample the teeth across the profile
+                ps = trimesh.path.traversal.PathSample(bottomPolyVerts)
 
-            myPolyVerts = np.vstack([topPolyVerts, bottomPolyVerts])
+                repPattern = self.toothProfile()
 
-            import trimesh.path.traversal
+                patternLen = repPattern[-1, 0]
+
+                numCycles = int(np.ceil(ps.length / patternLen))
+                patternList = []
+
+                # Replicate the tooth profile pattern across the entire length of the upper boundary
+                for i in range(numCycles):
+                    tPattern = repPattern.copy()
+                    tPattern[:, 0] += patternLen * i
+                    patternList.append(tPattern)
+
+                patternList = np.vstack(patternList)
+
+                """
+                Clip the interpolate positions. Trimesh PathSampler clips and repeats values, therefore only unique
+                values are selected and used for generating the teeth profile
+                """
+                xPos, idx = np.unique(np.clip(patternList[:, 0], 0, ps.length), return_index=True)
+                teethFinalBottom = ps.sample(xPos)
+
+                #teethFinal = ps.sample(np.clip(patternList[:, 0], 0, ps.length))
+                teethFinalBottom[:, 1] += patternList[idx, 1]
+
+            """
+            The bottom vertex of the path is lower than top indicates (counter-clockwise) when
+            the polygon has its paths correctly sorted internally using pyclipr or Shapely. This orientation 
+            gives an indication if the geometry lies at the top or the bottom of the support volume
+            """
+
+            if self._useUpperSupportTeeth:
+
+                # Provide a path interpolator to resample the teeth across the profile
+                ps = trimesh.path.traversal.PathSample(topPolyVerts)
+
+                repPattern = self.toothProfile()
+
+                patternLen = repPattern[-1, 0]
+
+                numCycles = int(np.ceil(ps.length / patternLen))
+                patternList = []
+
+                # Replicate the tooth profile pattern across the entire length of the upper boundary
+                for i in range(numCycles):
+                    tPattern = repPattern.copy()
+                    tPattern[:, 0] += patternLen * i
+                    patternList.append(tPattern)
+
+                patternList = np.vstack(patternList)
+
+                """
+                Clip the interpolate positions. Trimesh PathSampler clips and repeats values, therefore only unique
+                values are selected and used for generating the teeth profile
+                """
+                xPos, idx = np.unique(np.clip(patternList[:, 0], 0, ps.length), return_index=True)
+                teethFinalTop = ps.sample(xPos)
+
+                #teethFinal = ps.sample(np.clip(patternList[:, 0], 0, ps.length))
+                teethFinalTop[:, 1] += patternList[idx, 1]
+
+            vertexList = []
+
+            if self._useUpperSupportTeeth:
+                vertexList.append(teethFinalTop)
+            else:
+                vertexList.append(topPolyVerts)
+
+            if self._useLowerSupportTeeth:
+                vertexList.append(teethFinalBottom)
+            else:
+                vertexList.append(bottomPolyVerts)
+
+            # Use the intersecting boundaries of the support volume instead
+            myPolyVerts = np.vstack(vertexList)
+
+            """ 
+            Resample the boundary
+            """
             myPolyVerts = trimesh.path.traversal.resample_path(myPolyVerts, step=0.25)
 
             """
@@ -2103,7 +2290,7 @@ class GridBlockSupport(BlockSupportBase):
                 fy = []
 
                 idx = 0
-                for sect in section.Childs:
+                for sect in section.children:
 
                     exterior, interior = sortExteriorInteriorRings(sect, closePolygon=True)
                     vertsy, facesy = pyslm.support.geometry.triangulatePolygonFromPaths(exterior[0], interior,
