@@ -1585,6 +1585,52 @@ class GridBlockSupport(BlockSupportBase):
             nPaths = np.vstack([nPaths, nPaths[0,:]])
             nPathPoly = shapely.geometry.Polygon(nPaths).buffer(1e-5)
             slicePaths.append(nPathPoly)
+
+            """
+            Add additional support to the upper and lower surfaces 
+            """
+            if self._supportWallThickness > 1e-5:
+
+                if len(upperPaths) == 0 or len(lowerPaths) == 0:
+                    continue
+
+                topPolyVerts2, bottomPolyVerts2 = upperPaths[0].copy(), lowerPaths[0].copy()
+
+                topPolyVerts2 = np.vstack([topPolyVerts2[0, :],
+                                           topPolyVerts2,
+                                           topPolyVerts2[-1, :],
+                                           topPolyVerts2[0, :]])
+                topPolyVerts2[[0, -1, -2], [0, 0, 0]] = np.min(topPolyVerts2[:, 0]) - 10.0
+
+                bottomPolyVerts2 = np.vstack([bottomPolyVerts2[0, :],
+                                              bottomPolyVerts2,
+                                              bottomPolyVerts2[-1, :],
+                                              bottomPolyVerts2[0, :]])
+                bottomPolyVerts2[[0, -1, -2], [0, 0, 0]] = np.max(bottomPolyVerts2[:, 0]) + 10.0
+
+                isectPolyA = shapely.geometry.Polygon(bottomPolyVerts2)  # bottom edge
+                isectPolyB = shapely.geometry.Polygon(topPolyVerts2)  # top edge
+
+                # Merge the polygon sections together and offset the boundary
+                try:
+                    offsetWalls = isectPolyB.buffer(1e-8).union(isectPolyA.buffer(1e-8)).buffer(self._supportWallThickness)
+                    isectPolyC = offsetWalls.intersection(nPathPoly)
+
+                    # Identify only geometry which is a polygon/multipolygon
+                    if isinstance(isectPolyC, shapely.geometry.GeometryCollection):
+                        fndPolys = []
+                        for poly in isectPolyC.geoms:
+                            if isinstance(poly, shapely.geometry.Polygon) or isinstance(poly, shapely.geometry.MultiPolygon):
+                                fndPolys.append(poly)
+
+                        offsetPaths += fndPolys
+                    else:
+                        offsetPaths.append(isectPolyC)
+                except:
+                    continue
+
+        polys = slicePaths
+
         if len(polys) == 0:
             return None
 
@@ -2164,6 +2210,66 @@ class GridBlockSupport(BlockSupportBase):
             myPolyVerts = trimesh.path.traversal.resample_path(myPolyVerts, step=0.25)
 
             """
+            Add additional support to the upper and lower surfaces 
+            """
+            if self._supportWallThickness > 1e-5:
+
+                infillSolution = self.generateSupportSkinInfill(myPolyVerts, returnPolyNodes=False)
+
+                topPolyVerts2, bottomPolyVerts2 = topPolyVerts.copy(), bottomPolyVerts.copy()
+
+                topPolyVerts2 = np.vstack([topPolyVerts2[0, :],
+                                           topPolyVerts2,
+                                           topPolyVerts2[-1, :],
+                                           topPolyVerts2[0, :]])
+
+                topPolyVerts2[[0, -1, -2], [1, 1, 1]] = np.max(topPolyVerts2[:, 1]) + 10.0
+
+                bottomPolyVerts2 = np.vstack([bottomPolyVerts2[0, :],
+                                              bottomPolyVerts2,
+                                              bottomPolyVerts2[-1, :],
+                                              bottomPolyVerts2[0, :]])
+
+                bottomPolyVerts2[[0, -1, -2], [1, 1, 1]] = np.min(bottomPolyVerts2[:, 1]) - 10.0
+
+                isectPolyA = shapely.geometry.Polygon(bottomPolyVerts2) # bottom edge
+                isectPolyB = shapely.geometry.Polygon(topPolyVerts2) # top edge
+
+                # Merge the polygon sections together and offset the boundary
+                try:
+                    offsetWalls = isectPolyB.union(isectPolyA).buffer(self._supportWallThickness)
+                    isectPolyC = offsetWalls.intersection(shapely.geometry.Polygon(myPolyVerts))
+                except:
+                    raise Exception('error: please report bug ')
+
+                paths = [np.array(path) for path in infillSolution]
+                newPaths = [np.hstack([path, np.arange(len(path)).reshape(-1, 1)]) for path in paths]
+
+                newPaths2 = []
+                for path in newPaths:
+                    newPaths2.append(np.vstack([path, path[0,:]]))
+
+                ac = [np.array(pol) for pol in hatchingUtils.poly2Paths(isectPolyC)]
+
+                pc = pyclipr.Clipper()
+                pc.addPaths(ac, pyclipr.Clip)
+                pc.addPaths(newPaths2, pyclipr.Subject)
+
+                # Note open paths (lines) have to used pyclipr::execute2 in order to perform trimming
+                result = pc.execute2(pyclipr.Union, pyclipr.FillRule.NonZero)
+
+            else:
+                result = self.generateSupportSkinInfill(myPolyVerts, returnPolyNodes=True)
+
+            """
+            Create the polygon  and triangulate using the triangle library to provide a precise controlled conformal mesh.
+            """
+            exterior, interior = sortExteriorInteriorRings(result, closePolygon=True)
+
+            if len(exterior) > 1:
+                raise Exception('Error: exterior count > 1')
+
+            vy, fy = pyslm.support.geometry.triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
 
             """
             Create the interpolation or mapping function to go from the 2D polygon to the 3D mesh for the support boundary.
@@ -2179,7 +2285,6 @@ class GridBlockSupport(BlockSupportBase):
             f2 = interpolate.interp1d(topPolyX, y2, bounds_error=False, fill_value=(topXY[0, 1], topXY[-1, 1]))
 
             vy = np.hstack([vy, np.zeros([len(vy), 1])])
-
 
             """
             We subdivide and discretise the mesh further in-order to provide sufficient discretisiation of the support mesh.
