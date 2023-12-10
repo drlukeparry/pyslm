@@ -3,7 +3,7 @@ import numpy as np
 import trimesh.path.polygons
 import shapely.geometry
 
-from shapely.geometry import Polygon, LinearRing
+from shapely.geometry import Polygon
 from skimage.measure import approximate_polygon
 
 
@@ -86,8 +86,14 @@ def from3DHatchArray(hatchVectors: np.ndarray) -> np.ndarray:
 
     return hatchVectors.reshape(-1, 2)
 
-def poly2Paths(polygons: Union[shapely.geometry.Polygon, shapely.geometry.MultiPolygon]):
 
+def poly2Paths(polygons: Union[shapely.geometry.Polygon, shapely.geometry.MultiPolygon]) -> List[np.array]:
+    """
+    Converts a Shapely Polygon or MultiPolygon to a list of paths
+
+    :param polygons: A polygon to convert to individual paths
+    :return: A list of paths (interior and exterior) for each polygon
+    """
     paths = []
 
     if isinstance(polygons, shapely.geometry.MultiPolygon):
@@ -104,16 +110,31 @@ def poly2Paths(polygons: Union[shapely.geometry.Polygon, shapely.geometry.MultiP
     return paths
 
 
-def paths2clipper(paths: Any):
+def paths2clipper(paths: Any) -> List[np.array]:
+    """
+    Converts a list of paths to clipper format input
+
+    :param paths: Paths for conversion
+    :return: The list of coordinates for each path
+    """
     return [np.hstack([path, np.arange(len(path)).reshape(-1, 1)]) for path in paths]
 
-def clipper2Paths(paths, scaleFactor: float, close:bool = False):
+
+def clipper2Paths(paths, scaleFactor: float, close: bool = False) -> List[np.array]:
+    """
+    Returns scaled closed paths from clipper paths
+
+    :param paths: The input clipper paths
+    :param scaleFactor: Scale factor to apply
+    :param close: If True, the paths are closed by appending the first point to the end of the path
+    :return:
+    """
     out = [np.array(path)[:,:2]/scaleFactor for path in paths]
 
     if close:
         outPaths = []
         for path in out:
-            outPaths.append(np.vstack([out, out[0,:]]))
+            outPaths.append(np.vstack([path, path[0,:]]))
         out = outPaths
 
     return out
