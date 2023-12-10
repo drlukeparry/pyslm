@@ -17,8 +17,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, macos-13, windows-latest]
         exclude:
         - os: ubuntu-latest
-            python-version: '3.12'
-
+          python-version: '3.12'
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python
