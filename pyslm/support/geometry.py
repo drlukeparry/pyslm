@@ -81,6 +81,130 @@ def checkStrutCylinderIntersection(pntA: np.array, pntB: np.array, radius: float
         return hasIntersection
 
 
+def sweepPolygon(polygon, path, angles=None, scaleFactors=None, **kwargs) -> trimesh.Trimesh:
+    """
+    Sweeps a polygon with a variable size across the length of the path. The function is based on that internally
+    used in trimesh.
+
+    :param polygon: Polygon to sweep
+    :param path: The path segment to sweep across
+    :param angles: Variable angles used to rotate the polygon across the path
+    :param scaleFactors: Variable scale-factors used to rotate the polygon across the path
+    :return: The swept mesh
+    """
+
+    from trimesh import util
+    from trimesh import transformations as tf
+    from trimesh.creation import triangulate_polygon
+    path = np.asanyarray(path, dtype=np.float64)
+
+    if not util.is_shape(path, (-1, 3)):
+        raise ValueError('Path must be (n, 3)!')
+
+    # Extract 2D vertices and triangulation
+    verts_2d = np.array(polygon.exterior.xy).T
+    base_verts_2d, faces_2d = triangulate_polygon(
+        polygon, **kwargs)
+    n = len(verts_2d)
+
+    # Create basis for first planar polygon cap
+    x, y, z = util.generate_basis(path[0] - path[1])
+    tf_mat = np.ones((4, 4))
+    tf_mat[:3, :3] = np.c_[x, y, z]
+    tf_mat[:3, 3] = path[0]
+
+    prevScalFactor = scaleFactors[0]
+    tf_mat1 = tf.scale_matrix(scaleFactors[0, 0], origin=path[0])
+
+    # Compute 3D locations of those vertices
+    verts_3d = np.c_[verts_2d, np.zeros(n)]
+    verts_3d = tf.transform_points(verts_3d, tf_mat)
+    verts_3d = tf.transform_points(verts_3d, tf_mat1)
+
+    base_verts_3d = np.c_[base_verts_2d,
+    np.zeros(len(base_verts_2d))]
+    base_verts_3d = tf.transform_points(base_verts_3d,
+                                        tf_mat)
+
+    base_verts_3d = tf.transform_points(base_verts_3d,
+                                        tf_mat1)
+
+    # keep matching sequence of vertices and 0- indexed faces
+    vertices = [base_verts_3d]
+    faces = [faces_2d]
+
+    # Compute plane normals for each turn --
+    # each turn induces a plane halfway between the two vectors
+    v1s = util.unitize(path[1:-1] - path[:-2])
+    v2s = util.unitize(path[1:-1] - path[2:])
+    norms = np.cross(np.cross(v1s, v2s), v1s + v2s)
+    norms[(norms == 0.0).all(1)] = v1s[(norms == 0.0).all(1)]
+    norms = util.unitize(norms)
+    final_v1 = util.unitize(path[-1] - path[-2])
+    norms = np.vstack((norms, final_v1))
+    v1s = np.vstack((v1s, final_v1))
+
+    # Create all side walls by projecting the 3d vertices into each plane in succession
+
+    prevScalFactor = scaleFactors[0]
+
+    for i in range(len(norms)):
+        verts_3d_prev = verts_3d
+
+        # Rotate if needed
+        if angles is not None:
+            tf_mat = tf.rotation_matrix(angles[i],
+                                        norms[i],
+                                        path[i])
+            verts_3d_prev = tf.transform_points(verts_3d_prev,
+                                                tf_mat)
+        """
+        Apply the scale factors across the paths if specified
+        The scale factors are applied incrementally in order, therefore as a result the previous scale factor
+        must be inverted to ensure the correct scaling is applied
+        """
+        if scaleFactors is not None:
+            tf_mat1 = tf.scale_matrix(1 / scaleFactors[i, 0], path[i])
+            verts_3d_prev = tf.transform_points(verts_3d_prev, tf_mat1)
+
+            tf_mat1 = tf.scale_matrix(scaleFactors[i + 1, 0], path[i + 1])
+            verts_3d_prev = tf.transform_points(verts_3d_prev, tf_mat1)
+
+        # Project vertices onto plane in 3D
+        ds = np.einsum('ij,j->i', (path[i + 1] - verts_3d_prev), norms[i])
+        ds = ds / np.dot(v1s[i], norms[i])
+
+        verts_3d_new = np.einsum('i,j->ij', ds, v1s[i]) + verts_3d_prev
+
+        # Add to face and vertex lists
+        new_faces = [[i + n, (i + 1) % n, i] for i in range(n)]
+        new_faces.extend([[(i - 1) % n + n, i + n, i] for i in range(n)])
+
+        # save faces and vertices into a sequence
+        faces.append(np.array(new_faces))
+        vertices.append(np.vstack((verts_3d, verts_3d_new)))
+
+        verts_3d = verts_3d_new
+
+    # do the main stack operation from a sequence to (n,3) arrays
+    # doing one vstack provides a substantial speedup by
+    # avoiding a bunch of temporary  allocations
+    vertices, faces = util.append_faces(vertices, faces)
+
+    # Create final cap of the sweep path
+    x, y, z = util.generate_basis(path[-1] - path[-2])
+    vecs = verts_3d - path[-1]
+    coords = np.c_[np.einsum('ij,j->i', vecs, x),
+    np.einsum('ij,j->i', vecs, y)]
+    base_verts_2d, faces_2d = triangulate_polygon(Polygon(coords), **kwargs)
+    base_verts_3d = (np.einsum('i,j->ij', base_verts_2d[:, 0], x) +
+                     np.einsum('i,j->ij', base_verts_2d[:, 1], y)) + path[-1]
+    faces = np.vstack((faces, faces_2d + len(vertices)))
+    vertices = np.vstack((vertices, base_verts_3d))
+
+    mesh = trimesh.Trimesh(vertices, faces)
+
+    return mesh
 
 def extrudeFace(extrudeMesh: trimesh.Trimesh,
                 height: Optional[float] = None,
