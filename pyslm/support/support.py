@@ -38,6 +38,8 @@ import trimesh
 import trimesh.path
 import trimesh.path.traversal
 
+import pyslm.hatching
+import pyslm.hatching.utils
 import pyslm.support.geometry
 import pyslm.support.render
 import pyclipr
@@ -760,7 +762,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
             # Simplify the polygon to ease simplify extrusion
 
             # Offset in 2D the support region projection
-
             offsetShape = polygon.simplify(self.simplifyPolygonFactor, preserve_topology=False).buffer(-self.outerSupportEdgeGap)
 
             if offsetShape is None or offsetShape.area < self.minimumAreaThreshold:
@@ -858,8 +859,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
             heightMap = np.pad(heightMap, ((2, 2), (2,2)), 'constant', constant_values=((1, 1), (1,1)))
 
-            import matplotlib.pyplot as plt
-
             vx, vy = np.gradient(heightMap)
             grads = np.sqrt(vx ** 2 + vy ** 2)
 
@@ -879,7 +878,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                 outlinesTrans.append(outline * self.rayProjectionResolution + bbox[0, :2])
 
             # Convert outlines into closed polygons
-            outlinePolygons = pyslm.hatching.utils.pathsToClosedPolygons(outlinesTrans)
+            outlinePolygons = hatchingUtils.pathsToClosedPolygons(outlinesTrans)
 
             polygons = []
 
@@ -889,30 +888,28 @@ class BlockSupportGenerator(BaseSupportGenerator):
                 """
                 Process the outline by finding the boundaries
                 """
-                #outline = outline * self.rayProjectionResolution + bbox[0, :2]
-                #outline = pyslm.hatching.simplifyBoundaries(outlines)[0]
-
-                #if outline.shape[0] < 3:
-                #    continue
 
                 """
-                Process the polygon  by creating a shapley polygon and offseting the boundary
+                Process the polygon by creating a shapely polygon and offseting the boundary
                 """
                 mergedPoly = trimesh.load_path(outline)
-                mergedPoly.merge_vertices(1)
+                mergedPoly.merge_vertices(4)
 
-                mergedPoly = mergedPoly.simplify_spline(self._splineSimplificationFactor)
+                if self._splineSimplificationFactor is not None:
+                    mergedPoly = mergedPoly.simplify_spline(self._splineSimplificationFactor)
 
                 try:
                     outPolygons = mergedPoly.polygons_full
                 except:
-                    raise Exception('Incompatible Shapely version used')
+                    import pyslm.visualise
+                    pyslm.visualise.plotPolygon(outline)
+                    raise Exception('Incompatible Shapely version used or other issue detected - please submit a bug report')
 
                 if not mergedPoly.is_closed or len(outPolygons) == 0 or outPolygons[0] is None:
                     continue
 
                 if len(outPolygons) > 1:
-                    raise Exception('Multi polygons - error please submit a bug report')
+                    raise Exception('Multi-polygons - error please submit a bug report')
 
                 bufferPolyA = mergedPoly.polygons_full[0].simplify(self.simplifyPolygonFactor*self.rayProjectionResolution)
 
@@ -1400,9 +1397,13 @@ class GridBlockSupport(BlockSupportBase):
             supportSkins = []
 
         print('merging geometry', self._mergeMesh)
+
         # Use the Cork library to merge meshes
         if self._mergeMesh:
-            logging.info('\t - Resolving Boolean Intersections betwee all support meshes')
+
+            raise Exception('Currently performing a boolean merge between shell meshes is not available - please use the non-merged mesh')
+
+            logging.info('\t - Resolving Boolean Intersections between all support meshes')
             # Intersect the projection of the support face with the original part using the Cork Library
 
             isectMesh = slicesX + slicesY
@@ -2559,6 +2560,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         super().__init__()
 
         self._gridSpacing = [3, 3]
+
         self._useSupportSkin = True
         self._useSupportBorder = True
         self._useLowerSupportTeeth = True
