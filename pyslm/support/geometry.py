@@ -1,12 +1,11 @@
 """
 Provides supporting functions to generate geometry for support structures
 """
-
+from typing import Any, List, Optional, Tuple
 import logging
 import collections
 
 import numpy as np
-from typing import Any, List, Optional, Tuple
 
 import trimesh
 from trimesh import grouping
@@ -18,7 +17,70 @@ from shapely.geometry import Polygon
 from mapbox_earcut import triangulate_float64, triangulate_float32
 from triangle import triangulate
 
-import pycork
+
+def checkStrutCylinderIntersection(pntA: np.array, pntB: np.array, radius: float,
+                                   mesh: trimesh.Trimesh, returnLocation: Optional[bool] = False,
+                                   numPoints: Optional[int] = 6,
+                                   centreOnly: Optional[bool] = False):
+    """
+    Checks if the segment with number of cylinders between pnt and pnt2 intersects with the mesh. The number of
+    points (`numPoints`) determines the equal number of positions to perform the intersection radially at the
+    specified `radius`.
+
+    :param pntA: Start point of the line segment
+    :param pntB: End point of the line segment
+    :param radius: Radius of the cylinder to check intersection with
+    :param mesh: The mesh to check intersection with
+    :param returnLocation: If 'True' returns the hit location
+    :param numPoints: Number of points in the cylinder to check intersection with. Default is 6
+    :param centreOnly: Only perform the intersection between `pntA` and `pntB`
+
+    :return: If intersecting with mesh return `True`
+    """
+
+    from trimesh import util
+    from trimesh import transformations as tf
+
+    """  Calculate the points around the cylinder based on the number of points """
+    theta = np.linspace(0, 2 * np.pi, numPoints, endpoint=False)
+    verts_3d_prev = np.vstack([np.cos(theta), np.sin(theta), np.zeros(numPoints)]).T * radius
+
+    p1 = np.asanyarray(pntA).reshape(-1, 3)
+    p2 = np.asanyarray(pntB).reshape(-1, 3)
+
+    delta = p2 - p1
+    dist = np.linalg.norm(delta, axis=1)
+    norm = delta / dist
+
+    if centreOnly:
+        # Only perform the ray intersection test between points p1 and p2
+        hitLoc, index_ray, index_tri = mesh.ray.intersects_location(p1, norm, multiple_hits=False)
+    else:
+        x, y, z = util.generate_basis(norm.ravel())
+        tf_mat = np.ones((4, 4))
+        tf_mat[:3, :3] = np.c_[x, y, z]
+        tf_mat[:3, 3] = p1
+        verts_3d = tf.transform_points(verts_3d_prev, tf_mat)
+
+        norm = np.repeat(norm, numPoints, axis=0)
+        hitLoc, index_ray, index_tri = mesh.ray.intersects_location(verts_3d, norm, multiple_hits=False)
+
+    dist2 = 1e12
+
+    # If the ray-projection distance is less than the path length - then there is an intersection across
+    # the length of the line segment
+    if len(hitLoc) > 0:
+        v1 = hitLoc - p1
+        dist2 = np.linalg.norm(v1, axis=1)
+
+    hasIntersection = np.any(dist2 < dist)
+
+    if returnLocation:
+        return hasIntersection, hitLoc.ravel()
+    else:
+        return hasIntersection
+
+
 
 def extrudeFace(extrudeMesh: trimesh.Trimesh,
                 height: Optional[float] = None,
