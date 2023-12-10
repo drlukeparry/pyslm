@@ -146,10 +146,10 @@ class Island(InnerHatchRegion):
 
 class IslandHatcher(Hatcher):
     """
-    IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`~.islandWidth`)
-    which covers a region.  This a common scan strategy adopted across SLM systems. This has the effect of limiting the
-    maximum length of the scan whilst by orientating the scan vectors orthogonal to each other mitigating any
-    preferential distortion or curling  in a single direction and any effects to micro-structure.
+    IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size
+    (:attr:`islandWidth`) which covers a region.  This a common scan strategy adopted across SLM systems.
+    This has the effect of limiting the maximum length of the scan vectors whilst by orientating the scan vectors
+    orthogonal to each other mitigating any     preferential distortion or curling due to residual in a single direction and any effects to the microstructure.
     """
 
     def __init__(self):

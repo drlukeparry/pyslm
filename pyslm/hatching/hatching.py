@@ -199,29 +199,6 @@ class BaseHatcher(abc.ABC):
         """
         return 1. / cls.PYCLIPPER_SCALEFACTOR
 
-    @staticmethod
-    def _getChildPaths(poly):
-
-        offsetPolys = []
-
-        # Create single closed polygons for each polygon
-        paths = [path.Contour for path in poly.Childs]  # Polygon holes
-        paths.append(poly.Contour)  # Path holes
-
-        # Append the first point to the end of each path to close loop
-        for path in paths:
-            path.append(path[0])
-
-        paths = BaseHatcher.scaleFromClipper(paths)
-
-        offsetPolys.append(paths)
-
-        for polyChild in poly.Childs:
-            if len(polyChild.Childs) > 0:
-                for polyChild2 in polyChild.Childs:
-                    offsetPolys += BaseHatcher._getChildPaths(polyChild2)
-
-        return offsetPolys
 
     @staticmethod
     def offsetPolygons(polygons, offset: float):
@@ -365,7 +342,6 @@ class BaseHatcher(abc.ABC):
             outPaths.append(np.hstack([lineXY, lineZ]))
 
         return outPaths
-
 
     def generateHatching(self, paths, hatchSpacing: float, hatchAngle: Optional[float] = 90.0) -> np.ndarray:
         """
@@ -1005,11 +981,11 @@ class BasicIslandHatcher(Hatcher):
     (:attr:`.islandWidth`)  which covers a region.  This a common scan strategy adopted across SLM systems.
     This has the effect of limiting the max length of the scan whilst by orientating the scan vectors orthogonal
     to each other mitigating any preferential distortion or curling  in a single direction and any
-    effects to micro-structure.
+    effects to microstructure.
 
     :note:
 
-        This method is not optimal and is provided as a reference for the user to improve their own understand and
+        This method is not optimal and is provided as a reference for the user to improve their own understanding and
         develop their own island scan strategies. For optimal performance, the user should refer instead to
         :class:`IslandHatcher`
 
