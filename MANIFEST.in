@@ -4,4 +4,3 @@ include CHANGELOG.md
 
 include examples/*.py
 include models/*
-include external/pyclipper/*

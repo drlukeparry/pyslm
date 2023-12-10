@@ -132,7 +132,7 @@ at the discretion of the author until prior notice.
 Installation
 ===============
 
-libSLM is fundamentally a c++ library for directly interfacing with machine build files.
+libSLM is a c++ library for directly interfacing with machine build files used on commercial L-PBF fusion systems.
 
 No strict dependencies are required for compiling libSLM, originally based on the Qt library. This design decision was
 taken to improve the cross-platform behaviour of the project. Python bindings are generated via
