@@ -704,11 +704,11 @@ def triangulatePolygon(section,
     library Mapbox using the Ear Clipping algorithm - see `Mapbox <https://github.com/mapbox/earcut.hpp>`_ and
     the `Ear-Cut <https://pypi.org/project/mapbox-earcut/>`_ PyPi package .
 
-    By using the :class:`pyclipper.PyPolyNode` object, ClipperLib automatically generates a polygon hierarchy tree for
+    By using the :class:`pyclipr.PyPolyNode` object, ClipperLib automatically generates a polygon hierarchy tree for
     separating both external contours and internal holes, which can be passed directly to the earcut algorithm.
     Otherwise, this requires passing all paths and sorting these to identify interior holes.
 
-    :param section: A :class:`pyclipper.PyPolyNode` object containing a collection of polygons
+    :param section: A :class:`pyclipr.PyPolyNode` object containing a collection of polygons
     :param closed: If the polygo is already closed
     :return: A tuple of vertices and faces generated from the triangulation
     """
