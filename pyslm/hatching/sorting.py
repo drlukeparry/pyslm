@@ -55,6 +55,50 @@ class FlipSort(BaseSort):
         return from3DHatchArray(sv)
 
 
+class ChainSort(BaseSort):
+    """
+    Chains together hatch sorting algorithms.
+    """
+
+    def __init__(self, sorters: List[BaseSort]):
+        super().__init__()
+
+        self._sorters = sorters
+
+    def __str__(self):
+        return 'Chain Sort'
+
+    def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        sv = scanVectors.copy()
+
+        for sorter in self._sorters:
+            sv = sorter.sort(sv)
+
+        return sv
+
+class HatchDirectionalSort(BaseSort):
+    """
+    Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
+    """
+    def __init__(self):
+        super().__init__()
+
+
+    def __str__(self):
+        return 'Alternating Hatch Sort'
+
+    def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        """ This approach simply flips the odd pair of hatches"""
+
+        sv = to3DHatchArray(scanVectors)
+        delta = np.diff(sv, axis=1).reshape(-1,2)
+        ang = np.arctan2(delta[:, 0], delta[:, 1])
+
+        sv[ang < 0] = np.flip(sv[ang < 0], 1)
+
+        sv[1::2] = np.flip(sv[1::2], 1)
+        return from3DHatchArray(sv)
+
 class AlternateSort(BaseSort):
     """
     Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
