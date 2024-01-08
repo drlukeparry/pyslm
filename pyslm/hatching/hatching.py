@@ -160,7 +160,7 @@ class BaseHatcher(abc.ABC):
     :meth:`scaleToClipper` and :meth:`scaleFromClipper`.
     """
 
-    PYCLIPPER_SCALEFACTOR = 1e5
+    CLIPPER_SCALEFACTOR : int = int(1e5)
     """ 
     The scaling factor used for polygon clipping and offsetting in `PyClipr <https://pypi.org/project/pyclipr/>`_ 
     for the decimal component of each polygon coordinate. This should be set to inverse of the required decimal 
@@ -195,7 +195,7 @@ class BaseHatcher(abc.ABC):
         """
         Returns the accuracy of the polygon clipping depending on the chosen scale factor :attr:`.PYCLIPPER_SCALEFACTOR`.
         """
-        return 1. / cls.PYCLIPPER_SCALEFACTOR
+        return 1. / float(cls.CLIPPER_SCALEFACTOR)
 
     @staticmethod
     def offsetPolygons(polygons, offset: float):
@@ -223,7 +223,7 @@ class BaseHatcher(abc.ABC):
         """
 
         pc = pyclipr.ClipperOffset()
-        pc.scaleFactor = int(BaseHatcher.PYCLIPPER_SCALEFACTOR)
+        pc.scaleFactor = int(BaseHatcher.CLIPPER_SCALEFACTOR)
         pc.addPaths(paths, pyclipr.JoinType.Round)
 
         # Perform the offseting operation
@@ -294,7 +294,7 @@ class BaseHatcher(abc.ABC):
             return None
 
         pc2 = pyclipr.Clipper()
-        pc2.scaleFactor = int(BaseHatcher.PYCLIPPER_SCALEFACTOR)
+        pc2.scaleFactor = int(BaseHatcher.CLIPPER_SCALEFACTOR)
 
         pc2.addPaths(lines.reshape(-1,2,3), pyclipr.Subject, True)
         pc2.addPaths(paths, pyclipr.Clip)
@@ -321,7 +321,7 @@ class BaseHatcher(abc.ABC):
         """
 
         pc2 = pyclipr.Clipper()
-        pc2.scaleFactor = int(BaseHatcher.PYCLIPPER_SCALEFACTOR)
+        pc2.scaleFactor = int(BaseHatcher.CLIPPER_SCALEFACTOR)
         lineList = np.array(contourPaths)
         lineList = tuple(map(tuple, lineList))
 

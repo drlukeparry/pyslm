@@ -200,7 +200,7 @@ class IslandHatcher(Hatcher):
         """
 
         pc2 = pyclipr.Clipper()
-        pc2.scaleFactor = int(IslandHatcher.PYCLIPPER_SCALEFACTOR)
+        pc2.scaleFactor = int(IslandHatcher.CLIPPER_SCALEFACTOR)
 
         pc2.addPaths(pathSubjects, pyclipr.Subject, True)
         pc2.addPaths(paths, pyclipr.Clip, True)
