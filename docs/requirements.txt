@@ -1,10 +1,12 @@
-sphinx==3.4.1
+sphinx
 sphinx-automodapi
-sphinx-autodoc-typehints==1.10.3
+sphinx-autodoc-typehints
 sphinx-paramlinks
 autodocsumm
 pypandoc
+sphinx_rtd_theme
 m2r2
+mock
 numpy
 scipy
 shapely>=2.0
@@ -14,7 +16,6 @@ triangle
 matplotlib
 vispy
 mapbox_earcut
-pyclipper
 scikit-image
 cython
 PyQt5
