@@ -3,13 +3,12 @@ import numpy as np
 
 from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model, utils
 
-
 def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
     """
     Calculates the jump distance of the laser between adjacent exposure points and hatches, principally used for
-    :class:`HatchGeometry` and :class:`PointsGeometry`.
+    :class:`~pyslm.geometry.HatchGeometry` and :class:`~pyslm.geometry.PointsGeometry`.
 
-    :param layerGeom: Layer Geometry to find
+    :param layerGeom: The `LayerGeometry` to calculate the jump distance
     :return: The total path length of the layer geometry
     """
     totalJumpDist = 0.0
@@ -33,10 +32,10 @@ def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
 def getLayerGeometryPathLength(layerGeom: LayerGeometry) -> float:
     """
     Calculates the total path length scanned by the laser across a single :class:`~pyslm.geometry.LayerGeometry` and is
-    used for 1D geometry types i.e. :class:`HatchGeometry` and :class:`ContourGeometry`.
+    used for 1D geometry types i.e. :class:`~pyslm.geometry.HatchGeometry` and :class:`~pyslm.geometry.ContourGeometry`.
 
-    :param layerGeom: The  :class:`LayerGeometry` to be measured
-    :return: The total path length of the line
+    :param layerGeom: The `LayerGeometry` path length to be measured
+    :return: The total path length of the target geometry
     """
     # distance calculation
     coords = layerGeom.coords
@@ -60,12 +59,12 @@ def getLayerGeometryPathLength(layerGeom: LayerGeometry) -> float:
 
 def getLayerGeomTotalJumps(layerGeom: LayerGeometry) -> int:
     """
-    Returns the number of jumps across a :class:`LayerGeometry`.
+    Returns the total number of scan jumps across a :class:`~pyslm.geometry.LayerGeometry`.
 
     .. note::
         It is assumed that there is a single jump for each ContourGeometry and PointsGeometry
 
-    :param layerGeom: The :class:`LayerGeometry` to measure
+    :param layerGeom: The :class:`~pyslm.geometry.LayerGeometry` to measure
     :return: Returns the total number of jumps
     """
     coords = layerGeom.coords
@@ -86,9 +85,9 @@ def getLayerGeomTotalJumps(layerGeom: LayerGeometry) -> int:
 
 def getIntraLayerGeometryJumpLength(layer: Layer) -> float:
     """
-    Returns the intra-layer geometry jump length across the :class:`Layer`
+    Returns the intra-layer geometry jump length across the entire :class:`~pyslm.geometry.Layer`
 
-    :param layer: The :class:`Layer` to measure
+    :param layer: The :class:`~pyslm.geometry.Layer` to measure
     :return: Returns the jump path length for the layer
     """
     intraJumpDistance = 0.0
@@ -108,9 +107,9 @@ def getIntraLayerGeometryJumpLength(layer: Layer) -> float:
 
 def getLayerJumpLength(layer: Layer) -> float:
     """
-    Returns the total jump length across the :class:`Layer`
+    Returns the total jump length across the :class:`~pyslm.geometry.Layer`
 
-    :param layer: The :class:`Layer` to measure
+    :param layer: The `Layer` to measure the jump length
     :return: Returns the path length for the layer
     """
     totalJumpDistance = 0.0
@@ -137,7 +136,7 @@ def getLayerPathLength(layer: Layer) -> float:
     """
     Returns the total path length across the :class:`~pyslm.geometry.Layer`
 
-    :param layer: The :class:`~pyslm.geometry.Layer` to measure
+    :param layer: The `Layer` to measure
     :return: Returns the path length for the layer
     """
     totalPathDistance = 0.0
@@ -150,12 +149,12 @@ def getLayerPathLength(layer: Layer) -> float:
 
 def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
     """
-    Returns the effective laser speed given a BuildStyle using the point distance and point exposure time. This includes
-    the dwell time between pulse :attr:`BuildStyle.jumpDelay` and the jump speed :attr:`BuildStyle.jumpSpeed` assigned
-    to each individual :class:`BuildStyle`.
+    Returns the effective laser speed given a class:`~pyslm.geometry.BuildStyle` using the point distance and point
+    exposure time. This includes the dwell time between pulse :attr:`BuildStyle.jumpDelay` and the
+    :attr:`BuildStyle.jumpSpeed` assigned to each individual :class:`~pyslm.geometry.BuildStyle`.
 
-    :param bstyle: The :class:`~pyslm.geometry.BuildStyle` containing a valid point exposure
-    :return: The laser speed [mm/s]
+    :param bstyle: The `BuildStyle` containing a valid point exposure
+    :return: The laser speed [`mm/s`]
 
     """
     if bstyle.laserSpeed < 1e-7:
@@ -189,13 +188,13 @@ def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
     """
     Returns the total time taken to scan across a :class:`~pyslm.geometry.LayerGeometry`.
 
-    :param layerGeom: The :class:`~pyslm.geometry.LayerGeometry` to process
-    :param models: A list of :class:`~pyslm.geometry.Model` which is used by the :class:`geometry.LayerGeometry`
+    :param layerGeom: The `LayerGeometry` to process
+    :param models: A list of `Model` which is used by the `LayerGeometry`
     :param includeJumpTime: Include the jump time between scan vectors in the calculation (default = `False`)
-    :param jumpSpeed: The default jump speed used to scan between scan vectors [mm/s]
-    :param jumpDelay: The default jump delay used to scan between scan vectors [mu s]
+    :param jumpSpeed: The default jump speed used to scan between scan vectors [`mm/s`]
+    :param jumpDelay: The default jump delay used to scan between scan vectors [`mu s`]
 
-    :return: The time taken to scan across the :class:`~pyslm.geometry.LayerGeometry`
+    :return: The time taken to scan across the `LayerGeometry`
     """
 
     # Find the build style
@@ -235,15 +234,15 @@ def getLayerTime(layer: Layer, models: List[Model],
                  includeJumpTime: Optional[bool] = True,
                  laserJumpSpeed: Optional[float] = 5000) -> float:
     """
-    Returns the total time taken to scan across a :class:`Layer`. This includes the additional dwell time
+    Returns the total time taken to scan across a :class:`~pyslm.geometry.Layer`. This includes the additional dwell time
     laser pulses :attr:`BuildStyle.jumpDelay` and the jump time between both scan vectors and consecutive
-    :class:`LayerGeometry` groups. The time taken between adjacent scan vectors and layer geometries is assumed to have
+    :class:`~pyslm.geometry.LayerGeometry` groups. The time taken between adjacent scan vectors and layer geometries is assumed to have
     an instantaneous acceleration at constant velocity.
 
-    :param layer: The layer to process
-    :param models: The list of :class:`Model` containing the :class:`BuildStyle` used
-    :param includeJumpTime: Include the jump time between and within each :class:`LayerGeometry`
-    :param laserJumpSpeed: The default laser jump speed used whilst scanning between layer geometry [mm/s]
+    :param layer: The `Layer` to process
+    :param models: The `Model` list containing the :class:`~pyslm.geometry.BuildStyle` set used
+    :param includeJumpTime: Include the jump time between and within each `LayerGeometry`
+    :param laserJumpSpeed: The default laser jump speed used whilst scanning between layer geometry [`mm/s`]
 
     :return: The time taken to scan across the layer
     """

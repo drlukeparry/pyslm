@@ -6,7 +6,7 @@ import numpy as np
 
 from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model
 from ..geometry import utils as geomUtils
-from .utils import *
+from . import utils
 
 
 class LaserState:
@@ -53,8 +53,14 @@ class TimeNode:
 
 class ScanVectorIterator:
     """
-    ScanVectorIterator provides an iterator that will traverse across every scan vector (linear) across both hatch
+    ScanVectorIterator provides an iterator that will traverse across every scan vector (linearly) across both hatch
     and contour scan vectors for all layers passed into the constructor.
+
+    The Iterator should be passed a list of :class:`~pyslm.geometry.Layer` that are used to construct the time tree
+    for iterating across all the scan vectors presented in the file.
+
+    .. note::
+        Currently, points or vectors are ignored for signle scan exposures in PointsGeometry
     """
     def  __init__(self,  layers: List[Layer]):
 
@@ -67,6 +73,9 @@ class ScanVectorIterator:
 
     @property
     def vectors(self):
+        """
+        The list of scan vectors for the entire build
+        """
         return self._vectors
 
     def initialise(self):
@@ -88,9 +97,9 @@ class ScanVectorIterator:
     @staticmethod
     def getLayerVectors(layer: Layer) -> List[np.ndarray]:
         """
-        Returns a list of scan vectors groups from a :class:`Layer`.
+        Returns a list of scan vectors groups from a :class:`~pyslm.geometry.Layer`.
 
-        :param layer: The Layer to obtain the scan vectors from
+        :param layer: A single Layer to obtain the scan vectors from
         :return:  The scan vector list
         """
 
@@ -132,8 +141,18 @@ class ScanVectorIterator:
 
 class Iterator(ABC):
     """
-    Basic Iterator which parses through both :class:`Layer` and :class:`LayerGeometry` groups and incrementally goes
-    through the geometry based on time values generated in conjunction with the associated :class:`Model`.
+    Basic Iterator which parses through both a list of :class:`~pyslm.geometry.Layer` and
+    :class:`~pyslm.geometry.LayerGeometry` groups and incrementally goes through the geometry based on time values
+    generated in conjunction with the associated :class:`~pyslm.geometry.Model`. By parsing through each geometry
+    definition in the build, a cached time tree is constructed based on the specified laser parameters defined in
+    the model. There are several functions can be used for calculating the time across the build such as:
+
+    * Build time via :meth:`getBuildTime`,
+    * Specific layer time via :meth:`getLayerTime`,
+    * Specific layer geometry time via :meth:`getLayerGeomTime`
+
+    Additional information can be included for the iterator to account for additional dwell time between layers and
+    in :attr:`dwellTime` and the layer dwell time :attr:`recoaterTime`.
     """
     def  __init__(self, models: List[Model], layers: List[Layer]):
 
@@ -188,7 +207,7 @@ class Iterator(ABC):
             for layerGeomId, layerGeom in enumerate(layer.geometry):
 
                 geomNode = TimeNode(layerNode, id=layerGeomId, value=layerGeom)
-                geomNode.time = getLayerGeometryTime(layerGeom, self._models)
+                geomNode.time = utils.getLayerGeometryTime(layerGeom, self._models)
 
                 layerNode.children.append(geomNode)
 
@@ -214,7 +233,7 @@ class Iterator(ABC):
 
     @property
     def layers(self) -> List[Layer]:
-        """ A :class:`Layer` list to be processed by the iterator """
+        """ A :class:`~pyslm.geometry.Layer` list to be processed by the iterator """
         return self._layers
 
     @layers.setter
@@ -224,8 +243,8 @@ class Iterator(ABC):
 
     @property
     def models(self) -> List[Model]:
-        """ A :class:`Model` list to be processed by the iterator """
-        """ The models of the iterator"""
+        """ A :class:`~pyslm.geometry.Model` list to be processed by the iterator """
+
         return self._models
 
     @models.setter
@@ -236,7 +255,8 @@ class Iterator(ABC):
     def getBuildTime(self) -> float:
         """
         Gets the total build-time of the entire list of layers including additional dwell time between layers.
-        This function simply parses through the entire :class:`TimeNode` tree and adds on the dwell time per layer.
+        This function  parses through the entire :class:`TimeNode` tree and takes into account the additional dwell
+        time included.
         """
 
         time = 0.0
@@ -250,7 +270,7 @@ class Iterator(ABC):
     def getLayerGeomTime(self, layerId: int, layerGeomId: int ) -> float:
         """
         Gets the total time for each :class:`LayerGeometry` given a unique a :class:`Layer` index and a
-        :class:`LayerGeometry` index.
+        :class:`~pyslm.geometry.LayerGeometry` index.
 
         :param layerId: The layer index in the list
         :param layerGeomId: The layer geometry index within the :class:`Layer`
@@ -260,7 +280,7 @@ class Iterator(ABC):
 
     def getLayerTime(self, layerId: int) -> float:
         """
-        Gets the total time for a :class:`Layer` given a unique a :class:`Layer` index
+        Gets the total time for a :class:`~pyslm.geometry.Layer` given a unique a :class:`~pyslm.geometry.Layer` index
 
         :param layerId: The layer index in the list
         :return: The time fo the layer
@@ -269,8 +289,8 @@ class Iterator(ABC):
 
     def getTimeByLayerGeometryId(self, layerId: int, layerGeomId: int) -> float:
         """
-        Gets the current time for a :class:`LayerGeometry` given a unique a :class:`Layer` index and a
-        :class:`LayerGeometry` index.
+        Gets the current time for a :class:`LayerGeometry` given a unique a :class:`~pyslm.geometry.Layer` index and a
+        :class:`~pyslm.geometry.LayerGeometry` index.
 
         :param layerId: The layer index in the list
         :param layerGeomId: The layer geometry index within the :class:`Layer`
@@ -297,7 +317,7 @@ class Iterator(ABC):
 
     def getLayerGeometryNodeByTime(self, time: float) -> TimeNode:
         """
-        Gets the :class:`TimeNode` for a :class:`LayerGeometry` given a time
+        Gets the :class:`TimeNode` for a :class:`~pyslm.geometry.LayerGeometry` given a time.
 
         :param time: The time
         :return: The LayerGeometry TimeNode
@@ -328,17 +348,32 @@ class Iterator(ABC):
         return None
 
     def getLayerGeometryByTime(self, time: float) -> LayerGeometry:
+        """
+        Gets the :class:`~pyslm.geometry.LayerGeometry` for a given time in a build.
 
+        :param time: The time for locating the :class:`LayerGeometry`
+        :return: The LayerGeometry
+        """
         node = self.getLayerGeometryNodeByTime(time)
         return node.value if node else None
 
     def getLayerGeometryIdByTime(self, time: float) -> int:
+        """
+        Gets the :class:`~pyslm.geometry.LayerGeometry` id for a given time in a build.
 
+        :param time: The time for locating the LayerGeometry
+        :return: Node Index
+        """
         node = self.getLayerGeometryNodeByTime(time)
         return node.id if node else None
 
     def getLayerNodeByTime(self, time: float) -> Union[TimeNode, None]:
+        """
+        Get the :class:`TimeNode` for a given time in a build.
 
+        :param time: The time for locating the layer node in the build
+        :return:
+        """
         layerTime = 0.0
 
         for layerId, layerNode in enumerate(self.tree.children):
@@ -353,10 +388,10 @@ class Iterator(ABC):
 
     def getLayerByTime(self, time: float) -> Layer:
         """
-        Gets the current :class:`Layer` based on the search time
+        Gets the current :class:`~pyslm.geometry.Layer` based on the search time.
 
-        :param time: The time for locating the :class:`Layer`
-        :return: The Layer at time t
+        :param time: The time for locating the layer
+        :return: The layer at time t
         """
         node = self.getLayerNodeByTime(time)
         return node.value if node else None
@@ -373,7 +408,7 @@ class Iterator(ABC):
 
     def getTimeByLayerId(self, layerIdx: int) -> float:
         """
-        Gets the current time in the Build based on the layer index.
+        Gets the current time in the build based on the layer index.
 
         :param layerIdx: The layer index
         :return: The time at the start of the Layer
@@ -391,7 +426,7 @@ class Iterator(ABC):
 
     def getCurrentLayerGeometry(self) -> LayerGeometry:
         """
-        Gets the current :class:`LayerGeometry` for the current iteration
+        Gets the current :class:`~pyslm.geometry.LayerGeometry` for the current iteration.
 
         :return: The active LayerGeometry
         """
@@ -407,7 +442,7 @@ class Iterator(ABC):
 
     def seekByLayerGeometry(self, layerId: int, layerGeomId: int) -> None:
         """
-        Instructs the iterator to seek ahead in time to the specific :class:`LayerGeometry`
+        Instructs the iterator to seek ahead in time to the specific :class:`~pyslm.geometry.LayerGeometry`.
 
         :param layerId:  The index of the layer within the list of layers provided to the iterator
         :param layerGeomId:  The index of the layer geometry within the specified layer
@@ -487,20 +522,21 @@ class LayerGeometryIterator(Iterator):
 
 class ScanIterator(Iterator):
     """
-    The Scan Iterator class provides a  method to iterate at a variable :attr:`timestep` across a BuildFile
-    consisting of list of :class:`Layer` and :class:`Model` provided as the input. Typically this is used in
-    numerical simulation of powder-bed fusion processes and also its temporal visualisation. Properties include the
-    current position are available via :meth:`getCurrentLaserPosition` and the current laser parameters in
-    :meth:`getCurrentBuildStyle` and if the laser is currently active :meth:`isLaserOn`.
+    The Scan Iterator class provides a  method to iterate at a variable :attr:`timestep` across a build file
+    consisting of a :class:`~pyslm.geometry.Layer` list and :class:`~pyslm.geometry.Model` provided as the input.
+    Typically this is used in numerical simulation of powder-bed fusion processes and also its temporal
+    visualisation. Properties include the current position are available via :meth:`getCurrentLaserPosition` and the
+    current laser parameters in :meth:`getCurrentBuildStyle` and if the laser is currently active :meth:`isLaserOn`.
 
     .. note::
         The Iterator classes *assumes* that the laser position during rastering is linearly interpolated across each scan
         vector, based on the :attr:`timestep`, which can be modulated during the iterator.
 
-    ScanIterator builds upon  :class:`Iterator`  and utilises the TimeTree cache generated for each :class:`Layer`
-    and its set of :class:`LayerGeometry` objects respectively. If the current :attr:`time` is within the current
-    :class:`LayerGeometry` the current point is interpolated across the individual scan vectors depending on its type in
-    :meth:`getPointInLayerGeometry` using the current BuildStyle associated with the LayerGeometry.
+    ScanIterator builds upon  :class:`Iterator` and utilises the TimeTree cache generated for each
+    :class:`~pyslm.geometry.Layer` and its set of :class:`~pyslm.geometry.LayerGeometry` objects respectively. If the
+    current time is within the current :class:`LayerGeometry` the current point is interpolated across the
+    individual scan vectors depending on its type in :meth:`getPointInLayerGeometry` using the current
+    :class:`~pyslm.geometry.BuildStyle` associated with the LayerGeometry.
     """
     def __init__(self, models: List[Model], layers: List[Layer]):
         super().__init__(models, layers)
@@ -532,11 +568,11 @@ class ScanIterator(Iterator):
         else:
             return False
 
-    def getPointInLayerGeometry(self, timeOffset: object, layerGeom: object) -> Tuple[float, float]:
+    def getPointInLayerGeometry(self, timeOffset: float, layerGeom: LayerGeometry) -> Tuple[float, float]:
         """
-        Interpolates the current laser point based on a `timeoffset` from the start of the selected
-        :class:`LayerGeometry`. It iterates across each scan vector based on a total distance accumulated and locates
-        the scan vector to interpolate the position.
+        Interpolates the current laser point based on a `timeOffset` from the start of the selected
+        :class:`~pyslm.geometry.LayerGeometry`. It iterates across each scan vector based on a total distance
+        accumulated and locates the scan vector to interpolate the position.
 
         :param timeOffset: Time offset within the LayerGeometry
         :param layerGeom: The LayerGeometry to interpolate the laser point across
@@ -545,7 +581,7 @@ class ScanIterator(Iterator):
         """
         buildStyle = geomUtils.getBuildStyleById(self.models, layerGeom.mid, layerGeom.bid)
 
-        laserVelocity = getEffectiveLaserSpeed(buildStyle)
+        laserVelocity = utils.getEffectiveLaserSpeed(buildStyle)
 
         if isinstance(layerGeom, ContourGeometry):
             offsetDist = timeOffset  * laserVelocity
@@ -599,7 +635,7 @@ class ScanIterator(Iterator):
 
     def getCurrentLaserPosition(self) -> Tuple[float, float]:
         """
-        Returns the current position of the point exposure at the current :attr:`time`.
+        Returns the current position of the point exposure at the current time.
 
         :return: A tuple representing the exposure point :math:`(x,y)`
         """
@@ -612,7 +648,7 @@ class ScanIterator(Iterator):
 
     def getCurrentBuildStyle(self) -> BuildStyle:
         """
-        Gets the current :class:`BuildStyle`
+        Gets the current :class:`~pyslm.geometry.BuildStyle`
 
         :return: The current BuildStyle
         """

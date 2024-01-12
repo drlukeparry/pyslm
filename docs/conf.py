@@ -4,6 +4,7 @@ import mock
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath('../pyslm'))
 sys.path.insert(0, os.path.abspath('..'))
 
 from pyslm.version import __version__
@@ -19,6 +20,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_automodapi.automodapi',
               'sphinx.ext.autosummary',
               'sphinx_rtd_theme',
+              'sphinx_automodapi.smart_resolver',
               'autodocsumm',
               'sphinx_autodoc_typehints',
               'm2r2',
@@ -26,16 +28,12 @@ extensions = ['sphinx.ext.autodoc',
 
 # See options here for audodocsumm https://readthedocs.org/projects/sphinx-automodapi/downloads/pdf/latest/
 
-autodoc_default_options = {
-    'autosummary': True,
-}
-
 # Unfortunatly readthedocs cannot import this
 
 
-MOCK_MODULES = ['pyclipper', 'pyslm.pyclipper']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+#MOCK_MODULES = ['pyclipper', 'pyslm.pyclipper']
+#for mod_name in MOCK_MODULES:
+#    sys.modules[mod_name] = mock.Mock()
 
 
 # Add any paths that contain templates here, relative to this directory.
@@ -52,11 +50,13 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyslm'
-copyright = u'2023, Luke Parry'
+copyright = u'2024, Luke Parry'
 author = 'Luke Parry'
 
 autodoc_default_options = {
+    'autosummary-imported-members': False,
     'autosummary': True,
+    'autosummary-no-nesting': True,
     'automodapi_inheritance_diagram': False
 }
 

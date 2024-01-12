@@ -144,20 +144,17 @@ class BaseHatcher(abc.ABC):
     The BaseHatcher class provides common methods used for generating the 'contour' and infill 'hatch' scan vectors
     for a geometry slice typically a multi-polygon region.
 
-    The class provides an interface tp generate a variety of hatching patterns used. The developer should re-implement a
-    subclass and re-define the abstract method, :meth:`BaseHatcher.hatch`, which will be called.
+    The class provides an interface to generate a variety of hatching patterns used. The developer should re-implement a
+    subclass and re-define the abstract method, :meth:`BaseHatcher.hatch`, which will be called as a minimum. Other
+    behavior can be controlled for the generation of scan vectors include :meth:`generateHatching`.
 
     The user typically specifies a boundary, which may be offset the boundary of region using
     :meth:`offsetBoundary`. This is typically performed before generating the infill.
-    Following offsetting, the a series of hatch lines are generated using :meth:`~BaseHatcher.generateHatching` to fill
+    Following offsetting, then a series of hatch lines are generated using :meth:`~BaseHatcher.generateHatching` to fill
     the entire boundary region using :meth:`polygonBoundingBox`. To obtain the final clipped infill, the
     hatches are clipped using :meth:`~BaseHatcher.clipLines` which are clipped in the same sequential order they are
     generated using a technique explained further in the class method. The generated scan paths should be stored into
     collections of :class:`~pyslm.geometry.LayerGeometry` accordingly.
-
-    For all polygon manipulation operations used for offsetting and clipping, internally this calls provides automatic
-    conversion to the integer coordinate system used by ClipperLib by internally calling
-    :meth:`scaleToClipper` and :meth:`scaleFromClipper`.
     """
 
     CLIPPER_SCALEFACTOR : int = int(1e5)
@@ -169,7 +166,7 @@ class BaseHatcher(abc.ABC):
     
     :note:
         From experience, 1e4, mostly works, however, there are some artefacts generated during clipping hatch vectors.
-        Therefore at a small peformance cost 1e5 is recommended.
+        Therefore at a small performance cost 1e5 is recommended.
     """
 
     def __init__(self):
@@ -179,28 +176,30 @@ class BaseHatcher(abc.ABC):
         return 'BaseHatcher <{:s}>'.format(self.name)
 
     @staticmethod
-    def clipperToHatchArray(coords: np.ndarray) -> np.ndarray:
+    def clipperToHatchArray(coords: np.ndarray) -> np.array:
         """
         A helper method which converts the raw polygon edge lists returned by
         `PyClipr <https://pypi.org/project/pyclipr/>`_
         into a numpy array.
 
-        :param coords: The list of hatches generated from pyclipper
-        :return: The hatch coordinates transfromed into a (n x 2 x 3) numpy array.
+        :param coords: The list of hatches generated from clipping operations
+        :return: The hatch coordinates transfromed into a :math:`(n \\times 2 \\times 3)` numpy array.
         """
         return np.transpose(np.dstack(coords), axes=[2, 0, 1])
 
     @classmethod
     def error(cls) -> float:
         """
-        Returns the accuracy of the polygon clipping depending on the chosen scale factor :attr:`.PYCLIPPER_SCALEFACTOR`.
+        Returns the accuracy of the polygon clipping depending on the chosen scale factor.
         """
         return 1. / float(cls.CLIPPER_SCALEFACTOR)
 
     @staticmethod
     def offsetPolygons(polygons, offset: float):
         """
-        Offsets a set of boundaries across a collection of polygons by the offset parameter.
+        Offsets a set of boundaries across a collection of polygons by the offset distance. A positive offset is
+        the offset applied to the exterior of the polygon, whereas a negative offset is applied to the interior of the
+        boundary.
 
         .. note::
             Note that if any polygons are expanded overlap with adjacent polygons, the offsetting will **NOT** unify
@@ -236,12 +235,12 @@ class BaseHatcher(abc.ABC):
     def polygonBoundingBox(obj: Any) -> np.ndarray:
         """
         Returns the bounding box of the polygon - typically this represents a single shape with an exterior and a list of
-        boundaries within an array
+        boundaries within an array. The output of the bounding box takes the form of
+        :math:`\\left(x_{min}, y_{min}, z_{min}, x_{max}, y_{max}, z_{max}\\right)`.
 
-        :param obj: Geometry object
-        :return: A (1x6) numpy array representing the bounding box of a polygon
+        :param obj: A set of geometries
+        :return: A :math:`(1 \\times 6)` numpy array representing the bounding box of a polygon
         """
-        # Path (n,2) coords that
 
         if not isinstance(obj, list):
             obj = [obj]
@@ -260,10 +259,12 @@ class BaseHatcher(abc.ABC):
     @staticmethod
     def boundaryBoundingBox(boundaries) -> np.array:
         """
-        Returns the bounding box of a list of boundaries, typically generated by the tree representation in Pyclipr.
+        Returns the bounding box of a list of provided boundaries, typically generated by the tree representation in
+        pyclipr. The output of the bounding box takes the form of
+        :math:`\\left(x_{min}, y_{min}, z_{min}, x_{max}, y_{max}, z_{max}\\right)`.
 
         :param boundaries: A list of polygons
-        :return: A (1x6) numpy array of the bounding box
+        :return: A :math:`(1 \\times 6)` numpy array of the bounding box
         """
 
         bboxList = [BaseHatcher.polygonBoundingBox(boundary) for boundary in boundaries]
@@ -282,10 +283,10 @@ class BaseHatcher(abc.ABC):
 
         .. note ::
             The order is guaranteed from the list of lines used, so these do not require sorting usually. However,
-            the position may require additional sorting to cater for the user's requirements.
+            the position may require additional sorting to cater for the user's requirements during scanning.
 
         :param paths: The set of boundary paths for trimming the lines
-        :param lines: The un-trimmed lines to clip from the boundary
+        :param lines: The untrimmed lines to clip from the boundary
         :return: A list of trimmed lines (open paths)
         """
 
@@ -343,8 +344,8 @@ class BaseHatcher(abc.ABC):
         Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
         of the polygon bounding box
 
-        :param paths: Boundary paths to generate hatches to cover
-        :param hatchSpacing: Hatch Spacing to use
+        :param paths: The boundary paths for the generated hatch vectors to cover
+        :param hatchSpacing: Hatch spacing to use
         :param hatchAngle: Hatch angle (degrees) to rotate the scan vectors
 
         :return: Returns the list of un-clipped scan vectors
@@ -391,8 +392,8 @@ class BaseHatcher(abc.ABC):
     @abc.abstractmethod
     def hatch(self, boundaryFeature) -> Union[Layer, None]:
         """
-        The hatch method should be re-implemented by a child class to generate a :class:`Layer` containing the scan
-        vectors used for manufacturing the layer.
+        The hatch method should be re-implemented by a child class to generate a :class:`~pyslm.geometry.Layer`
+        containing the scan vectors used for manufacturing the layer.
 
         :param boundaryFeature: The collection of boundaries of closed polygons within a layer.
         :raises: :class:`NotImplementedError`
@@ -407,7 +408,7 @@ class InnerHatchRegion(abc.ABC):
     the region used. The user typically in derived :class:`BaseHatcher` class should set via
     :meth:`~InnerHatchRegion.setRequiresClipping` if the region requires further clipping.
 
-    Finally the derived class must generate a set of hatch vectors covering the boundary region, by re-implementing the
+    Finally, the derived class must generate a set of hatch vectors covering the boundary region, by re-implementing the
     abstract method :meth:`~InnerHatchRegion.hatch`. If the boundary requires clipping, the interior hatches are also
     clipped.
     """
@@ -557,16 +558,46 @@ class InnerHatchRegion(abc.ABC):
 
 class Hatcher(BaseHatcher):
     """
-    Provides a generic SLM Hatcher 'recipe' with standard parameters for defining the hatch across regions. This
-    includes generating multiple contour offsets and then a generic hatch infill pattern by re-implementing the
-    :meth:`BaseHatcher.hatch` method. This class may be derived from to provide additional or customised behavior.
+    The class provides a generic Hatcher 'recipe' with standard parameters specified for defining the hatch across
+    regions. This includes generating multiple contour offsets and then a generic hatch infill pattern by
+    re-implementing the :meth:`BaseHatcher.hatch` method in a subclass. This class may be derived from in order to
+    provide additional or customised behavior.
+
+    Firstly, the boundaries are offset based on first spot compensation factor (:attr:`spotCompensation`) and then
+    subsequent interior offsets into the boundary provided (controlled by (:attr:`numOuterContours` and
+    :attr:`numInnerContours`). This is done via an internal :meth:`offsetBoundary` method which
+    requires an offset distance.
+
+    .. code-block:: python
+
+        offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
+
+    These offsets are then simplified and transformed into contour scans (:class:`~pyslm.geometry.ContourGeometry`).
+
+    Once the final offset has been obtained, the interior is then infilled with scan vectors. The default infill or scan
+    strategy employed in this class is the usual `meander` or `serpentine` whereby scan
+    vectors cover the boundary interior produced in :meth:`generateHatching` with the following key parameters:
+
+    * Hatch distance (:attr:`hatchDistance`)
+    * Hatch angle (:attr:`hatchAngle`)
+
+    The hatch angle is incremented by changing :attr:`layerAngleIncrement`. The produced scan vectors are
+    clipped within the boundary internally as follows:
+
+    .. code-block:: python
+
+            # Clip the hatch fill to the boundary
+            clippedPaths = self.clipLines(paths, hatches)
+
+    The clipped scan vectors can be sorted seperately via (:class:`FlipSort`) then added sequentially to a list of
+    scan vectors within a group (:class:`~pyslm.geometry.HatchGeometry').
     """
 
     def __init__(self):
 
         super().__init__()
 
-        # Contour private attributes
+        # Private attributes related to the contour
         self._scanContourFirst = False
         self._numInnerContours = 1
         self._numOuterContours = 1
@@ -574,8 +605,7 @@ class Hatcher(BaseHatcher):
         self._contourOffset = 1.0 * self._spotCompensation
         self._volOffsetHatch = self._spotCompensation
 
-
-        # Hatch private attributes
+        # Hatcher private attributes
         self._layerAngleIncrement = 0  # 66 + 2 / 3
         self._hatchDistance = 0.08  # mm
         self._hatchAngle = 45
@@ -584,7 +614,7 @@ class Hatcher(BaseHatcher):
 
     @property
     def hatchDistance(self) -> float:
-        """ The distance between adjacent hatch scan vectors """
+        """ The distance between adjacent hatch scan vectors. """
         return self._hatchDistance
 
     @hatchDistance.setter
@@ -594,7 +624,7 @@ class Hatcher(BaseHatcher):
     @property
     def hatchAngle(self) -> float:
         """
-        The base hatch angle used for hatching the region expressed in degrees :math:`[-180,180]`
+        The base hatch angle used for hatching the region expressed in degrees :math:`[-180,180].`
         """
         return self._hatchAngle
 
@@ -606,8 +636,8 @@ class Hatcher(BaseHatcher):
     def layerAngleIncrement(self) -> float:
         """
         An additional offset used to increment the hatch angle between layers in degrees. This is typically set to
-        66.6 :math:`^\\circ` per layer to provide additional uniformity of the scan vectors across multiple layers.
-        By default this is set to `0.0` """
+        66.6 :math:`^\circ` per layer to provide additional uniformity of the scan vectors across multiple layers.
+        By default this is set to `0.0`. """
         return self._layerAngleIncrement
 
     @layerAngleIncrement.setter
@@ -633,7 +663,7 @@ class Hatcher(BaseHatcher):
     def scanContourFirst(self) -> bool:
         """
         Determines if the contour/border vectors :class:`LayerGeometry` are scanned first before the hatch vectors. By
-        default this is set to `False`.
+        default this is set to ``False``.
         """
         return self._scanContourFirst
 
@@ -644,7 +674,7 @@ class Hatcher(BaseHatcher):
     @property
     def numInnerContours(self) -> int:
         """
-        The total number of inner contours to generate by offsets from the boundary region.
+        The total number of inner contour offsets to generate from the boundary region.
         """
         return self._numInnerContours
 
@@ -655,7 +685,7 @@ class Hatcher(BaseHatcher):
     @property
     def numOuterContours(self) -> int:
         """
-        The total number of outer contours to generate by offsets from the boundary region.
+        The total number of outer contours offsets to generate from the boundary region.
         """
         return self._numOuterContours
 
@@ -678,7 +708,7 @@ class Hatcher(BaseHatcher):
     @property
     def contourOffset(self) -> float:
         """
-        The contour offset is the distance between the contour or border scans
+        The contour offset is the distance between the contour or border scans.
         """
         return self._contourOffset
 
@@ -700,7 +730,7 @@ class Hatcher(BaseHatcher):
 
     @property
     def hatchingEnabled(self) -> bool:
-        """ If the internal hatch region should be processed (default: True)"""
+        """ If the internal hatch region should be processed (default: `True`)."""
         return self._hatchingEnabled
 
     @hatchingEnabled.setter
@@ -859,13 +889,17 @@ class Hatcher(BaseHatcher):
 
 class StripeHatcher(Hatcher):
     """
-    The Stripe Hatcher extends the standard :class:`Hatcher` but generates a set of stripe hatches of a fixed width
-    (:attr:`~.stripeWidth`) to cover a region. This a common scan strategy adopted by users of EOS systems.
-    This has the effect of limiting the max length of the scan vectors  across a region in order to mitigate the
-    effects of residual stress.
+    The Stripe Hatcher extends the behavior of the standard :class:`Hatcher` for generating a 'stripe' scan strategy,
+    which generates a set of an infill of hatches of a fixed width (:attr:`stripeWidth`) to cover a region. This a
+    common scan strategy adopted by users of EOS systems. This has the effect of limiting the max length of the scan
+    vectors  across a region in order to mitigate the effects of residual stress, but is far more convenient to
+    implement and process compared to the island scan strategy.
+
+    This class simply overrides the :meth:`generateHatching` method in order to implement this.
     """
 
     def __init__(self):
+
         super().__init__()
 
         self._stripeWidth = 5.0
@@ -910,9 +944,9 @@ class StripeHatcher(Hatcher):
         of the polygon bounding box
 
         :param paths: The polygon boundaries
-        :param hatchSpacing: Hatch spacing to use
-        :param hatchAngle: Hatch angle (degrees) to rotate the scan vectors
-        :return: Llist of unclipped scan vectors
+        :param hatchSpacing: The hatch spacing to use for scan vectors
+        :param hatchAngle: The hatch angle (degrees) to rotate the scan vectors
+        :return: List of unclipped scan vectors
         """
 
         """
@@ -972,17 +1006,24 @@ class StripeHatcher(Hatcher):
 
 class BasicIslandHatcher(Hatcher):
     """
-    BasicIslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size
-    (:attr:`.islandWidth`)  which covers a region.  This a common scan strategy adopted across SLM systems.
-    This has the effect of limiting the max length of the scan whilst by orientating the scan vectors orthogonal
-    to each other mitigating any preferential distortion or curling  in a single direction and any
-    effects to microstructure.
+    The class extends the standard :class:`Hatcher` but generates a set of islands of fixed size (
+    :attr:`.islandWidth`)  which covers a region.  This a common scan strategy adopted across numerous L-PBF (SLM)
+    systems. This scan strategy in particular is designed to have effect of limiting the maximum length of the scan whilst by
+    orientating the scan vectors orthogonal to each other mitigating any preferential distortion or curling due to
+    residual stress in a single direction and any effects to microstructure.
 
-    :note:
+    The extension of the base class involves simply overriding the :meth:`generateHatching` method for creating an infill
+    for the boundaries provided in the primary method within :meth:`Hatcher.hatch`. The infill must cover the entire boundary.
+    Other attribute and properties can be added to the class to provide further user defineable behavior such as:
+
+    * Island Size (:attr:`islandWidth`) - the length of each size of the square island
+    * Island Overlap (:attr:`islandOverlap`) - the overlap between adjacent islands
+
+    .. warning::
 
         This method is not optimal and is provided as a reference for the user to improve their own understanding and
-        develop their own island scan strategies. For optimal performance, the user should refer instead to
-        :class:`IslandHatcher`
+        develop their own form island scan strategies. For optimal performance, it is recommended that the user should
+        refer instead to :class:`IslandHatcher`.
 
     """
 

@@ -1,14 +1,15 @@
 .. automodapi:: pyslm.analysis
     :no-inheritance-diagram:
     :no-inherited-members:
+    :no-imported-members:
     :toctree: api
-    :skip: ABC
+    :skip: BuildStyle, ContourGeometry, HatchGeometry, Layer, LayerGeometry, Model, PointsGeometry
 
 .. automodapi:: pyslm.core
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
-    :skip: ABC, Polygon
+    :skip: ABC, Polygon, ConvexHull
 
 .. automodapi:: pyslm.geometry
     :no-inheritance-diagram:

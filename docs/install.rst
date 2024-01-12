@@ -40,8 +40,9 @@ Installation with PyPI
 ========================
 
 Installation is currently supported across all platforms on Windows, Mac OS X and Linux environments.
-The pre-requisites for using PySLM can be installed via PyPi and/or Anaconda distribution. The main dependencies
-are contained within the
+The pre-requisites for using PySLM can be installed via PyPi and/or Anaconda distribution. PySLM is solely a source
+distribution, with all additional dependencies precompiled where possible across all main platforms. The main
+dependencies are contained within the
 `requirements.txt <https://github.com/drlukeparry/pyslm/blob/master/requirements.txt>`_
 file, however, the predominant dependencies are those required by `Trimesh <https://github.com/mikedh/trimesh>`_ -
 the library for loading and manipulating and working with popular mesh formats.
@@ -51,7 +52,7 @@ the library for loading and manipulating and working with popular mesh formats.
     conda install -c conda-forge shapely, Rtree, networkx, scikit-image, cython, trimesh
     conda install trimesh
     
-or using PyPi
+Alternatively, the more common approach is using PyPi to install the dependencies.
 
 Packages are now pre-compiled (inc. build test) using github actions CI for use on a variety of Platforms
 (Windows 10, Ubuntu, Mac OS X). The pre-compiled packages are securely uploaded directly from github to PyPi repository
@@ -69,10 +70,10 @@ These require a working OpenGL environment to work via vispy - the PyQt5 module 
 
 .. code:: bash
 
-    pip install vispy pyqt5 triangle pycork mapbox-earcut
+    pip install vispy pyqt5 triangle manifold3d mapbox-earcut
 
     
-You can download the precompiled binaries as a Python package from PyPI using pip. Just use:
+You can download the precompiled binaries as a Python package from PyPI using pip using:
 
 .. code-block:: bash
 

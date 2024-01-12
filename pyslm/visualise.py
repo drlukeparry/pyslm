@@ -15,8 +15,14 @@ from .core import Part
 from .geometry import Layer, HatchGeometry, ContourGeometry, PointsGeometry
 
 
-def getContoursFromShapelyPolygon(poly, mergeRings: Optional[bool] = True) -> Tuple[np.ndarray, np.ndarray]:
+def getContoursFromShapelyPolygon(poly: Polygon, mergeRings: Optional[bool] = True) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Returns the  contours from boundaries extracted from exterior and interior paths of shapely geometry.
 
+    :param poly: Shapely polygons
+    :param mergeRings: If ``True`` combines the interior and exteriors within each path group
+    :return: The paths extracted from the polygon paths
+    """
     outerRings = []
     innerRings = []
 

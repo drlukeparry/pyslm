@@ -2,7 +2,6 @@
 Provides classes and methods for the creation of grid block supports for use typically in metal Additive Manufacturing
 """
 
-from builtins import staticmethod
 from typing import Any, Optional, List, Tuple, Union
 import logging
 
@@ -49,11 +48,13 @@ class GridBlockSupport(BlockSupportBase):
     The tooth sizes may be specified using :attr:`~GridBlockSupport.supportTeethHeight`,
     :attr:`~GridBlockSupport.supportTeethTopLength`, :attr:`~GridBlockSupport.supportTeethBottomLength`,
     :attr:`~GridBlockSupport.supportTeethBaseInterval` and an additional self-penetration distance
-    :attr:`~GridBlockSupport.supportTeethUpperPenetration` to enhance the strength of the support by over-
+    (:attr:`~GridBlockSupport.supportTeethUpperPenetration` and :attr:`~GridBlockSupport.supportTeethLowerPenetration`) to enhance the strength of the support by over-
     scanning material within the solid part internally. The tooth profile is repeated across the upper edge of the
     intersected support volume using an internal overrideable function :meth:`toothProfile`. The generation of support
     teeth on the upper and lower surfaces may be individually toggled by setting
-    :attr:`~GridBlockSupport.useUpperSupportTeeth` and :attr:`~GridBlockSupport.useLowerSupportTeeth` respectively.
+    :attr:`~GridBlockSupport.useUpperSupportTeeth` and :attr:`~GridBlockSupport.useLowerSupportTeeth` respectively. If
+    the user desires to strengthen the support near the upper and lower surfaces near the support teeth, and additional
+    offsetting can be applied using :attr:`~GridBlockSupport.supportWallThickness`.
 
     The truss is designed to self-intersect at set distance based on both the :attr:`trussAngle` and
     the :attr:`gridSpacing` so that they combine as a consistently connected support mesh. Upon
@@ -178,6 +179,9 @@ class GridBlockSupport(BlockSupportBase):
 
     @property
     def supportTeethBaseInterval(self) -> float:
+        """
+        The gap between the base of the tooth.
+        """
         return self._supportTeethBaseInterval
 
     @supportTeethBaseInterval.setter
@@ -187,7 +191,7 @@ class GridBlockSupport(BlockSupportBase):
     @property
     def supportTeethUpperPenetration(self) -> float:
         """
-        Vertical (+z) penetration of the support teeth into the intersecting mesh
+        Vertical (:math:`+Z`) penetration of the support teeth into the intersecting part mesh.
         """
         return self._supportTeethUpperPenetration
 
@@ -237,11 +241,14 @@ class GridBlockSupport(BlockSupportBase):
 
     @property
     def generateTrussGrid(self) -> bool:
+        """
+        Set to ``True`` to generate the truss grid, otherwise the support volume.
+        """
         return self._generateTrussGrid
 
     @generateTrussGrid.setter
-    def generateTrussGrid(self, value):
-        self._generateTrussGrid = value
+    def generateTrussGrid(self, state: bool):
+        self._generateTrussGrid = state
 
     @property
     def supportBorderDistance(self) -> float:
@@ -360,11 +367,16 @@ class GridBlockSupport(BlockSupportBase):
 
     @property
     def borderGeometry(self):
+        """
+        The support skin (around the boundary) for the support volume
+        """
         return self.generateSupportSkins()
 
     @property
     def sliceGeometry(self):
-
+        """
+        The grid composed of trusses in both the X and Y orientations.
+        """
         slicesX, slicesY = self.generateSupportSlices()
 
         return slicesX, slicesY
@@ -423,7 +435,7 @@ class GridBlockSupport(BlockSupportBase):
         :class:`trimesh.path.Path2D`. This provides a consistent centroid or local origin for generating the truss
         frame across the entire support volume.
 
-        :param section: A :class:`~trimesh.path.Path2D` cross-section consisting of a 3D transformation matrix
+        :param section: A trimesh `Path2D` cross-section consisting of a 3D transformation matrix
         :return: A 2D polygon representing the bounding box of the support geometry volume.
         """
 
@@ -450,8 +462,9 @@ class GridBlockSupport(BlockSupportBase):
 
     def toothProfile(self) -> np.array:
         """
-        Returns a 2D profile of a tooth used along the edge profile when generating the profile for the skin and 
-        the planar truss structure.
+        The 2D profile of a tooth used along the edge profile when generating the profile for the skin and
+        the planar truss structure. This can be overriden in a derived class to provide a custom pattern or design of
+        tooth for use along the profile of the support generation.
         """
 
         p_a = self._supportTeethHeight
@@ -514,7 +527,7 @@ class GridBlockSupport(BlockSupportBase):
 
             """
             Identify the upper and lower edges of the polygon. This is guaranteed for extruded supports because the
-            sides edges are always vertically orientated in (+z). Also note order is sequentially guaranteed since
+            sides edges are always vertically orientated in (:math:`+Z`). Also note order is sequentially guaranteed since
             the polygons edges have been pre-sorted and correctly orientated.
             """
 
@@ -1693,6 +1706,9 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
 
     @property
     def supportTeethBaseInterval(self) -> float:
+        """
+        The gap between the base of the tooth.
+        """
         return self._supportTeethBaseInterval
 
     @supportTeethBaseInterval.setter
@@ -1702,7 +1718,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
     @property
     def supportTeethUpperPenetration(self) -> float:
         """
-        Vertical (+z) penetration of the support teeth into the intersecting mesh
+        Vertical (:math:`+Z`) penetration of the support teeth into the intersecting mesh
         """
         return self._supportTeethUpperPenetration
 

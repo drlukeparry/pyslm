@@ -44,10 +44,10 @@ class DocumentObject(ABC):
         self._name = name
 
     def boundingBox(self):  # const
-        raise NotImplementedError('Abstract  method should be implemented in derived class')
+        raise NotImplementedError('Abstract method should be implemented in derived class')
 
     def extents(self):
-        raise NotImplementedError('Abstract  method should be implemented in derived class')
+        raise NotImplementedError('Abstract method should be implemented in derived class')
 
 class Document:
 
