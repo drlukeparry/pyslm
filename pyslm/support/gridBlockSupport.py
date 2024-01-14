@@ -1,13 +1,14 @@
 """
 Provides classes and methods for the creation of grid block supports for use typically in metal Additive Manufacturing
 """
-
+from enum import IntEnum
 from typing import Any, Optional, List, Tuple, Union
 import logging
 
 import warnings
 
 import scipy.ndimage.filters
+import trimesh
 from scipy import interpolate
 
 import shapely.geometry
@@ -24,6 +25,26 @@ from .utils import *
 from .geometry import *
 from ..hatching import BaseHatcher
 from ..hatching import utils as hatchingUtils
+
+class GridMeshType(IntEnum):
+    """
+    The mesh definition for each part of a grid truss support structure
+    """
+
+    BOUNDARY = 0
+    """
+    A truss network is used to generate the support structure
+    """
+
+    SLICE_X = 1
+    """
+    A slice along the x-direction
+    """
+
+    SLICE_Y = 2
+    """
+    A slice along the y-direction
+    """
 
 class GridBlockSupport(BlockSupportBase):
     """
@@ -417,12 +438,15 @@ class GridBlockSupport(BlockSupportBase):
             isectMesh += supportSkins
         else:
             logging.info('\t Concatenating Support Geometry Meshes Together')
-            maxId = np.max(getattr(slicesY.face_attributes, 'order', 0))
+            maxId = np.max(slicesY.face_attributes.get('order', 0)) + 1
 
+            # Update the scan order index for each boundary located on the support
             for i in range(len(supportSkins)):
-                supportSkins[i].face_attributes['order'] = np.ones(len(supportSkins[i].faces)) * (maxId + i + 1)
+                supportSkins[i].face_attributes['order'] = np.ones(len(supportSkins[i].faces)) * (maxId + i)
+                supportSkins[i].face_attributes['type'] = np.ones(len(supportSkins[i].faces)) * GridMeshType.BOUNDARY
+
+            # Concatenate the meshes including the stored face attributes
             isectMesh = self.concatenateMeshes([slicesX, slicesY] + supportSkins)
-            #isectMesh = slicesX + slicesY + supportSkins
 
         # Assign a random colour to the support geometry generated
         isectMesh.visual.face_colors[:, :3] = np.random.randint(254, size=3)
@@ -1336,10 +1360,16 @@ class GridBlockSupport(BlockSupportBase):
 
         :return: A tuple of X,Y grid slices
         """
-        xSectionMeshList = [trimesh.Trimesh()]
-        ySectionMeshList = [trimesh.Trimesh()]
+        xSectionMeshList = []
+        ySectionMeshList = []
 
         sectionsX, sectionsY = self.generateGridSlices()
+
+        """
+        Note the scanning order begins from zero - boundaries are appended at the end because multiple borders may exist
+        """
+        scanId = 0
+
 
         # Process the Section X
         for i, sectionX in enumerate(sectionsX):
@@ -1376,13 +1406,18 @@ class GridBlockSupport(BlockSupportBase):
                 # Triangulate the polygon
                 vx, fx = triangulatePolygon(section)
 
-            if len(vx) == 0:
+            if len(fx) == 0:
                 continue
 
             # Append a Z coordinate in order to transform to mesh
             vx = np.insert(vx, 2, values=0.0, axis=1)
             secX = trimesh.Trimesh(vertices=vx, faces=fx)
-            secX.face_attributes['order'] = np.ones(len(fx)) * i
+
+            # Add the scan order to the mesh so that the hatches can be seperated later during slicing
+            secX.face_attributes['order'] = np.ones(len(fx)) * scanId
+            secX.face_attributes['type'] = np.ones(len(fx)) * GridMeshType.SLICE_X
+            scanId += 1
+
             # Transform using the original transformation matrix generated during slicing
             #secX.apply_transform(sectionX.metadata['to_3D'])
             secX.apply_transform(sectionX[1])
@@ -1393,7 +1428,9 @@ class GridBlockSupport(BlockSupportBase):
         #xSectionMesh = trimesh.util.concatenate(xSectionMeshList)
         xSectionMesh = self.concatenateMeshes(xSectionMeshList)
 
+        # The maximum Id is used for collecting the current scan order
         maxId = len(xSectionMeshList)
+
         # Process the Section Y
         for i, sectionY in enumerate(sectionsY):
 
@@ -1431,13 +1468,18 @@ class GridBlockSupport(BlockSupportBase):
                 # Triangulate the polygon
                 vy, fy = triangulatePolygon(section)
 
-            if len(vy) == 0:
+            if len(fy) == 0:
                 continue
 
             # Append a z coordinate in order to transform to mesh
             vy = np.insert(vy, 2, values=0.0, axis=1)
             secY = trimesh.Trimesh(vertices=vy, faces=fy)
-            secY.face_attributes['order'] = np.ones(len(fy)) * (maxId + i)
+
+            # Add the scan order to the mesh so that the hatches can be seperated later during slicing
+            secY.face_attributes['order'] = np.ones(len(fy)) * scanId
+            secY.face_attributes['type']  = np.ones(len(fy)) * GridMeshType.SLICE_Y
+
+            scanId += 1
 
             # Transform using the original transformation matrix generated during slicing
             #secY.apply_transform(sectionY.metadata['to_3D'])
@@ -1451,6 +1493,9 @@ class GridBlockSupport(BlockSupportBase):
         return xSectionMesh, ySectionMesh
 
     def concatenateMeshes(self, meshList):
+
+        if len(meshList) < 1:
+            return trimesh.Trimesh()
 
         idxLen = [len(mesh.vertices) for mesh in meshList]
         idxCumSum = np.hstack([0, np.cumsum(idxLen)])
@@ -1470,7 +1515,7 @@ class GridBlockSupport(BlockSupportBase):
         for key, value in faceAttr.items():
             faceAttr[key] = np.hstack(value)
 
-        return trimesh.Trimesh(vertices=newVerts, faces=newFaces, face_attributes=faceAttr)
+        return trimesh.Trimesh(vertices=newVerts, faces=newFaces, face_attributes=faceAttr, process=False)
 
     def section_multiplane(self, volume, plane_origin, plane_normal, heights):
 
