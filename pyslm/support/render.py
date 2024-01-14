@@ -3,7 +3,6 @@ import trimesh
 from vispy import app, gloo
 from vispy.util.transforms import translate, rotate, ortho
 
-from matplotlib import pyplot as plt
 app.use_app('pyqt5')  # Set backend
 
 vert = """

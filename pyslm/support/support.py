@@ -35,14 +35,14 @@ import numpy as np
 import trimesh
 import trimesh.path
 import trimesh.path.traversal
-import pyslm.hatching
 import pyclipr
 
 from ..core import Part
+from . import render
 from .utils import *
 from .geometry import *
 from ..hatching import BaseHatcher, utils
-import pyslm.hatching.utils as hatchingUtils
+
 
 class SupportStructure(abc.ABC):
     """
@@ -99,7 +99,6 @@ class SupportStructure(abc.ABC):
         flattenPath.apply_translation(polygonTransform[:2, 3])  # np.array([polygonTransform[0, 3],
 
         #flattenPath = flattenPath.simplify_spline(smooth=1000)
-        # polygonTransform[1, 3]]))
         polygon = flattenPath.polygons_full[0]
 
         return polygon
@@ -613,10 +612,10 @@ class BlockSupportGenerator(BaseSupportGenerator):
         bboxCpy[0,2] -= 1
         bboxCpy[1,2] += 1
 
-        upperImg = pyslm.support.render.projectHeightMap(subregion, self.rayProjectionResolution, False, bboxCpy)
+        upperImg = render.projectHeightMap(subregion, self.rayProjectionResolution, False, bboxCpy)
 
         # Cut mesh is lower surface
-        lowerImg = pyslm.support.render.projectHeightMap(cutMesh, self.rayProjectionResolution, True, bboxCpy)
+        lowerImg = render.projectHeightMap(cutMesh, self.rayProjectionResolution, True, bboxCpy)
         lowerImg = np.flipud(lowerImg)
 
         # Generate the difference between upper and lower ray-traced intersections
@@ -870,7 +869,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                 outlinesTrans.append(outline * self.rayProjectionResolution + bbox[0, :2])
 
             # Convert outlines into closed polygons
-            outlinePolygons = hatchingUtils.pathsToClosedPolygons(outlinesTrans)
+            outlinePolygons = utils.pathsToClosedPolygons(outlinesTrans)
 
             polygons = []
 
