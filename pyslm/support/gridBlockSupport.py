@@ -1587,6 +1587,131 @@ class GridBlockSupport(BlockSupportBase):
 
         return sectionsX, sectionsY
 
+    @staticmethod
+    def slice(meshSupports: List[trimesh.Trimesh], z: float):
+        """
+        Slices the Grid Truss Structure including boundaries and the internal truss grid at a given Z position.
+
+        .. note::
+
+            Currently this is a static member requiring the mesh to be generated prior to slicing. The supports are
+            only sorted in the +ve X and Y directions, therefore take care when rotating meshes beyond 45 degrees.
+
+        """
+
+        # collect the face attributes
+
+        geoms = []
+        borderGeoms = []
+
+        for mesh in meshSupports:
+
+            faceOrderIds = []
+            cntId = 0
+
+            attrOrder = mesh.face_attributes.get('order', False)
+            attrType = mesh.face_attributes.get('type', False)
+
+            if attrOrder is False or attrType is False:
+                continue
+
+            # Seperate the mesh types and process independently for convenience
+
+            lines, face_index = trimesh.intersections.mesh_plane(mesh=mesh, plane_normal=[0.0, 0, 1.0],
+                                                                 plane_origin=[0, 0, z],
+                                                                 return_faces=True)
+
+            # Obtain the order and type ids based on the grid
+            orderId = attrOrder[face_index]
+            typeId = attrType[face_index]
+
+            """
+            Split orderId into arrays based on their order value which were assigned during their generation.
+            The direction can be identified by their type id
+            """
+            unique, inverse = np.unique(orderId, return_inverse=True)
+
+            bins = np.unique(orderId)
+            splitPiece = []
+            for i in bins:
+                splitPiece.append(np.where(orderId == i)[0])
+            #splitPiece = np.split(np.argsort(inverse), np.cumsum(np.bincount(inverse))[:-1])
+
+
+
+            # outline is the first group
+            for split in splitPiece:
+
+                # Determine the group type and order appropriately
+                if typeId[split[0]] == GridMeshType.BOUNDARY.value:
+                    isBorder = True
+                else:
+                    isBorder = False
+
+                # we know that the boundaries are not co-linear
+                coords = lines[split, :, :2]  # .reshape(-1,3)
+
+                if typeId[split[0]] == GridMeshType.SLICE_X.value:
+                    # We can assume that the lines are co-linear and can be sorted in ascending order X Value
+                    coords = coords.reshape(-1,2)
+                    coords = coords[np.argsort(coords[:,1]), :].reshape(-1,2,2)
+                elif typeId[split[0]] == GridMeshType.SLICE_Y.value:
+                    # We can assume that the lines are co-linear and can be sorted in ascending order Y Value
+                    coords = coords.reshape(-1,2)
+                    coords = coords[np.argsort(coords[:,0]), :].reshape(-1,2,2)
+
+                # Load the connected paths (these will merge connected vertices
+                path = trimesh.load_path(coords)  # .show()
+                pEnts = path.entities.tolist()
+
+                conPath = []
+
+                p = pEnts.pop(0)
+                conPath.append(p)
+
+                while len(pEnts) > 0:
+
+                    # find the nearest point to the end point
+                    vEnd = path.vertices[p.end_points[1]]
+
+                    maxDist = 1e8
+                    idxFnd = -1
+                    swap = False
+                    for j, p2 in enumerate(pEnts):
+                        v2Start = path.vertices[p2.end_points[0]]
+                        v2End = path.vertices[p2.end_points[1]]
+                        # if distance between vStart and vEnd is less than maxDist updated index
+                        dist = np.linalg.norm(v2Start - vEnd)
+                        dist2 = np.linalg.norm(v2End - vEnd)
+
+                        if dist < maxDist:
+                            swap=False
+                            maxDist = dist
+                            idxFnd = j
+
+                        if dist2 < maxDist:
+                            maxDist = dist2
+                            swap = True
+                            idxFnd = j
+
+                    conPath.append(p)
+                    p = pEnts[idxFnd]
+
+                    if swap:
+                        p.reverse()
+
+                    pEnts.pop(idxFnd)
+
+                conPath.append(p)
+
+                for p in conPath:
+
+                    if isBorder:
+                        borderGeoms.append(p.discrete(path.vertices))
+                    else:
+                        geoms.append(p.discrete(path.vertices))
+
+        return geoms, borderGeoms
 
 class GridBlockSupportGenerator(BlockSupportGenerator):
     """

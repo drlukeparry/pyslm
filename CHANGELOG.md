@@ -10,16 +10,18 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-## [0.6.0] - 2023-12-10
+## [0.6.0] - 2024-01-14
 
 ### Added
 - In `pyslm.support` for `BlockSupportBase` that are connected directly to the baseplate are now smoothly created  [df2dd41e0b04160a7ed4c96f8f7c0aed71003430](https://github.com/drlukeparry/pyslm/commit/df2dd41e0b04160a7ed4c96f8f7c0aed71003430)
 - In `pyslm.support` added perforated teeth to the upper and lower surfaces of `GridBlockSupport`  [70c510cce31b0cb297873252fa72c2f67b386423](https://github.com/drlukeparry/pyslm/commit/70c510cce31b0cb297873252fa72c2f67b386423)
 - In `pyslm.support` added regions for strengthening the support on upper and lower regions of both the skin and slices in
-  `GridBlockSupport`   [0121971813e50296e3f6d9bab0beb431067443d2](https://github.com/drlukeparry/pyslm/commit/0121971813e50296e3f6d9bab0beb431067443d2)
+  `GridBlockSupport`  [0121971813e50296e3f6d9bab0beb431067443d2](https://github.com/drlukeparry/pyslm/commit/0121971813e50296e3f6d9bab0beb431067443d2)
+- In `pyslm.support.GridBlockSupport` added methods for labelling generated geometry based on the interior X,Y grid and across the skin [71fb3efd1a8376809850f83760639fa331181436](https://github.com/drlukeparry/pyslm/commit/71fb3efd1a8376809850f83760639fa331181436)
+- In `pyslm.support.GridBlockSupport` added methods for slicing the geometry into layers and performing sorting to provide correct orientation [4c7000b604b3f231d0160312aa2cd5a170de69f1](https://github.com/drlukeparry/pyslm/commit/4c7000b604b3f231d0160312aa2cd5a170de69f1)
 - Added methods `pyslm.hatching.poly2paths` , `pyslm.hatching.paths2clipper` and `pyslm.hatching.clipper2paths` for conversion 
   between shapely polygons and pyclipr paths  [adcb371e62e45a5dbadfa46e4e5589a0f5cb28ae](https://github.com/drlukeparry/pyslm/commit/adcb371e62e45a5dbadfa46e4e5589a0f5cb28ae)
-- In `pyslm.support.GridBlockSupport` the grid truss slices include additional face-attributes `order` describing 
+- In `pyslm.support.GridBlockSupport` the grid truss slices include additional face-attributes `order` and `type` describing 
   their order of generation across X,Y planes. This is used for the scan order when slicing and hatching these regions
 
 ### Fixed
@@ -36,9 +38,10 @@ All notable changes to this project will be documented in this file.
 - Fixes for IslandHatcher when processing empty regions  [f9ff55ecc2709c3514b1d14f815cb2620856be97](https://github.com/drlukeparry/pyslm/commit/f9ff55ecc2709c3514b1d14f815cb2620856be97)
 - `pyslm.visualise.plot` will now plot point geometries when included [ddb7f27f6c18b6d494870e5823dbede7987e2e12](https://github.com/drlukeparry/pyslm/commit/ddb7f27f6c18b6d494870e5823dbede7987e2e12)
 - In `pyslm.visaulise.plot`, the method will correctly plot `shapely.geometry.MultiPolygon` after the update to Shapely 2.0 [99c7a475e10b9c138e061f56aa28f7780f2a5eac](https://github.com/drlukeparry/pyslm/commit/99c7a475e10b9c138e061f56aa28f7780f2a5eac)
+- Update imports to prevent namespace polluting
 
 ### Changed
-- Change PySLM to use manfold library instead of pycork [bad0fc0285835e998a3acdb02afa7e0ed02619ee](https://github.com/drlukeparry/pyslm/commit/bad0fc0285835e998a3acdb02afa7e0ed02619ee)
+- Change PySLM to use manifold library instead of pycork [bad0fc0285835e998a3acdb02afa7e0ed02619ee](https://github.com/drlukeparry/pyslm/commit/bad0fc0285835e998a3acdb02afa7e0ed02619ee)
 - Change PySLM to use pyclipr library [081dede9a14357fe9fb706470a5d42e698b763a6](https://github.com/drlukeparry/pyslm/commit/dda04c15b66ace3c487bc5e20acd806dda1ba89a)
 - `pyslm.visualise.plot` by default only plots for a single layer [02ccc1d503580cea802d996f6d6532c2f7526c8f](https://github.com/drlukeparry/pyslm/commit/02ccc1d503580cea802d996f6d6532c2f7526c8f)
 - Removal of custom pyclipper bindings and removing the requirement for compiling via cython [f434d77c8670bbb0bf5e289d9b7d2c011a9dcc92](https://github.com/drlukeparry/pyslm/commit/f434d77c8670bbb0bf5e289d9b7d2c011a9dcc92)
