@@ -138,7 +138,7 @@ def sweepPolygon(polygon, path, angles=None, scaleFactors=None, **kwargs) -> tri
     v1s = util.unitize(path[1:-1] - path[:-2])
     v2s = util.unitize(path[1:-1] - path[2:])
     norms = np.cross(np.cross(v1s, v2s), v1s + v2s)
-    norms[(norms == 0.0).all(1)] = v1s[(norms == 0.0).all(1)]
+    norms[(np.abs(norms) < 1e-6).all(1)] = v1s[(np.abs(norms) < 1e-6).all(1)]
     norms = util.unitize(norms)
     final_v1 = util.unitize(path[-1] - path[-2])
     norms = np.vstack((norms, final_v1))

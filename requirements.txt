@@ -1,5 +1,5 @@
 sphinx
-pyclipr >= 0.1.4
+pyclipr >= 0.1.7
 numpy
 manifold3d
 matplotlib
