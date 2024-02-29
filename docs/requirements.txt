@@ -17,7 +17,6 @@ matplotlib
 vispy
 mapbox_earcut
 scikit-image
-cython
 PyQt5
-pyclipr
+pyclipr >= 0.1.7
 manifold3d

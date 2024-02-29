@@ -18,7 +18,7 @@ repository as it allows the user to see and execute the examples within the sour
     git clone https://github.com/drlukeparry/pyslm.git
 
 PySLM (version >0.6) and onwards is now source only, and the ClipperLib library originally bundled with PySLM is not
-required therefore internal compiliation via cython is not required. Thus, this simplifies the distribution and
+required therefore internal compilation via cython is not required. Thus, this simplifies the distribution and
 installation of PySLM.
 
 Legacy versions of PySLM (version <= 0.5) require compiling directly from source. This requires compiling the code
@@ -83,7 +83,7 @@ You can download the precompiled binaries as a Python package from PyPI using pi
     Historically PySLM package was unavailable for use by the project. The name is secured and for user's security and
     to prevent confusion will be retained by the author.
 
-Installation dependencies for the support module
+Installation Support Module Dependencies
 ###################################################
 
 The support module requires a system with a working implementation of OpenGL 2.1 (available across the majority of
@@ -92,7 +92,7 @@ successfully tested across all platforms (Windows 10, Ubuntu, Mac OS X).
 
 Due to the technical complexity of the support module, a number of additional soft dependencies are currently
 required amongst a working Python OpenGL environment. These are not required for the core functionality of
-PySLM such as slicing and hatching to provide a maximise accessibility of the lbirary.
+PySLM such as slicing and hatching to provide a maximise accessibility of the library.
 
 The Python OpenGL environment can be installed with the following
 dependencies:
@@ -110,8 +110,8 @@ The remaining dependencies are required for the support module to function:
 The `manifold <https://github.com/elalish/manifold>`_ library provides the boolean CSG operations used for intersecting
 meshes between the part model and the support structures.
 
-Installing the support library (libSLM)
-#########################################
+Installing libSLM
+###################
 
 libSLM is a c++ support library for the translation (reading and writing) of machine build files commonly used with
 commercial SLM systems. Potentially the library could be extended to SLA platforms.

@@ -13,8 +13,10 @@ All notable changes to this project will be documented in this file.
 ## [0.6.0] - 2024-01-14
 
 ### Added
+- In `pyslm.support` added a method for sweeping polygons along a path `sweepPolygon` based on Trimesh  [7ac9e4fd771fa6abc65753c21735c1592dbc9aa1](https://github.com/drlukeparry/pyslm/commit/7ac9e4fd771fa6abc65753c21735c1592dbc9aa1)
 - In `pyslm.support` for `BlockSupportBase` that are connected directly to the baseplate are now smoothly created  [df2dd41e0b04160a7ed4c96f8f7c0aed71003430](https://github.com/drlukeparry/pyslm/commit/df2dd41e0b04160a7ed4c96f8f7c0aed71003430)
 - In `pyslm.support` added perforated teeth to the upper and lower surfaces of `GridBlockSupport`  [70c510cce31b0cb297873252fa72c2f67b386423](https://github.com/drlukeparry/pyslm/commit/70c510cce31b0cb297873252fa72c2f67b386423)
+- In `pyslm.support` added a method for checking the approximate intersection of a cylindrical strut `checkStrutCylinderIntersection`  [f2baa3383b1c01512d3a74d74af65931b14f7986](https://github.com/drlukeparry/pyslm/commit/f2baa3383b1c01512d3a74d74af65931b14f7986)
 - In `pyslm.support` added regions for strengthening the support on upper and lower regions of both the skin and slices in
   `GridBlockSupport`  [0121971813e50296e3f6d9bab0beb431067443d2](https://github.com/drlukeparry/pyslm/commit/0121971813e50296e3f6d9bab0beb431067443d2)
 - In `pyslm.support.GridBlockSupport` added methods for labelling generated geometry based on the interior X,Y grid and across the skin [71fb3efd1a8376809850f83760639fa331181436](https://github.com/drlukeparry/pyslm/commit/71fb3efd1a8376809850f83760639fa331181436)

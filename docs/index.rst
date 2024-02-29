@@ -22,6 +22,13 @@ Links
    install
 
 .. toctree::
+   :caption: Examples
+   :maxdepth: 2
+
+   examples
+   examples/basic_hatching
+
+.. toctree::
    :caption: Modules
    :maxdepth: 2
 
