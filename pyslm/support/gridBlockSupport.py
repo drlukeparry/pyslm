@@ -1594,9 +1594,11 @@ class GridBlockSupport(BlockSupportBase):
 
         .. note::
 
-            Currently this is a static member requiring the mesh to be generated prior to slicing. The supports are
+            Currently, this is a static member requiring the mesh to be generated prior to slicing. The supports are
             only sorted in the +ve X and Y directions, therefore take care when rotating meshes beyond 45 degrees.
 
+        :param meshSupports: A list of :class:`trimesh.Trimesh` objects
+        :return: A tuple of the internal truss grid and the boundary truss grid slices
         """
 
         # collect the face attributes

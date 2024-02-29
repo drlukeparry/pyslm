@@ -64,10 +64,12 @@ supportGenerator.triangulationSpacing = 2.0     # [mm] - Used for triangulating 
 supportGenerator.minimumAreaThreshold = 0.1     # Minimum area threshold to not process support region'
 supportGenerator.triangulationSpacing = 4       # [mm^2] - Internal parameter used for generating the mesh of the volume
 supportGenerator.supportBorderDistance = 1.0    # [mm]
+supportGenerator.numSkinMeshSubdivideIterations = 2
 
 # Support teeth parameters
 supportGenerator.useUpperSupportTeeth = True
 supportGenerator.useLowerSupportTeeth = True
+supportGenerator.supportWallThickness = 1.0         # [mm] - The thickness of the upper and support walls to strengthen teeth regions
 supportGenerator.supportTeethTopLength = 0.1        # [mm] - The length of the tab for the support teeth
 supportGenerator.supportTeethHeight = 1.5           # [mm] - Length of the support teeth
 supportGenerator.supportTeethBaseInterval = 1.5     # [mm] - The interval between the support teeth
@@ -163,6 +165,7 @@ meshSupports = []
 
 for supportBlock in supportBlockRegions:
     supportBlock.mergeMesh = False
+    supportBlock.useSupportSkin = True
     meshSupports.append(supportBlock.geometry())
 
 s2 = trimesh.Scene([overhangMesh, myPart.geometry,
@@ -173,6 +176,33 @@ s2.show()
 isectMesh += blockSupportSides
 
 isectMesh = blockSupportMesh + myPart.geometry
+"""
+The final section merges all the geometry and demonstrates slicing across the support structure previously generated.
+"""
+
+# Care must be taken to ensure matplotlib is loaded after the support generation using vispy
+
+import pyslm.visualise
+from pyslm.geometry import Layer, ContourGeometry
+
+innerHatchPaths, boundaryPaths = pyslm.support.GridBlockSupport.slice(meshSupports, 0.5)
+
+layer = Layer()
+gridCoords = pyslm.hatching.simplifyBoundaries(innerHatchPaths, 0.1)
+
+for coords in gridCoords:
+    layerGeom = ContourGeometry()
+    layerGeom.coords = coords.reshape(-1,2)
+    layer.geometry.append(layerGeom)
+
+boundarCoords = pyslm.hatching.simplifyBoundaries(boundaryPaths, 0.1)
+
+for coords in boundarCoords:
+    layerGeom = ContourGeometry()
+    layerGeom.coords = coords.reshape(-1,2)
+    layer.geometry.append(layerGeom)
+
+pyslm.visualise.plotSequential(layer, plotJumps=True, plotArrows=False)
 
 # Obtain the 2D Planar Section at this Z-position
 sections = isectMesh.section(plane_origin=[0.0, 0, 10.0], plane_normal=[0, 0, 1])
