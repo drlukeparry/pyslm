@@ -206,7 +206,7 @@ def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
     if isinstance(layerGeom, HatchGeometry) or isinstance(layerGeom, ContourGeometry):
         scanTime = getLayerGeometryPathLength(layerGeom) / getEffectiveLaserSpeed(bstyle)
     elif isinstance(layerGeom, PointsGeometry):
-        scanTime = layerGeom.coords * float(bstyle.pointExposureTime) * 1e-6
+        scanTime = layerGeom.coords.shape[0] * float(bstyle.pointExposureTime) * 1e-6
     else:
         raise Exception('Invalid LayerGeometry object passed as an argument')
 
