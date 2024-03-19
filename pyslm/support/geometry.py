@@ -303,7 +303,7 @@ def boolUnion(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh
     :return: The Boolean union between Mesh A and Mesh B.
     """
     #vertsOut, facesOut = pycork.union(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
-    outMesh = trimesh.boolean.union([meshA, meshB], engine='manifold')
+    outMesh = trimesh.boolean.union([meshA, meshB], engine='manifold', check_volume=False)
     return outMesh
 
 
@@ -323,7 +323,7 @@ def boolIntersect(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
       """
     #vertsOut, facesOut = pycork.intersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
-    outMesh = trimesh.boolean.intersection([meshA, meshB], engine='manifold')
+    outMesh = trimesh.boolean.intersection([meshA, meshB], engine='manifold', check_volume=False)
     return outMesh
 
 
@@ -344,7 +344,7 @@ def boolDiff(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh:
     """
     #vertsOut, facesOut = pycork.difference(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
-    outMesh = trimesh.boolean.difference([meshA, meshB], engine='manifold')
+    outMesh = trimesh.boolean.difference([meshA, meshB], engine='manifold', check_volume=False)
     return outMesh
 
 

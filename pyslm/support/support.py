@@ -728,10 +728,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
         overhangSubregions = getOverhangMesh(part, overhangAngle, True)
 
-        """
-        The geometry of the part requires exporting as a '.off' file to be correctly used with the Cork Library
-        """
-
         supportBlockRegions = []
 
         totalBooleanTime = 0.0
@@ -750,9 +746,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
             #mergedPoly.merge_vertices(1)
             #mergedPoly = mergedPoly.simplify_spline(self._splineSimplificationFactor)
 
-            # Simplify the polygon to ease simplify extrusion
-
-            # Offset in 2D the support region projection
+            # Simplify the polygon to ease simplify extrusion and offset in 2D the support region projection
             offsetShape = polygon.simplify(self.simplifyPolygonFactor, preserve_topology=False).buffer(-self.outerSupportEdgeGap)
 
             if offsetShape is None or offsetShape.area < self.minimumAreaThreshold:
@@ -786,6 +780,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
             extruMesh2Flat.vertices[:,2] = 0.0
 
             extruMesh2 = trimesh.creation.extrude_triangulation(extruMesh2Flat.vertices[:,:2], extruMesh2Flat.faces, 100)
+
+            # Position the upper-surface of the mesh just below the upper surface (1e-2) to avoid self-intersection
             eMesh2Idx = extruMesh2.vertices[:,2] > 1.0
             extruMesh2.vertices[eMesh2Idx,2] = subregion.vertices[:,2] - 0.01
             extruMesh = extruMesh2
@@ -798,7 +794,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
             bbox = extruMesh.bounds
             cutMesh = boolIntersect(part.geometry, extruMesh)
-            logging.info('\t\t - Mesh intersection time using Cork: {:.3f}s'.format(time.time() - timeIntersect))
+            logging.info('\t\t - Mesh intersection time using manifold: {:.3f}s'.format(time.time() - timeIntersect))
             logging.info('\t -  Finished intersecting mesh')
             totalBooleanTime += time.time() - timeIntersect
 
@@ -953,7 +949,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
                                                                                            ray_directions=ray_dir,
                                                                                            multiple_hits=False)
                 else:
-                    # Base-plate support
+                    # The region was not intersecting with the part so this is a Base-plate support
                     hitLoc2 = []
 
                 if len(hitLoc) != len(coords) or len(hitLoc2) != len(hitLoc):
@@ -999,10 +995,16 @@ class BlockSupportGenerator(BaseSupportGenerator):
                 Previous mesh was used in Version 0.5. This was not necessarily required, but offers the most robust
                 implementation dealing with self-intersections
                 """
-                #blockSupportMesh = boolDiff(part.geometry,extrudedBlock)
+
+
                 extrudedBlock.fix_normals()
                 extrudedBlock.merge_vertices()
-                blockSupportMesh = boolDiff(extrudedBlock, cutMesh)
+
+                if cutMesh.volume < BlockSupportGenerator._intersectionVolumeTolerance:
+                    # Base-plate support voliume is created but requires intersection with the previous full mesh
+                    blockSupportMesh = boolDiff(extrudedBlock, part.geometry)
+                else:
+                    blockSupportMesh = boolDiff(extrudedBlock, cutMesh)
 
                 logging.info('\t\t Boolean Difference Time: {:.3f}\n'.format(time.time() - timeDiff))
 
