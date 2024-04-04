@@ -65,17 +65,18 @@ class GridBlockSupport(BlockSupportBase):
     :attr:`~GridBlockSupport.generateTrussGrid`).
 
     Furthermore, penetrating teeth located at the upper and lower intersection of the support volume can be generated
-    to ease support removal for metal AM processes. A variety of configurable options are included to vary the geometry.
-    The tooth sizes may be specified using :attr:`~GridBlockSupport.supportTeethHeight`,
+    to ease support removal for metal AM processes. A variety of configurable options are included to vary the
+    geometry. The tooth sizes may be specified using :attr:`~GridBlockSupport.supportTeethHeight`,
     :attr:`~GridBlockSupport.supportTeethTopLength`, :attr:`~GridBlockSupport.supportTeethBottomLength`,
-    :attr:`~GridBlockSupport.supportTeethBaseInterval` and an additional self-penetration distance
-    (:attr:`~GridBlockSupport.supportTeethUpperPenetration` and :attr:`~GridBlockSupport.supportTeethLowerPenetration`) to enhance the strength of the support by over-
-    scanning material within the solid part internally. The tooth profile is repeated across the upper edge of the
-    intersected support volume using an internal overrideable function :meth:`toothProfile`. The generation of support
-    teeth on the upper and lower surfaces may be individually toggled by setting
-    :attr:`~GridBlockSupport.useUpperSupportTeeth` and :attr:`~GridBlockSupport.useLowerSupportTeeth` respectively. If
-    the user desires to strengthen the support near the upper and lower surfaces near the support teeth, and additional
-    offsetting can be applied using :attr:`~GridBlockSupport.supportWallThickness`.
+    :attr:`~GridBlockSupport.supportTeethBaseInterval` and an additional self-penetration distance (
+    :attr:`~GridBlockSupport.supportTeethUpperPenetration` and
+    :attr:`~GridBlockSupport.supportTeethLowerPenetration`) to enhance the strength of the support by over- scanning
+    material within the solid part internally. The tooth profile is repeated across the upper edge of the intersected
+    support volume using an internal overrideable function :meth:`toothProfile`. The generation of support teeth on
+    the upper and lower surfaces may be individually toggled by setting
+    :attr:`~GridBlockSupport.useUpperSupportTeeth` and :attr:`~GridBlockSupport.useLowerSupportTeeth` respectively.
+    If the user desires to strengthen the support near the upper and lower surfaces near the support teeth,
+    and additional offsetting can be applied using :attr:`~GridBlockSupport.supportWallThickness`.
 
     The truss is designed to self-intersect at set distance based on both the :attr:`trussAngle` and
     the :attr:`gridSpacing` so that they combine as a consistently connected support mesh. Upon
@@ -123,8 +124,9 @@ class GridBlockSupport(BlockSupportBase):
     @property
     def numSkinMeshSubdivideIterations(self) -> int:
         """
-        Number of times to subdivide the support skin mesh to increase the resolution of the mesh when conforming to
-        the boundary of the support block volume. Default is 2.
+        Number of times to subdivide the exterior skin of the support mesh to increase the resolution to improve the
+        quality of output mesh in order for this to conform with the boundary of the support block volume.
+        The default value is 2.
         """
         return self._numSkinMeshSubdivideIterations
 
@@ -1033,7 +1035,7 @@ class GridBlockSupport(BlockSupportBase):
         Swap the curves based on their overall position in their z-position for the support structure boundary.
         Semantically this makes no difference to the generation of the support structure.
         """
-        if bottom.bounds[0, 2] > top.bounds[0, 2]:
+        if bottom.bounds[1, 2] > top.bounds[1, 2]:
             top, bottom = bottom, top
 
         topPoly3D = top.outline()
@@ -1271,7 +1273,7 @@ class GridBlockSupport(BlockSupportBase):
                     offsetWalls = isectPolyB.union(isectPolyA).buffer(self._supportWallThickness)
                     isectPolyC = offsetWalls.intersection(shapely.geometry.Polygon(myPolyVerts))
                 except:
-                    raise Exception('error: please report bug ')
+                    raise Exception('Error: please share a bug report')
 
                 paths = [np.array(path) for path in infillSolution]
                 newPaths = [np.hstack([path, np.arange(len(path)).reshape(-1, 1)]) for path in paths]
@@ -1302,9 +1304,10 @@ class GridBlockSupport(BlockSupportBase):
                 result2 = self.generateSupportSkinInfill(myPolyVerts, returnPolyNodes=False)
                 handle = pyslm.visualise.plotPolygon([myPolyVerts])
                 pyslm.visualise.plotPolygon(result2, handle)
-                raise Exception('Error: exterior count < 1')
+                raise Exception('Error: exterior count < 1: Please report bug report')
+
             if len(exterior) > 1:
-                raise Exception('Error: exterior count > 1')
+                raise Exception('Error: exterior count > 1. Increase the support border distance to resolve this issue. ')
 
             vy, fy = triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
 
@@ -1597,6 +1600,9 @@ class GridBlockSupport(BlockSupportBase):
             Currently, this is a static member requiring the mesh to be generated prior to slicing. The supports are
             only sorted in the +ve X and Y directions, therefore take care when rotating meshes beyond 45 degrees.
 
+        .. note::
+            The scan order is not currently filtered or sorted in a predefined way and will be implemented in the future.
+
         :param meshSupports: A list of :class:`trimesh.Trimesh` objects
         :return: A tuple of the internal truss grid and the boundary truss grid slices
         """
@@ -1618,7 +1624,6 @@ class GridBlockSupport(BlockSupportBase):
                 continue
 
             # Seperate the mesh types and process independently for convenience
-
             lines, face_index = trimesh.intersections.mesh_plane(mesh=mesh, plane_normal=[0.0, 0, 1.0],
                                                                  plane_origin=[0, 0, z],
                                                                  return_faces=True)
@@ -1629,19 +1634,20 @@ class GridBlockSupport(BlockSupportBase):
 
             """
             Split orderId into arrays based on their order value which were assigned during their generation.
-            The direction can be identified by their type id
+            The direction can be identified by their type id derived from the metadata stored extracted during slicing
             """
+
             unique, inverse = np.unique(orderId, return_inverse=True)
 
             bins = np.unique(orderId)
             splitPiece = []
+
             for i in bins:
                 splitPiece.append(np.where(orderId == i)[0])
-            #splitPiece = np.split(np.argsort(inverse), np.cumsum(np.bincount(inverse))[:-1])
 
-
-
-            # outline is the first group
+            """
+            Dependent on the type order these in sequential order if part of the grid outline is the first group
+            """
             for split in splitPiece:
 
                 # Determine the group type and order appropriately
@@ -1657,13 +1663,20 @@ class GridBlockSupport(BlockSupportBase):
                     # We can assume that the lines are co-linear and can be sorted in ascending order X Value
                     coords = coords.reshape(-1,2)
                     coords = coords[np.argsort(coords[:,1]), :].reshape(-1,2,2)
+                    path = trimesh.util.concatenate([trimesh.load_path(c) for c in coords])
+                    # [TODO] the above is not the most efficient way to resolve this
+
                 elif typeId[split[0]] == GridMeshType.SLICE_Y.value:
                     # We can assume that the lines are co-linear and can be sorted in ascending order Y Value
                     coords = coords.reshape(-1,2)
                     coords = coords[np.argsort(coords[:,0]), :].reshape(-1,2,2)
+                    path = trimesh.util.concatenate([trimesh.load_path(c) for c in coords])
 
-                # Load the connected paths (these will merge connected vertices
-                path = trimesh.load_path(coords)  # .show()
+                else:
+                    # Load the connected paths (these will merge connected vertices)
+                    path = trimesh.load_path(coords, process=False)
+
+                # Convert the entities in the path to a list for re-ordering based on their proximity
                 pEnts = path.entities.tolist()
 
                 conPath = []
@@ -1671,6 +1684,10 @@ class GridBlockSupport(BlockSupportBase):
                 p = pEnts.pop(0)
                 conPath.append(p)
 
+                """
+                Iterate across all connected path entities and identify for each segment type their nearest neighbour
+                and switch the ends of the paths to ensure consistent scanning.
+                """
                 while len(pEnts) > 0:
 
                     # find the nearest point to the end point
@@ -1679,6 +1696,7 @@ class GridBlockSupport(BlockSupportBase):
                     maxDist = 1e8
                     idxFnd = -1
                     swap = False
+
                     for j, p2 in enumerate(pEnts):
                         v2Start = path.vertices[p2.end_points[0]]
                         v2End = path.vertices[p2.end_points[1]]
@@ -1687,7 +1705,7 @@ class GridBlockSupport(BlockSupportBase):
                         dist2 = np.linalg.norm(v2End - vEnd)
 
                         if dist < maxDist:
-                            swap=False
+                            swap = False
                             maxDist = dist
                             idxFnd = j
 
@@ -1706,6 +1724,7 @@ class GridBlockSupport(BlockSupportBase):
 
                 conPath.append(p)
 
+                # Add the ordered connected paths to the output of the slicing either as border or internal grid paths
                 for p in conPath:
 
                     if isBorder:
