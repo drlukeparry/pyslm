@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 ## [0.6.0] - 2024-01-14
 
 ### Added
+- Added documentation covering basic usage for the operation of PySLM
 - In `pyslm.support` added a method for sweeping polygons along a path `sweepPolygon` based on Trimesh  [7ac9e4fd771fa6abc65753c21735c1592dbc9aa1](https://github.com/drlukeparry/pyslm/commit/7ac9e4fd771fa6abc65753c21735c1592dbc9aa1)
 - In `pyslm.support` for `BlockSupportBase` that are connected directly to the baseplate are now smoothly created  [df2dd41e0b04160a7ed4c96f8f7c0aed71003430](https://github.com/drlukeparry/pyslm/commit/df2dd41e0b04160a7ed4c96f8f7c0aed71003430)
 - In `pyslm.support` added perforated teeth to the upper and lower surfaces of `GridBlockSupport`  [70c510cce31b0cb297873252fa72c2f67b386423](https://github.com/drlukeparry/pyslm/commit/70c510cce31b0cb297873252fa72c2f67b386423)
@@ -27,8 +28,10 @@ All notable changes to this project will be documented in this file.
   their order of generation across X,Y planes. This is used for the scan order when slicing and hatching these regions
 
 ### Fixed
+- Fixed a bug in `pyslm.support.GridBlockSupport`  - fixes for identifying top and bottom paths of the skin and fixed ordering during slicing - [7d4c9e1294f17334f97016c22062eccd3111b2a6](https://github.com/drlukeparry/pyslm/commit/7d4c9e1294f17334f97016c22062eccd3111b2a6) 
+- Fixed a bug in `BlockSupportGenerator.identifySupportRegions` where supports connected to the build-plate were not self-intersected with the original mesh - [f1d9c95a5921bf6070799f05fd940cc056d852b1](https://github.com/drlukeparry/pyslm/commit/f1d9c95a5921bf6070799f05fd940cc056d852b1) 
 - Fixed a bug in `pyslm.analysis.getLayerGeometryTime` where the jump distance was not correctly calculated resulting 
-  in an NaN by dividing by zero by checking the build-style jump speed is greater than zero  [d169b30302e79c73ea37f9759feff72784dda4e6](https://github.com/drlukeparry/pyslm/commit/d169b30302e79c73ea37f9759feff72784dda4e6) 
+  in an `NaN` by dividing by zero by checking the build-style jump speed is greater than zero  [d169b30302e79c73ea37f9759feff72784dda4e6](https://github.com/drlukeparry/pyslm/commit/d169b30302e79c73ea37f9759feff72784dda4e6) 
 - Fixed a bug in `pyslm.analysis.getLayerGeometryTime` where the jump delay was not added and default argument is used 
   alternatively in the calculation [3d996ef44284959d40b81918ecfbfba4ef240d0c](https://github.com/drlukeparry/pyslm/commit/3d996ef44284959d40b81918ecfbfba4ef240d0c) 
 - Fixed bug in `pyslm.support.render.Canvas` not capturing the depth correctly - [114ffa9259f844549c4aa509c5e3d4b2db4ab081](https://github.com/drlukeparry/pyslm/commit/114ffa9259f844549c4aa509c5e3d4b2db4ab081)
@@ -41,6 +44,7 @@ All notable changes to this project will be documented in this file.
 - `pyslm.visualise.plot` will now plot point geometries when included [ddb7f27f6c18b6d494870e5823dbede7987e2e12](https://github.com/drlukeparry/pyslm/commit/ddb7f27f6c18b6d494870e5823dbede7987e2e12)
 - In `pyslm.visaulise.plot`, the method will correctly plot `shapely.geometry.MultiPolygon` after the update to Shapely 2.0 [99c7a475e10b9c138e061f56aa28f7780f2a5eac](https://github.com/drlukeparry/pyslm/commit/99c7a475e10b9c138e061f56aa28f7780f2a5eac)
 - Update imports to prevent namespace polluting
+- In `pyslm.analysis` fixed bug for build-time calculation using `pyslm.geometry.PointsGeometry` [7f1e42ae6b30ee157a96303fa6e0b6e5632eabfd](https://github.com/drlukeparry/pyslm/commit/7f1e42ae6b30ee157a96303fa6e0b6e5632eabfd) 
 
 ### Changed
 - Change PySLM to use manifold library instead of pycork [bad0fc0285835e998a3acdb02afa7e0ed02619ee](https://github.com/drlukeparry/pyslm/commit/bad0fc0285835e998a3acdb02afa7e0ed02619ee)
