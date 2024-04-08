@@ -4,9 +4,9 @@ from abc import ABC
 
 import numpy as np
 
+from .utils import getLayerGeometryTime, getEffectiveLaserSpeed
 from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model
 from ..geometry import utils as geomUtils
-from . import utils
 
 
 class LaserState:
@@ -207,7 +207,7 @@ class Iterator(ABC):
             for layerGeomId, layerGeom in enumerate(layer.geometry):
 
                 geomNode = TimeNode(layerNode, id=layerGeomId, value=layerGeom)
-                geomNode.time = utils.getLayerGeometryTime(layerGeom, self._models)
+                geomNode.time = getLayerGeometryTime(layerGeom, self._models)
 
                 layerNode.children.append(geomNode)
 
@@ -254,7 +254,7 @@ class Iterator(ABC):
 
     def getBuildTime(self) -> float:
         """
-        Gets the total build-time of the entire list of layers including additional dwell time between layers.
+        Gets the total buildtime of the entire list of layers including additional dwell time between layers.
         This function  parses through the entire :class:`TimeNode` tree and takes into account the additional dwell
         time included.
         """
@@ -269,12 +269,12 @@ class Iterator(ABC):
 
     def getLayerGeomTime(self, layerId: int, layerGeomId: int ) -> float:
         """
-        Gets the total time for each :class:`LayerGeometry` given a unique a :class:`Layer` index and a
+        Gets the total time for each :class:`~pyslm.geometry.LayerGeometry` given a unique a :class:`~pyslm.geometry.Layer` index and a
         :class:`~pyslm.geometry.LayerGeometry` index.
 
         :param layerId: The layer index in the list
         :param layerGeomId: The layer geometry index within the :class:`Layer`
-        :return: The time for the LayerGeometry
+        :return: The time for the `LayerGeometry`
         """
         return self.tree.children[layerId].children[layerGeomId].time
 
@@ -289,8 +289,8 @@ class Iterator(ABC):
 
     def getTimeByLayerGeometryId(self, layerId: int, layerGeomId: int) -> float:
         """
-        Gets the current time for a :class:`LayerGeometry` given a unique a :class:`~pyslm.geometry.Layer` index and a
-        :class:`~pyslm.geometry.LayerGeometry` index.
+        Gets the current time for a :class:`~pyslm.geometry.LayerGeometry` given a unique a :class:`~pyslm.geometry.Layer`
+        index and a :class:`~pyslm.geometry.LayerGeometry` index.
 
         :param layerId: The layer index in the list
         :param layerGeomId: The layer geometry index within the :class:`Layer`
@@ -398,7 +398,7 @@ class Iterator(ABC):
 
     def getLayerIdByTime(self, time: float) -> int:
         """
-        Gets the current :class:`Layer` index based on the search time
+        Gets the current :class:`~pyslm.geometry.Layer` index based on the search time
 
         :param time: The time for finding the layer
         :return: The Layer Index in the list if found
@@ -570,7 +570,7 @@ class ScanIterator(Iterator):
 
     def getPointInLayerGeometry(self, timeOffset: float, layerGeom: LayerGeometry) -> Tuple[float, float]:
         """
-        Interpolates the current laser point based on a `timeOffset` from the start of the selected
+        Interpolates the current laser point based on the ``timeOffset`` from the start of the selected
         :class:`~pyslm.geometry.LayerGeometry`. It iterates across each scan vector based on a total distance
         accumulated and locates the scan vector to interpolate the position.
 
@@ -579,9 +579,10 @@ class ScanIterator(Iterator):
 
         :return:  The current position of the laser of the time
         """
+
         buildStyle = geomUtils.getBuildStyleById(self.models, layerGeom.mid, layerGeom.bid)
 
-        laserVelocity = utils.getEffectiveLaserSpeed(buildStyle)
+        laserVelocity = getEffectiveLaserSpeed(buildStyle)
 
         if isinstance(layerGeom, ContourGeometry):
             offsetDist = timeOffset  * laserVelocity
@@ -620,7 +621,6 @@ class ScanIterator(Iterator):
             dist = np.hypot(delta[:, 0], delta[:, 1])
             cumDist = np.cumsum(dist)
             cumDist2 = np.insert(cumDist, 0, 0)
-
 
             id = 0
             for i, vec in enumerate(cumDist2):
