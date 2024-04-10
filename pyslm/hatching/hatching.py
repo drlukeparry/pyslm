@@ -774,8 +774,8 @@ class Hatcher(BaseHatcher):
         # Repeat for inner contours
         for i in range(self._numInnerContours):
 
-            if i > 0:
-                offsetDelta -= self._contourOffset
+            if (self._numOuterContours == 0 and i > 0) or self._numOuterContours > 0:
+                    offsetDelta -= self._contourOffset
 
             offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
