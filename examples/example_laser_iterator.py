@@ -102,6 +102,13 @@ pythonic notation
 # Generate a list of point exposures - note the 3rd column is the current time
 ab = np.array([point for point in scanIter])
 
+
+import matplotlib.pyplot as plt
+plt.figure()
+plt.scatter(ab[:,0], ab[:,1], c=plt.cm.jet(ab[:,2]/np.max(ab[:,2])))
+plt.gca().set_aspect('equal', adjustable='box')
+plt.show()
+
 # reset to layer one
 scanIter.seekByLayer(1)
 print("Current time at layer (1): {:.3f})".format(scanIter.time))
