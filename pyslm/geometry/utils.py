@@ -37,7 +37,8 @@ def mergeLayers(layerLists: List[Dict[int, Layer]]) -> Dict[int, Layer]:
 
 def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildStyle, None]:
     """
-    Returns the :class:`Buildstyle` found from a list of :class:`Model`  given a model id and buildstyle  id.
+    Returns the :class:`BuildStyle` found from a list of :class:`Model` given a model id and buildstyle
+    :attr:`BuildStyle.bid`.
 
     :param models: A list of models
     :param mid: The selected model id
@@ -92,7 +93,6 @@ class ModelValidator:
     * References to a correct :class:`BuildStyle` via its (`bid`) for each :class:`LayerGeometry` included
     * References to a correct :class:`Model` via its (`mid`) for each :class:`LayerGeometry` included
     * Ensure there are unique :class:`BuildStyle` entries for each :class:`Model` included
-
 
     The key function that can be called is :meth:`validateBuild`, which ideally should be called before attempting to
     export the layer and model information to a libSLM Machine Build file translator. Additional sub-functions are also

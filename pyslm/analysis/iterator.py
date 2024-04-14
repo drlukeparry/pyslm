@@ -290,7 +290,7 @@ class Iterator(ABC):
     def getTimeByLayerGeometryId(self, layerId: int, layerGeomId: int) -> float:
         """
         Gets the current time for a :class:`~pyslm.geometry.LayerGeometry` given a unique a :class:`~pyslm.geometry.Layer`
-        index and a :class:`~pyslm.geometry.LayerGeometry` index.
+        index and a         :class:`~pyslm.geometry.LayerGeometry` index.
 
         :param layerId: The layer index in the list
         :param layerGeomId: The layer geometry index within the :class:`Layer`
@@ -522,9 +522,9 @@ class LayerGeometryIterator(Iterator):
 
 class ScanIterator(Iterator):
     """
-    The Scan Iterator class provides a  method to iterate at a variable :attr:`timestep` across a build file
-    consisting of a :class:`~pyslm.geometry.Layer` list and :class:`~pyslm.geometry.Model` provided as the input.
-    Typically this is used in numerical simulation of powder-bed fusion processes and also its temporal
+    The Scan Iterator class provides funtionality to iterate at a variable :attr:`timestep` across a build file
+    consisting of a :class:`~pyslm.geometry.Layer` list and :class:`~pyslm.geometry.Model` provided as its input.
+    Typically, this is used in numerical simulation of powder-bed fusion processes and also its temporal
     visualisation. Properties include the current position are available via :meth:`getCurrentLaserPosition` and the
     current laser parameters in :meth:`getCurrentBuildStyle` and if the laser is currently active :meth:`isLaserOn`.
 
@@ -532,10 +532,10 @@ class ScanIterator(Iterator):
         The Iterator classes *assumes* that the laser position during rastering is linearly interpolated across each scan
         vector, based on the :attr:`timestep`, which can be modulated during the iterator.
 
-    ScanIterator builds upon  :class:`Iterator` and utilises the TimeTree cache generated for each
+    ScanIterator builds upon :class:`Iterator` and utilises the TimeTree cache generated for each
     :class:`~pyslm.geometry.Layer` and its set of :class:`~pyslm.geometry.LayerGeometry` objects respectively. If the
-    current time is within the current :class:`LayerGeometry` the current point is interpolated across the
-    individual scan vectors depending on its type in :meth:`getPointInLayerGeometry` using the current
+    current time is within the current :class:`~pyslm.geometry.LayerGeometry` the current point is interpolated across
+    the individual scan vectors depending on its type in :meth:`getPointInLayerGeometry` using the current
     :class:`~pyslm.geometry.BuildStyle` associated with the LayerGeometry.
     """
     def __init__(self, models: List[Model], layers: List[Layer]):
@@ -557,7 +557,7 @@ class ScanIterator(Iterator):
 
     def isLaserOn(self) -> bool:
         """
-        Determines if the laser is currently on.
+        Determines if the laser is currently on at the current iterator time.
 
         :return: Status of the laser
         """
@@ -635,7 +635,7 @@ class ScanIterator(Iterator):
 
     def getCurrentLaserPosition(self) -> Tuple[float, float]:
         """
-        Returns the current position of the point exposure at the current time.
+        Gets the current laser position of the point exposure at the current time.
 
         :return: A tuple representing the exposure point :math:`(x,y)`
         """

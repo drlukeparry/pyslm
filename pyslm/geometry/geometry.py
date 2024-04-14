@@ -338,9 +338,9 @@ class LayerGeometry(abc.ABC):
     A set of coordinates are always available via :attr:`coords`. The coordinates should always be provided as a numpy
     array with a shape of :math:`N \\times 2` corresponding to the LayerGeometry type indexing such as:
 
-    * A :class:`ContourGeometry`
-    * A :class:`HatchGeometry`
-    * A :class:`PointsGeometry`
+    * :class:`ContourGeometry`
+    * :class:`HatchGeometry`
+    * :class:`PointsGeometry`
 
     """
 
