@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
   their order of generation across X,Y planes. This is used for the scan order when slicing and hatching these regions
 
 ### Fixed
+- Fixed a bug in 'pyslm.hatching.BaseHatcher.hatch' - internal contour is offset when needed [344941fdd951152b69d81e97a957fd2709251151](https://github.com/drlukeparry/pyslm/commit/344941fdd951152b69d81e97a957fd2709251151) 
 - Fixed a bug in `pyslm.support.GridBlockSupport`  - fixes for identifying top and bottom paths of the skin and fixed ordering during slicing - [7d4c9e1294f17334f97016c22062eccd3111b2a6](https://github.com/drlukeparry/pyslm/commit/7d4c9e1294f17334f97016c22062eccd3111b2a6) 
 - Fixed a bug in `BlockSupportGenerator.identifySupportRegions` where supports connected to the build-plate were not self-intersected with the original mesh - [f1d9c95a5921bf6070799f05fd940cc056d852b1](https://github.com/drlukeparry/pyslm/commit/f1d9c95a5921bf6070799f05fd940cc056d852b1) 
 - Fixed a bug in `pyslm.analysis.getLayerGeometryTime` where the jump distance was not correctly calculated resulting 

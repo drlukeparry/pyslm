@@ -3,8 +3,6 @@
 import os
 
 from setuptools import setup, find_packages
-from setuptools.extension import Extension
-from Cython.Build import cythonize
 
 # load __version__ without importing anything
 version_file = os.path.join(
