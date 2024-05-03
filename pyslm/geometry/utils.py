@@ -1,6 +1,8 @@
-from typing import Dict, List, Optional, Tuple, Union
-import numpy as np
+from typing import Dict,Iterable, List, Optional, Tuple, Union
 from warnings import warn
+
+import trimesh.transformations
+import numpy as np
 
 from . import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model
 
@@ -12,6 +14,7 @@ def createLayerDict(layerList: List[Layer]) -> Dict[int, Layer]:
     :return: A Dict Structure with Layers
     """
     return {layer.layerId: layer for layer in layerList }
+
 
 def mergeLayers(layerLists: List[Dict[int, Layer]]) -> Dict[int, Layer]:
     """
@@ -33,6 +36,50 @@ def mergeLayers(layerLists: List[Dict[int, Layer]]) -> Dict[int, Layer]:
                 mergedLayers[layer.layerId] = layer
 
     return mergedLayers
+
+def translateLayerGeoms(layerGeoms: Union[LayerGeometry, List[LayerGeometry]],
+                        translation: np.ndarray) -> None:
+    """
+    Apply a translation in-siut to :class:`LayerGeometry` objects
+
+    :param layerGeoms: The Layer Geometries to transform
+    :param translation: The translation vector to apply
+    """
+
+    M = trimesh.transformations.translation_matrix(translation)
+    transformLayerGeoms(layerGeoms, M)
+
+
+def transformLayerGeoms(layerGeoms: Union[LayerGeometry, List[LayerGeometry]],
+                        transform: np.ndarray) -> None:
+    """
+    Apply a transformation in-situ to :class:`LayerGeometry` objects
+
+    .. note::
+
+        The function applies affine transformation matrix first and subsequently followed by translation
+
+    :param layerGeoms: The Layer Geometries to transform
+    :param transform: A (2x2 or 3x3) transformation matrix applied to the coordinates in each :class:`LayerGeometry`
+    """
+
+    if not isinstance(layerGeoms, Iterable):
+        layerGeoms = [layerGeoms]
+
+    if not(transform.shape == (3,3) or transform.shape == (2,2)):
+        raise ValueError('Transformation matrix should be 2x2 or 3x3')
+
+    # Extract the affine transformation (excluding the translation)
+    M = transform[0:2, 0:2]
+
+    # Extract the translation vector
+    if transform.shape == (3,3):
+        T = transform[0:2, 2]
+    else:
+        T = np.array([0.,0.0])
+
+    for geom in layerGeoms:
+        geom.coords = M.dot(geom.coords.T).T + T.reshape(1,2)
 
 
 def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildStyle, None]:
@@ -57,12 +104,13 @@ def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildSty
 
 def getLayerById(layers: List[Layer], layerId: int) -> Layer:
     """
-    Finds the `Layer` within a list given an id
+    Convenience function that locates the :class:`Layer` within a list given a provided layer id by searching across
+    :attr:`Layer.layerId`
 
     :param layers: The list of layers to search
     :param layerId: The layer id to find
 
-    :return: If found the layer or ``None``
+    :return: If found the Layer or ``None``
     """
     layer = next(x for x in layers if x.layerId == layerId)
 
@@ -85,17 +133,17 @@ def getModel(models: List[Model], mid: int) -> Union[BuildStyle, None]:
 
 class ModelValidator:
     """
-    ModelValidator takes the  data structures in `pyslm.geometry` such as a list of  :class:`Layer` and :class:`Model`
-    and validates their input for consistency when utilised together to form a build file prior to exporting
-    using libSLM. Basic checks include:
+    ModelValidator takes the  data structures in `pyslm.geometry` such as a list of :class:`Layer` and :class:`Model`
+    and validates their input for consistency when utilised together to form a machine build file prior to exporting
+    using `libSLM <https://github.com/drlukeparry/libSLM>`_. Basic consistency checks include:
 
     * Validating each :class:`BuildStyle` used in each :class:`Model`, including individual laser parameters
-    * References to a correct :class:`BuildStyle` via its (`bid`) for each :class:`LayerGeometry` included
-    * References to a correct :class:`Model` via its (`mid`) for each :class:`LayerGeometry` included
+    * References to a correct :class:`BuildStyle` via its (:attr:`~BuildStyle.bid`) for each :class:`LayerGeometry` included
+    * References to a correct :class:`Model` via its (:attr:`~BuildStyle.mid`) for each :class:`LayerGeometry` included
     * Ensure there are unique :class:`BuildStyle` entries for each :class:`Model` included
 
-    The key function that can be called is :meth:`validateBuild`, which ideally should be called before attempting to
-    export the layer and model information to a libSLM Machine Build file translator. Additional sub-functions are also
+    The key function that can be called is :meth:`validateBuild`, which is recommened to be called before attempting to
+    export the layer and model information to a libSLM machine build file translator. Additional sub-functions are also
     available for checking specific objects used to construct the build-file.
     """
 
@@ -130,7 +178,7 @@ class ModelValidator:
         if bstyle.bid < 1 or not isinstance(bstyle.bid, int):
             raise Exception("BuildStyle ({:d}) should have a positive integer id".format(bstyle.bid))
 
-        if bstyle.laserPower < 0 :
+        if bstyle.laserPower < 0:
             raise Exception("BuildStyle({:d}).laserPower must be a positive integer".format(bstyle.bid))
 
         if bstyle.laserSpeed < 0:
