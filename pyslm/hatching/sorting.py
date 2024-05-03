@@ -121,14 +121,15 @@ class LinearSort(BaseSort):
     and the projection along the X-axis is sorted in ascending order (+ve X direction).
     """
 
-    def __init__(self):
+    def __init__(self, hatchAngle: float = 0.0):
         super().__init__()
-        self._hatchAngle = 0.0
+        self._hatchAngle = hatchAngle
 
     @property
     def hatchAngle(self) -> float:
         """
-        The hatch angle reference across the scan vectors to be sorted
+        The hatch angle that acts as the reference axis which the scan vectors to be sorted across. This is provided
+        in degrees. 
         """
         return self._hatchAngle
 
