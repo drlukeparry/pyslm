@@ -82,8 +82,6 @@ class HatchDirectionalSort(BaseSort):
     """
     def __init__(self):
         super().__init__()
-
-
     def __str__(self):
         return 'Alternating Hatch Sort'
 
@@ -139,22 +137,22 @@ class LinearSort(BaseSort):
         self._hatchAngle = angle
 
     def sort(self, scanVectors: np.ndarray) -> np.ndarray:
-        # requires an n x 2 x 2 array
+
+        sv = to3DHatchArray(scanVectors)
 
         # Sort along the x-axis and obtain the indices of the sorted array
-
         theta_h = np.deg2rad(self._hatchAngle)
 
         # Find the unit vector normal based on the hatch angle
         norm = np.array([np.cos(theta_h), np.sin(theta_h)])
 
-        midPoints = np.mean(scanVectors, axis=1)
+        midPoints = np.mean(sv, axis=1)
         idx2 = norm.dot(midPoints.T)
         idx3 = np.argsort(idx2)
 
         sortIdx = np.arange(len(midPoints))[idx3]
 
-        return scanVectors[sortIdx]
+        return from3DHatchArray(sv[sortIdx])
 
 
 class GreedySort(BaseSort):
