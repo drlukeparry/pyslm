@@ -40,7 +40,7 @@ def mergeLayers(layerLists: List[Dict[int, Layer]]) -> Dict[int, Layer]:
 def translateLayerGeoms(layerGeoms: Union[LayerGeometry, List[LayerGeometry]],
                         translation: np.ndarray) -> None:
     """
-    Apply a translation in-siut to :class:`LayerGeometry` objects
+    Apply a translation in-situ to :class:`LayerGeometry` objects
 
     :param layerGeoms: The Layer Geometries to transform
     :param translation: The translation vector to apply
@@ -89,7 +89,7 @@ def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildSty
 
     :param models: A list of models
     :param mid: The selected model id
-    :param bid: The selected `Buildstyle` id
+    :param bid: The selected `BuildStyle` id
 
     :return: The :class:`BuildStyle` if found or `None`
     """
@@ -112,6 +112,7 @@ def getLayerById(layers: List[Layer], layerId: int) -> Layer:
 
     :return: If found the Layer or ``None``
     """
+
     layer = next(x for x in layers if x.layerId == layerId)
 
     return layer
