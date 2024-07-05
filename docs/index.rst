@@ -22,11 +22,15 @@ Links
    install
 
 .. toctree::
-   :caption: Examples
+   :caption: Getting Started
    :maxdepth: 2
 
    examples
    examples/basic_hatching
+   examples/basic_geometry
+   examples/basic_visualisation
+   examples/basic_support
+   examples/basic_analysis
 
 .. toctree::
    :caption: Modules

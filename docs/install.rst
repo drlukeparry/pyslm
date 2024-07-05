@@ -64,14 +64,6 @@ and should only be installed using *PythonSLM* package only.
     pip install shapely, Rtree, networkx, scikit-image, pyclipr
     pip install trimesh
 
-If you are interested using the support generation module, there are additional dependencies that
-are required to be installed. These are not required for the core functionality of PySLM such as slicing and hatching.
-These require a working OpenGL environment to work via vispy - the PyQt5 module provides the backend for this currently.
-
-.. code:: bash
-
-    pip install vispy pyqt5 triangle manifold3d mapbox-earcut
-
     
 You can download the precompiled binaries as a Python package from PyPI using pip using:
 
@@ -94,18 +86,17 @@ Due to the technical complexity of the support module, a number of additional so
 required amongst a working Python OpenGL environment. These are not required for the core functionality of
 PySLM such as slicing and hatching to provide a maximise accessibility of the library.
 
-The Python OpenGL environment can be installed with the following
-dependencies:
+The Python OpenGL environment can be installed with the following dependencies:
 
 .. code-block:: bash
 
     pip install PyQt5, vispy
 
-The remaining dependencies are required for the support module to function:
+The remaining dependencies are required for the support module to function correctly:
 
 .. code-block:: bash
 
-    pip install triangle, pyclipr, manifold3d, mapbox-earcut
+    pip install triangle, manifold3d, mapbox-earcut
 
 The `manifold <https://github.com/elalish/manifold>`_ library provides the boolean CSG operations used for intersecting
 meshes between the part model and the support structures.
@@ -138,7 +129,7 @@ libSLM is a c++ library for directly interfacing with machine build files used o
 No strict dependencies are required for compiling libSLM, originally based on the Qt library. This design decision was
 taken to improve the cross-platform behaviour of the project. Python bindings are generated via
 `pybind <https://pybind11.readthedocs.io/en/stable/>`_, which is automatically pulled in by as sub-module by calling
-`git clone with `--recursive`.
+`git clone` with `--recursive`.
 
 
 .. code:: bash
