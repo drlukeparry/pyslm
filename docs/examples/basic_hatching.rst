@@ -12,23 +12,23 @@ material. PySLM is not currently focused on generating paths for extrusion based
 other open source packages that already provide this functionality.
 
 This guide will show you how to use the basic hatching functionality available in the
-`pyslm.hatching` module. The `hatching` module inside pyslm provides the basic underlying framework for
+:mod:`pyslm.hatching` module. The `hatching` module inside pyslm provides the basic underlying framework for
 offsetting and hatching polygonal boundaries passed that are typically obtained from a set of slicing operations on a
-volumetric object, which typically are a triangular mesh encapsulated by `trimesh.Trimesh`. However, alternative means for
+volumetric object, which typically are a triangular mesh encapsulated by `trimesh.Trimesh` object. However, alternative means for
 obtaining geometry can be used such as implicit fields for lattice volumes,
-or those generated procedurally, including functions such as Hilbert Curves. Fundamentally, the only requirement is the
+or those generated procedurally, including mathematics functions such as Hilbert curves. Fundamentally, the only requirement is the
 generation of polygonal boundaries which form the basis of offsetting and hatching operations.
 
 Structure of PySLM
 ----------------------
-In the hatching module there are a variety of classes available that demonstrate the flexibility and capability offered
+In the :mod:`~pyslm.hatching` module there are a variety of classes available that demonstrate the flexibility and capability offered
 for generating alternative infills produce a variety of scan strategies employed in these processes including:
 
 * meander / serpentine,
 * island / checkerboard,
 * stripe.
 
-Although, in practice these can be extended to any infill pattern.
+Although, in practice these can be extended to any infill pattern desired by the user.
 
 The core hatching functionality is included in :class:`pyslm.hatching.BaseHatcher`, which contains the functions for manipulating
 the geometry and for performing basic offsetting and clipping of scan vectors. This is built-upon external functionality
@@ -38,10 +38,9 @@ intersection and offsetting functionality.
 
 PySLM Parts
 --------------------------------
-
 :class:`~pyslm.core.Part` geometry can created from an input mesh geometry supported by those native in the
 `trimesh` library, which typically include .stl, .ply and .3mf. The geometry can be imported by using the
-:meth:`~pyslm.core.Part.setGeometry` method. The part can be transformed using the in-built methods.
+:meth:`~pyslm.core.Part.setGeometry` method. The part can be transformed using  in-built methods.
 
 .. note::
 
@@ -60,12 +59,12 @@ PySLM Parts
 
 Basic transformation operations (e.g. rotation, translation and scaling), can be applied to the
 geometry, especially those which include dropping the part within a distance from the build-plate by using
-:meth:`~pyslm.core.Part.dropToPlatform` method.
+:meth:`~pyslm.core.Part.dropToPlatform` function.
 
 The underlying representation in `trimesh` can be accessed in the :attr:`~pyslm.core.Part.geometry` attribute.
 The transformation are applied on demand when required.  However, if the in-built transformations are modified
-directly since python uses references, the user should call :meth:`~pyslm.core.Part.regenerate` to ensure the internal
-mesh is updated.
+directly because Python internally uses references, the user should call :meth:`~pyslm.core.Part.regenerate` to ensure the internal
+mesh representation is updated.
 
 .. code-block:: python
 
@@ -80,9 +79,10 @@ mesh is updated.
         solidPart.regenerate()
 
 
-:class:`~pyslm.core.Part` aims to provide the foundation for other 3D printing relevant utilities and functionality
+:class:`~pyslm.core.Part` objects aim to provide the foundation for other 3D printing relevant utilities and functionality
 in the future, rather than replicating existing functionality offered by the already extensive `trimesh` library.
-Nevertheless, there are some convenience functions available for accessing the underlying mesh geometry.
+Nevertheless, there are some convenience functions available for accessing the underlying mesh geometry,
+that is fully interchangeable with utilities provided by Trimesh.
 
 .. code-block:: python
 
@@ -98,9 +98,9 @@ offsetting and hatching operations. Many convenience functions are provided for 
 extended across many other AM processes. These include fundamental clipping and boolean operations required for the
 generation of scan vectors.
 
-:class:`~pyslm.hatching.BaseHatcher` is provided with boundaries typically generated from a slicing operation obtained
-from mesh geometry. These boundaries are offset to create a series of internal coordinates and the interior is infilled
-using a series of hatches or potentially other infill patterns.
+:class:`~pyslm.hatching.BaseHatcher` is provided with boundaries that are typically generated from slicing
+the underlying mesh geometry. These boundaries are offset to create a series of internal boundaries with the innermost region infilled
+using a series of hatches or  other infill patterns.
 
 .. code-block:: python
 
@@ -129,7 +129,7 @@ These parameters can be modified at any point during the hatching process across
 (closed polygons) or between layers.
 
 The boundaries of any geometry are passed to the :class:`~pyslm.hatching.BaseHatcher` object using the
-:meth:`~pyslm.hatching.BaseHatcher.hatch` method. The boundaries must be
+:meth:`~pyslm.hatching.BaseHatcher.hatch` method. The boundaries must be fully
 closed connected paths that typically originate from  watertight (manifold) geometry in a mesh. These can be obtained
 from a variety of means but typically are obtained from a slicing operation on a mesh that can be performed directly
 in PySLM. Alternative methods doe exist for other geometries (e.g. implicit models -
@@ -156,14 +156,14 @@ using a convenience method :meth:`pyslm.visualise.plotPolygon`.
    :alt: Visualisation of the slice obtained for a simple example geometry
 
 These can be provided to the hatching infill strategy accordingly. This will create suitable scan vector structures used for
-processing by most commercial PBF systems, which consist of fundamental types defined in `pyslm.hatching`.
+processing by most commercial PBF systems, which consist of fundamental types defined in :mod:`pyslm.hatching`.
 
 In principle, the :meth:`~pyslm.hatching.BaseHatcher.hatch` method will generate and offset a set of borders
 (:class:`pyslm.geometry.ContourGeometry`), and for the interior, infilling with a series of hatch vectors across
 each region (:class:`pyslm.geometry.HatchGeometry`). Parameters must be separately be defined for each set of scan vector
 types, and these parameter sets are specific to different L-PBF platforms. The user can specify the strategy chosen
 using the :meth:`~pyslm.hatching.BaseHatcher.hatch` method, which can apply to other derived classes too. The in-built
-hatch methods will offset the boundary and infill using a particular scan-strategy.
+hatch methods will offset the boundary and infill using a scan-strategy selected by the user.
 
 .. code-block:: python
 
@@ -187,7 +187,7 @@ of plotting options, currently built on top of the matplotlib library.
 
 Alternatively, plots can be showed sequentially in time using the
 :meth:`~pyslm.visualise.plotSequential` function, which can include the jumps between scan vectors by setting the parameter
-`plotJumps` to `True`.
+``plotJumps`` to `True`.
 
 .. code-block:: python
 
@@ -231,12 +231,12 @@ the time and duration taken during scanning. Further information can be found in
     model.mid = 1
     model.buildStyles.append(bstyle)
 
-Once these are set, these structures can be used for exporting the scan vectors to a variety of formats via libSLM or
+Once these are set, these structures can be used for exporting the scan vectors to a variety of formats via `libSLM  <https://github.com/drlukeparry/libSLM>`_ or
 for analysis of the build process or for use in other applications such as simulation.
 
 Analysing Scan Paths
 ----------------------
-Analysis of the layers can be achieved using the `pyslm.analysis` module. The path distance and the estimate time taken
+Analysis of the layers can be achieved using the :mod:`pyslm.analysis` module. The path distance and the estimate time taken
 to scan the layer can be predicted. Additionally other information during the build process such as the jump distance
 can be obtained.
 

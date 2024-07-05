@@ -9,7 +9,7 @@ geometry of a layer within the 'machine build files' used across the majority of
 The typical infill pattern consists of a series of boundaries obtained by slicing that are offset and the interior
 region infilled with hatch vectors, constantly spaced with hatch distance :math:`h_d` and orientated at hatch angle
 :math:`\theta_h`. The offsets of the boundary are arbitrarily chosen but often compensate for the beam size and additional
-offsetting to reduce the likelihood for porosity.
+offsetting to reduce the likelihood for producing porosity and other defects due to instability in the process.
 
 .. image:: ../images/examples/lpbf_slm_layer_geometry_scan_vectors.png
    :width: 600
@@ -18,19 +18,19 @@ offsetting to reduce the likelihood for porosity.
 
 
 Subtly, the scan paths are more concise definition and do not follow the typical G-CODE format used across other 3D
-printing systems. However, there is a tendency that irrespective of the definition the scan paths will follow a
-simiar pattern, that is mostly historically driven by the early L-PBF systems and those based on the original
+printing systems. However, there is a tendency that the definition the scan paths will follow a
+similar pattern, that is mostly historically driven by the early L-PBF systems and those based on the original
 `.cli <https://www.hmilch.net/downloads/cli_format.html>`_ specification.
 
 The structure of machine build file is that composed from the following sections:
 
-* header,
-* models,
-* layers section.
+* Header,
+* Models,
+*  Layers .
 
 The header contains machine specific metadata, and parameters for controlling the build.The models section contains
 details about individual parts within a build and  a selection of Laser Parameters grouped as Build Style. Finally,
-as this remains a planar process the layers section, at a prescribed build height in the Z direction. Each layer
+as this remains a planar process the layers section, at a prescribed build height in the :math:`Z` direction. Each layer
 contains the various 2D layer geometry that describe the infill raster pattern used for controlling the
 scan-paths taken by the exposure sources. The common layer geometry types are 1D exposures or 2D scan vectors that
 are linearly discretised across the layer:
@@ -45,20 +45,20 @@ Geometry Structure
 PySLM builds upon these structures throughout to provide a universal interface for generating
 layer geometry features (i.e. scan-vectors) and subsequent translation to associated machine build files
 that can be utilised across a range of commercial L-PBF systems via `libSLM  <https://github.com/drlukeparry/libSLM>`_
-and simulation tools. These structures are defied in the `pyslm.geometry` module, which will transparently load libSLM
+and simulation tools. These structures are defied in the :mod:`pyslm.geometry` module, which will transparently load libSLM
 if available.
 
 Parts and their Laser Parameters are contained within :class:`~pyslm.geometry.Model`. Each model at a minimum
 must contain a unique :attr:`~pyslm.geometry.Model.mid` (model id) and the
-:attr:`~pyslm.geometry.Model.topLayerId`. The top layer id, identifies the layer that contains the highest Z value for
-any :class:`~pyslm.geometry.LayerGeometry` that is associated with that model. The model can also contain a list
+:attr:`~pyslm.geometry.Model.topLayerId`. The ``top layer id`` identifies the uppermost layer that contains the highest Z value for
+any :class:`~pyslm.geometry.LayerGeometry` that is associated for a model group. The model can also contain a list
 of :class:`~pyslm.geometry.BuildStyle` that define the choice of laser parameters.
 
 .. note::
     Currently it is assumed that laser parameters are assigned to a group of scan vectors. In future, some system support
     may be added to allow for the assignment of laser parameters to individual scan vectors.
 
-The model can be created as follows:
+A :class:`~pyslm.geometry.Model` can be created as follows:
 
 .. code-block:: python
 
@@ -74,7 +74,7 @@ The model can be created as follows:
 
 Build Styles
 -----------------
-Each build style contains a unique id :attr:`~pyslm.geometry.BuildStyle.bid` and a set of laser parameters typical
+Each build style contains a unique  :attr:`~pyslm.geometry.BuildStyle.bid` and a set of laser parameters typical
 across most L-PBF systems. These can be attached to each :class:`~pyslm.geometry.Model`. The laser parameters are
 referenced by each :class:`~pyslm.geometry.LayerGeometry` using their `mid` and `bid` references respectively. Therefore,
 it is required that each model contains at least one build style and are uniquely identifiable.
@@ -112,8 +112,8 @@ used by the L-PBF system when exported to the machine build files. These are def
 The laser parameters are stored in the :class:`~pyslm.geometry.BuildStyle` object and other machine specific parameters
 can be defined and are stated below for reference:
 
-* :attr:`~pyslm.geometry.BuildStyle.pointExposureTime` - Point Exposure Time [mu s] for Pulsed Laser Systems
-* :attr:`~pyslm.geometry.BuildStyle.pointDistance` - Point Exposure Distance [mu m] for Pulsed Laser Systems
+* :attr:`~pyslm.geometry.BuildStyle.pointExposureTime` - Point Exposure Time [:math:`\mu`s] for Pulsed Laser Systems
+* :attr:`~pyslm.geometry.BuildStyle.pointDistance` - Point Exposure Distance [:math:`\mu`m] for Pulsed Laser Systems
 * :attr:`~pyslm.geometry.BuildStyle.laserFocus` - Laser focus position [mm] for some laser systems
 * :attr:`~pyslm.geometry.BuildStyle.laserId` - Laser ID for multi-laser systems
 * :attr:`~pyslm.geometry.BuildStyle.description` - A description of the build style
@@ -179,24 +179,26 @@ The following example demonstrates how to create a layer geometry with a contour
 Validation
 -----------------
 
-The geometry can be validated using an additional utility :class:`~pyslm.geometry.ModelValidator` . This class
-which will check the structures for consistency and ensure that the geometry is correctly defined. This is particularly
+Generated geometry can be validated using an additional utility :class:`~pyslm.geometry.ModelValidator` . This class
+which will check the structures for consistency and ensure that the geometry is correctly defined throughout. This is
 important for large build files consisting multiple models and build styles, and difficulty identify problems that
 can occur when exporting to machine build files.
 
 :class:`~pyslm.geometry.ModelValidator` is supplied with a list of :class:`~pyslm.geometry.Layer` and
 :class:`~pyslm.geometry.Model` , and internally will check for consistency. The following short example demonstrates how to
-validate the geometry:
+validate the geometry used as input prior to generating a machine build file:
 
 .. code-block:: python
-    import pyslm.geometry
 
-    # Create a list of models and a list of layers
-    models = [model]
-    layers = [layer]
+        import pyslm.geometry
 
-    """ Validate the input model """
-    pyslm.geometry.ModelValidator.validateBuild(models, layers)
+        # Create a list of models and a list of layers
+        models = [model]
+        layers = [layer]
+
+        """ Validate the input model """
+        pyslm.geometry.ModelValidator.validateBuild(models, layers)
+
 
 Exporting
 ------------
@@ -239,7 +241,7 @@ or metadata. The following example demonstrates how to export the geometry to a 
     mttWriter.write(header, models, layers)
 
 
-For other machine build file formats, these are similar in construction, but will have specific parameters or modifications
+For other machine build file formats, these are constructed similarly, but will have specific parameters or modifications
 required to be accepted by the system.
 Likewise machine build files can be imported back into PySLM for further analysis or visualisation.
 

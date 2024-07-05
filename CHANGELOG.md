@@ -10,10 +10,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-## [0.6.0] - 2024-01-14
+## [0.6.0] - 2024-07-07
 
 ### Added
-- Added documentation covering basic usage for the operation of PySLM
+- Added documentation covering basic example usage for the operation of PySLM   [8eee1f96f13b4b7915ea862ee643984f8e1e2f41](https://github.com/drlukeparry/pyslm/commit/8eee1f96f13b4b7915ea862ee643984f8e1e2f41)
 - In `pyslm.support` added a method for sweeping polygons along a path `sweepPolygon` based on Trimesh  [7ac9e4fd771fa6abc65753c21735c1592dbc9aa1](https://github.com/drlukeparry/pyslm/commit/7ac9e4fd771fa6abc65753c21735c1592dbc9aa1)
 - In `pyslm.support` for `BlockSupportBase` that are connected directly to the baseplate are now smoothly created  [df2dd41e0b04160a7ed4c96f8f7c0aed71003430](https://github.com/drlukeparry/pyslm/commit/df2dd41e0b04160a7ed4c96f8f7c0aed71003430)
 - In `pyslm.support` added perforated teeth to the upper and lower surfaces of `GridBlockSupport`  [70c510cce31b0cb297873252fa72c2f67b386423](https://github.com/drlukeparry/pyslm/commit/70c510cce31b0cb297873252fa72c2f67b386423)

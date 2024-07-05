@@ -2,7 +2,7 @@ Support Generation
 ==============================
 
 This tutorial will show you how to generate the basic support generation functionality available in the
-`pyslm.support` module. The generation of support structures remains a critical aspect within the majority of
+:mod:`pyslm.support` module. The generation of support structures remains a critical aspect within the majority of
 AM processes. The support structures are used to provide a means of connecting overhanging regions (<45°) to the build
 platform and to ensure buildable specific to the targeted AM process. The support structures are typically removed after the
 completion of the build. Careful generation is necessary to reduce waste material, build-time and reduce post-processing
@@ -346,7 +346,7 @@ The output of the slicing can be visualised.
    :alt: Slicing of structure generation in L-PBF (SLM) with the correct scan-order
 
 As can be seen, the scan order will sequentially scan across each line
-of the grid structure and then the outer boundary of the support structure. This ensures efficient operation when
+of the grid structure and then the outer boundary of the support structure. This ensures efficient scanning operation when
 building the part.
 
 .. note::

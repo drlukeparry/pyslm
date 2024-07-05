@@ -30,8 +30,8 @@ and additional properties across a layer. The functionality builds upon the prim
 the `pyslm.geometry` module, therefore the user should ensure any scan paths conform to this structure.
 Nevertheless, other functions exist for visualising geometry paths.
 
-The visualisation tools are available in the `pyslm.visualise` module. The :meth:`~pyslm.visualise.plot` function is the
-main visualisation tool. The function takes a :class:`~pyslm.geometry.Layer` object as input and a set
+There are numerous visualisation tools  available in the :mod:`pyslm.visualise` module. The :meth:`~pyslm.visualise.plot` function is the
+main technique for plotting scan paths. The function takes a :class:`~pyslm.geometry.Layer` object as input and a set
 of arguments to control its behavior. The plot function can be used to visualise the three layer geometry types:
 
 * :class:`~pyslm.geometry.ContourGeometry` - A set of contour vectors
@@ -113,7 +113,7 @@ is focused on plotting the scan paths in a sequential order in time and addition
 
 Plotting Additional Data
 -------------------------------
-It is possible to use a python lambda function to include additional data stored within
+It is possible to use a Python lambda function to include additional data stored within
 each :class:`~pyslm.geometry.BuildStyle` corresponding to the :class:`~pyslm.geometry.Model` for each set of scan paths.
 Ensure that each :class:`~pyslm.geometry.LayerGeometry` has a corresponding set of BuildStyles in the
 :class:`~pyslm.geometry.Model` when passing it to the lambda function. The lambda function must return a corresponding
