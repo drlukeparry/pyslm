@@ -1,7 +1,6 @@
 PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 =============================================================================
 
-.. https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
 
 .. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
     :alt:  PySLM - Library for Additive Manufacturing and 3D Printing including Selective Laser Melting
@@ -13,7 +12,7 @@ PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 .. image:: https://badge.fury.io/py/PythonSLM.svg
     :target: https://badge.fury.io/py/PythonSLM
 .. image:: https://static.pepy.tech/personalized-badge/pythonslm?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
- :target: https://pepy.tech/project/pythonslm
+    :target: https://pepy.tech/project/pythonslm
 
 
 PySLM is a Python library for supporting development and generation of build files in Additive Manufacturing or 3D
@@ -163,7 +162,7 @@ exclusively in Python, therefore a seperate compiler infrastructure (cython) is 
     python setup.py install
 
 Usage
-******
+********
 A basic example below, shows how relatively straightforward it is to generate a single layer from a STL mesh which
 generates a the hatch infill using a Stripe Scan Strategy typically employed on some commercial systems to limit the
 maximum scan vector length generated in a region.
