@@ -1,0 +1,102 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "PythonSLM"
+dynamic = ["version"]
+description = "Python Package for Additive Manufacturing and 3D Printing Development"
+readme = "README.rst"
+license = {file = "LICENSE"}
+requires-python = ">=3.7"
+authors = [
+    { name = "Luke Parry", email = "dev@lukeparry.uk" },
+]
+keywords = [
+    "3D Printing",
+    "Additive Manufacturing",
+    "AM",
+    "Geometry",
+    "L-PBF",
+    "SLM",
+    "Selective Laser Melting",
+]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "matplotlib",
+    "networkx",
+    "numpy",
+    "pyclipr",
+    "Rtree",
+    "scikit-image",
+    "scipy",
+    "setuptools",
+    "shapely",
+    "trimesh",
+]
+
+[project.optional-dependencies]
+docs = [
+    "matplotlib",
+    "trimesh",
+    "cython",
+    "jupyter",
+    "networkx",
+    "numpy",
+    "pyclipr",
+    "autodocsumm",
+    "scikit-image",
+    "scipy",
+    "shapely",
+    "sphinx",
+    "sphinx-paramlinks",
+    "pypandoc",
+    "sphinx_rtd_theme",
+    "trimesh",
+]
+easy = [
+    "colorlog",
+    "scikit-image",
+    "setuptools",
+    "shapely",
+    "triangle",
+    "trimesh",
+]
+support = [
+    "mapbox-earcut",
+    "manifold3d",
+    "PyQt5",
+    "setuptools",
+    "shapely",
+    "triangle",
+    "trimesh",
+    "vispy",
+]
+
+[project.urls]
+Documentation = "https://pyslm.readthedocs.io/en/latest/"
+Homepage = "https://github.com/drlukeparry/pyslm"
+Source = "https://github.com/drylukeparry/pyslm/pyslm/"
+Tracker = "https://github.com/drlukeparry/pyslm/issues"
+
+[tool.hatch.version]
+path = "pyslm/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "pyslm",
+]
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "pyslm",
+]
