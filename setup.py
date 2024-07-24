@@ -85,8 +85,8 @@ setup(
     name='PythonSLM',
     version=__version__,
     description='Python Package for Additive Manufacturing and 3D Printing Development',
-    long_description=readme,
     long_description_content_type='text/x-rst',
+    long_description=readme,
     author='Luke Parry',
     author_email='dev@lukeparry.uk',
     url='https://github.com/drlukeparry/pyslm',
@@ -98,20 +98,23 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11'
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Natural Language :: English',
         'Topic :: Scientific/Engineering'],
     license="",
     packages=find_packages(exclude=('tests', 'docs', 'examples')),
+    package_data = {'pyslm': ['../LICENSE',  '../CHANGELOG.md', '../README.rst']},
+    include_package_data=False,
     install_requires=list(requirements_default),
     extras_require={'easy': list(requirements_easy),
-                    'support': list(requirements_supports),
-                    'docs': list(requirements_docs)},
+                                'support': list(requirements_supports),
+                                'docs': list(requirements_docs)},
 
     project_urls = {
-    'Documentation': 'https://pyslm.readthedocs.io/en/latest/',
-    'Source': 'https://github.com/drylukeparry/pyslm/pyslm/',
-    'Tracker': 'https://github.com/drlukeparry/pyslm/issues'
+        'Documentation': 'https://pyslm.readthedocs.io/en/latest/',
+        'Source': 'https://github.com/drylukeparry/pyslm/pyslm/',
+        'Tracker': 'https://github.com/drlukeparry/pyslm/issues'
     }
 
 )
