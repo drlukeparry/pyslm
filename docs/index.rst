@@ -9,16 +9,28 @@
 Links
 ==========
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    changelog
    PySLM On Github <http://github.com/drlukeparry/pyslm>
+   references
 
 .. toctree::
    :caption: Installation
    :maxdepth: 2
 
    install
+
+.. toctree::
+   :caption: Getting Started
+   :maxdepth: 2
+
+   examples
+   examples/basic_hatching
+   examples/basic_geometry
+   examples/basic_visualisation
+   examples/basic_support
+   examples/basic_analysis
 
 .. toctree::
    :caption: Modules

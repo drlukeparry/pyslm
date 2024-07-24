@@ -2,10 +2,11 @@ from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
-from pyslm import pyclipper
-from shapely.geometry import LinearRing, MultiPolygon, Polygon
+import pyclipr
 
-from ..geometry import Layer, LayerGeometry, ContourGeometry, HatchGeometry, PointsGeometry
+from shapely.geometry import  MultiPolygon, Polygon
+
+from ..geometry import Layer, ContourGeometry, HatchGeometry
 from .hatching import Hatcher, InnerHatchRegion
 from .utils import pathsToClosedPolygons
 
@@ -145,10 +146,10 @@ class Island(InnerHatchRegion):
 
 class IslandHatcher(Hatcher):
     """
-    IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`~.islandWidth`)
-    which covers a region.  This a common scan strategy adopted across SLM systems. This has the effect of limiting the
-    maximum length of the scan whilst by orientating the scan vectors orthogonal to each other mitigating any
-    preferential distortion or curling  in a single direction and any effects to micro-structure.
+    IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size
+    (:attr:`islandWidth`) which covers a region.  This a common scan strategy adopted across SLM systems.
+    This has the effect of limiting the maximum length of the scan vectors whilst by orientating the scan vectors
+    orthogonal to each other mitigating any     preferential distortion or curling due to residual in a single direction and any effects to the microstructure.
     """
 
     def __init__(self):
@@ -198,21 +199,15 @@ class IslandHatcher(Hatcher):
         with a list of paths. It is not actually used but provided as a reference for users.
         """
 
-        pc = pyclipper.Pyclipper()
+        pc2 = pyclipr.Clipper()
+        pc2.scaleFactor = int(IslandHatcher.CLIPPER_SCALEFACTOR)
 
-        for path in paths:
-            pc.AddPath(self.scaleToClipper(path), pyclipper.PT_CLIP, True)
+        pc2.addPaths(pathSubjects, pyclipr.Subject, True)
+        pc2.addPaths(paths, pyclipr.Clip, True)
+        out = pc2.execute(pyclipr.Intersection, pyclipr.NonZero, returnOpenPaths=False, returnZ=False)
 
-        for subjPath in pathSubjects:
-            pc.AddPath(self.scaleToClipper(subjPath), pyclipper.PT_SUBJECT, True)
+        return out
 
-        # Note open paths (lines) have to used PyClipper::Execute2 in order to perform trimming
-        result = pc.Execute2(pyclipper.CT_INTERSECTION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
-
-        # Cast from PolyNode Struct from the result into line paths since this is not a list
-        output = pyclipper.PolyTreeToPaths(result)
-
-        return self.scaleFromClipper(output)
 
     def generateIslands(self, paths, hatchAngle: Optional[float] = 90.0) -> List[Island]:
         """
@@ -300,12 +295,12 @@ class IslandHatcher(Hatcher):
             offsetDelta -= self._contourOffset
             offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
-            for poly in offsetBoundary:
-                for path in poly:
-                    contourGeometry = ContourGeometry()
-                    contourGeometry.coords = np.array(path)[:, :2]
-                    contourGeometry.subType = "outer"
-                    layer.geometry.append(contourGeometry)  # Append to the layer
+            for path in offsetBoundary:
+                contourGeometry = ContourGeometry()
+                coords = np.vstack([path, path[0]])
+                contourGeometry.coords = coords
+                contourGeometry.subType = "outer"
+                layer.geometry.append(contourGeometry)  # Append to the layer
 
         # Repeat for inner contours
         for i in range(self._numInnerContours):
@@ -313,18 +308,22 @@ class IslandHatcher(Hatcher):
             offsetDelta -= self._contourOffset
             offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
-            for poly in offsetBoundary:
-                for path in poly:
-                    contourGeometry = ContourGeometry()
-                    contourGeometry.coords = np.array(path)[:, :2]
-                    contourGeometry.subType = "inner"
-                    layer.geometry.append(contourGeometry)  # Append to the layer
+            for path in offsetBoundary:
+                contourGeometry = ContourGeometry()
+                coords = np.vstack([path, path[0]])
+                contourGeometry.coords = coords
+                contourGeometry.subType = "inner"
+                layer.geometry.append(contourGeometry)  # Append to the layer
 
         # The final offset is applied to the boundary
 
         offsetDelta -= self._volOffsetHatch
 
         curBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
+
+        if len(curBoundary) < 1:
+            # No internal regions to hatch
+            return layer
 
         scanVectors = []
 
@@ -371,27 +370,33 @@ class IslandHatcher(Hatcher):
             # ISSUE - the max coordinate id should be used to update this but it adds additional computiatonal complexity
             idx += coords.shape[0] / 2
 
-        clippedCoords = np.vstack(clippedCoords)
-        unclippedCoords = np.vstack(unclippedCoords).reshape(-1,2,3)
+        if len(unclippedCoords) < 1:
+            unclippedCoords = np.array([]).reshape(-1,2,3)
+        else:
+            unclippedCoords = np.vstack(unclippedCoords).reshape(-1, 2, 3)
 
-        # Clip the hatches of the boundaries to fill to the boundary
-        clippedPaths = self.clipLines(curBoundary, clippedCoords)
-        clippedPaths = np.array(clippedPaths)
+        if len(clippedCoords) > 0:
+            clippedCoords = np.vstack(clippedCoords)
+
+            # Clip the hatches of the boundaries to fill to the boundary
+            clippedPaths = self.clipLines(curBoundary, clippedCoords)
+            clippedPaths = np.array(clippedPaths)
+        else:
+            clippedPaths = np.array([]).reshape(-1,2,3)
 
         # Merge hatches from both groups together
         hatches = np.vstack([clippedPaths, unclippedCoords])
         clippedLines = self.clipperToHatchArray(hatches)
 
         # Merge the lines together
-        if len(clippedPaths) > 0:
+        if len(clippedLines) > 0:
 
             # Extract only x-y coordinates and sort based on the pseudo-order stored in the z component.
             clippedLines = clippedLines[:, :, :3]
             id = np.argsort(clippedLines[:, 0, 2])
+
             clippedLines = clippedLines[id, :, :]
-
             scanVectors.append(clippedLines)
-
 
         if len(clippedLines) > 0:
             # Scan vectors have been created for the hatched region
@@ -415,7 +420,7 @@ class IslandHatcher(Hatcher):
 
     def intersectIslands(self, paths, islands: List[Island]) -> Tuple[Any, Any]:
         """
-        Perform the intersection and overlap tests on the island sub regions. This should be performed before any
+        Perform the intersection and overlap tests on the island sub-regions. This should be performed before any
         clipping operations are performed.
 
         :param paths: List of coordinates describing the boundary
@@ -423,11 +428,7 @@ class IslandHatcher(Hatcher):
 
         :return: A tuple containing lists of clipped and unClipped islands
         """
-        polys = []
-        for path in paths:
-            polys += pathsToClosedPolygons(path)
-
-        poly = MultiPolygon(polys)
+        poly = MultiPolygon(pathsToClosedPolygons(paths))
 
         intersectIslands = []
         overlapIslands = []
@@ -449,7 +450,6 @@ class IslandHatcher(Hatcher):
                 intersectIslandsSet.add(i)  # id
                 intersectIslands.append(island.boundary)
                 island.setIntersecting(True)
-
 
         unTouchedIslandSet = intersectIslandsSet - overlapIslandsSet
         unTouchedIslands = [islands[i] for i in unTouchedIslandSet]

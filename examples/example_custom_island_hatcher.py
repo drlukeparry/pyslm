@@ -102,7 +102,7 @@ class HexIsland(hatching.Island):
         coords = np.matmul(R, coords.T).T
 
         # Clip the hatch fill to the boundary
-        boundary = [[self.localBoundary()]]
+        boundary = [self.localBoundary()]
         clippedLines = np.array(hatching.BaseHatcher.clipLines(boundary, coords))
 
         # Sort the hatches

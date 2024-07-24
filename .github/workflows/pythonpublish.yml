@@ -4,8 +4,8 @@
 name: Upload Python Package
 
 on:
-  push:
-    branches: [ master ]
+  release:
+    types: [published]
 
 jobs:
   deploy:
@@ -13,9 +13,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, '3.10']
-        os: [ubuntu-latest, macos-latest, windows-latest]
-
+        python-version: [3.7, 3.8, 3.9, '3.10', '3.11', '3.12']
+        os: [ubuntu-latest, macos-latest, macos-13, windows-latest]
+        exclude:
+        - os: ubuntu-latest
+          python-version: '3.12'
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python

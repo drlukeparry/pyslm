@@ -1,53 +1,30 @@
 """
 Support generation script - Shows how to generate basic block supports using PySLM
-Support Generation currently requires compiling the `Cork library <https://github.com/gilbo/cork> and then providing
-the path to the compiled executable`
 """
 
-
-
-
 import numpy as np
-from vispy import app
-
-app.use_app('pyqt5') # Set backend
+import logging
 
 from matplotlib import pyplot as plt
 from pyslm.core import Part
 import pyslm.support
 
+import vispy
 import trimesh
 import trimesh.creation
-import logging
+
+"""
+Uncomment the line below to provide debug messages for OpenGL - if issues arise.
+"""
+# vispy.set_log_level('debug')
 
 logging.getLogger().setLevel(logging.INFO)
 
 ## CONSTANTS ####
-CORK_PATH = '/home/lparry/Development/src/external/cork/bin/cork'
-
-pyslm.support.BlockSupportGenerator.CORK_PATH = CORK_PATH
-
 OVERHANG_ANGLE = 55 # deg - Overhang angle
 
-
-img = np.zeros([1000,1000])
-x,y = np.meshgrid(np.arange(0,img.shape[1]), np.arange(0, img.shape[0]))
-
-solid = np.sqrt((x-500)**2 + (y-500)**2) < 400
-bound =   np.sqrt((x-500)**2 + (y-500)**2)
-#solid = img[:,:,3].astype(np.float64)
-orient = np.array([1.0,1.0])
-orient = orient / np.linalg.norm(orient)
-perp = np.array((orient[1], orient[0]))
-
-
-dotProd = np.dot(x, orient[0])+np.dot(y,orient[1])
-solid2 = solid*( np.sin(0.2*dotProd))
-bound * solid2
-
-
 """
-Set the Geometry for the Example
+Set the Geometry for the Example using a complicated topology optimised bracket geometry
 """
 myPart = Part('myPart')
 myPart.setGeometry("../models/bracket.stl", fixGeometry=True)
@@ -60,37 +37,52 @@ myPart.dropToPlatform(10)
 
 """ Extract the overhang mesh - don't explicitly split the mesh"""
 overhangMesh = pyslm.support.getOverhangMesh(myPart, OVERHANG_ANGLE,
-                                             splitMesh=False, useConnectivity=False)
-overhangMesh.visual.face_colors = [254.0, 0., 0., 254]
+                                             splitMesh=False, useConnectivity=True)
 
+overhangMesh.visual.face_colors = [254.0, 0., 0., 254]
 
 """
 Generate the geometry for the supports (Point and Edge Over Hangs)
 """
 # First generate point and edge supports
 pointOverhangs = pyslm.support.BaseSupportGenerator.findOverhangPoints(myPart)
-overhangEdges = pyslm.support.BaseSupportGenerator.findOverhangEdges(myPart)
+overhangEdges  = pyslm.support.BaseSupportGenerator.findOverhangEdges(myPart)
 
 """
 Generate block supports for the part.
-The GridBlockSupportGenerator class is initialised and the parameters below are specified
+
+The GridBlockSupportGenerator class is initialised and the parameters below are specified as a reasonable starting
+defaults for the algorithm. The GridBlockSupport generator overrides the BlockSupportGenerator class and provides
+additional methods for generating a grid-truss structure from the support volume.
 """
 supportGenerator = pyslm.support.GridBlockSupportGenerator()
-supportGenerator.rayProjectionResolution = 0.1 # [mm] - The resolution of the grid used for the ray projection
-supportGenerator.innerSupportEdgeGap = 0.2 # [mm] - Inner support offset used between adjacent support distances
-supportGenerator.outerSupportEdgeGap = 0.2 # [mm] - Outer support offset used for the boundaries of overhang regions
-supportGenerator.simplifyPolygonFactor = 0.5 #  - Factor used for simplifying the overall support shape
-supportGenerator.triangulationSpacing = 2.0 # [mm] - Used for triangulating the extruded polygon for the bloc
-supportGenerator.minimumAreaThreshold = 0.1 # Minimum area threshold to not process support region'
-supportGenerator.triangulationSpacing = 4
-supportGenerator.supportBorderDistance = 1.0
-supportGenerator.splineSimplificationFactor = 10
-#supportGenerator.gridSpacing = [20,20]
+supportGenerator.rayProjectionResolution = 0.05 # [mm] - The resolution of the grid used for the ray projection
+supportGenerator.innerSupportEdgeGap = 0.3      # [mm] - Inner support offset used between adjacent support distances
+supportGenerator.outerSupportEdgeGap = 0.3      # [mm] - Outer support offset used for the boundaries of overhang regions
+supportGenerator.simplifyPolygonFactor = 0.5    #      - Factor used for simplifying the overall support shape
+supportGenerator.triangulationSpacing = 2.0     # [mm] - Used for triangulating the extruded polygon for the bloc
+supportGenerator.minimumAreaThreshold = 0.1     # Minimum area threshold to not process support region'
+supportGenerator.triangulationSpacing = 4       # [mm^2] - Internal parameter used for generating the mesh of the volume
+supportGenerator.supportBorderDistance = 1.0    # [mm]
+supportGenerator.numSkinMeshSubdivideIterations = 2
 
+# Support teeth parameters
+supportGenerator.useUpperSupportTeeth = True
+supportGenerator.useLowerSupportTeeth = True
+supportGenerator.supportWallThickness = 1.0         # [mm] - The thickness of the upper and support walls to strengthen teeth regions
+supportGenerator.supportTeethTopLength = 0.1        # [mm] - The length of the tab for the support teeth
+supportGenerator.supportTeethHeight = 1.5           # [mm] - Length of the support teeth
+supportGenerator.supportTeethBaseInterval = 1.5     # [mm] - The interval between the support teeth
+supportGenerator.supportTeethUpperPenetration = 0.2 # [mm] - The penetration of the support teeth into the part
 
-# Generate a list of  Grid Block Supports (trimesh objects currently)
-supportBlockRegions = supportGenerator.identifySupportRegions(myPart, OVERHANG_ANGLE)
+supportGenerator.splineSimplificationFactor = 10 # - Specify the smoothing factor using spline interpolation for the support boundaries
+supportGenerator.gridSpacing = [5,5] # [mm] The Grid
 
+"""
+Generate a list of Grid Block Supports (trimesh objects currently). The contain the support volumes and other generated
+information identified from the support surfaces identified on the part based on the choice of overhang angle.
+"""
+supportBlockRegions = supportGenerator.identifySupportRegions(myPart, OVERHANG_ANGLE, True)
 
 for block in supportBlockRegions:
     block.trussWidth = 1.0
@@ -105,12 +97,9 @@ meshVerts = myPart.geometry.vertices
 centroids = myPart.geometry.triangles_center
 
 if True:
-    """ Visualise Edge Supports"""
+    """ Visualise Edges potentially requiring support"""
     edgeRays = np.vstack([meshVerts[edge] for edge in overhangEdges])
     visualize_support_edges = trimesh.load_path((edgeRays).reshape(-1, 2, 3))
-    colorCpy = visualize_support_edges.colors.copy()
-    colorCpy[:] = [254, 0, 0, 254]
-    visualize_support_edges.colors = colorCpy
 
     edge_supports = []
     for edge in overhangEdges:
@@ -133,15 +122,10 @@ if True:
         point_supports += trimesh.creation.cylinder(radius = cylinder_rad, segment =coords)
         rays.append(coords)
 
-
     # Alternatively can be visualised by lines
     rays = np.hstack([meshVerts[pointOverhangs]]*2).reshape(-1, 2, 3)
     rays[:, 1, 2] = 0.0
     visualize_support_pnts = trimesh.load_path(rays)
-
-
-import trimesh.creation
-
 
 # Make the normal part transparent
 myPart.geometry.visual.vertex_colors = [80,80,80, 125]
@@ -149,29 +133,39 @@ myPart.geometry.visual.vertex_colors = [80,80,80, 125]
 """
 Visualise all the support geometry
 """
+
 """ Identify the sides of the block extrudes """
-s1 = trimesh.Scene([myPart.geometry, overhangMesh] + blockSupports) # , overhangMesh] + supportExtrudes)
+s1 = trimesh.Scene([myPart.geometry] + blockSupports)
+
+"""
+The following section exports the group of support structures from the trimesh scene. 
+"""
 
 with open('overhangSupport.glb', 'wb') as f:
     f.write(trimesh.exchange.gltf.export_glb(s1, include_normals=True))
 
-DISPLAY_BLOCK_VOLUME = True
+"""
+Show only the volume block supports generated
+"""
+DISPLAY_BLOCK_VOLUME = False
 
 if DISPLAY_BLOCK_VOLUME:
     s2 = trimesh.Scene([myPart.geometry, overhangMesh,
-                        point_supports, edge_supports,
                         blockSupports])
     s2.show()
 
-#
 """
-Merge the support geometry together into a single mesh
+The following section generates the grid-truss structure by calling the geometry method. As a summary, the process 
+takes a multiple cross-sections across the support volume and extracts the faces of the volume boundary projected onto
+an equivalent 2D area. Within the 2D regions a series of lines are offset and intersected to produce a grid structure.
+The polygon is converted to a triangular mesh and the boundary truss is mapped back onto the original 3D boundary.
 """
 
 meshSupports = []
 
 for supportBlock in supportBlockRegions:
     supportBlock.mergeMesh = False
+    supportBlock.useSupportSkin = True
     meshSupports.append(supportBlock.geometry())
 
 s2 = trimesh.Scene([overhangMesh, myPart.geometry,
@@ -182,6 +176,33 @@ s2.show()
 isectMesh += blockSupportSides
 
 isectMesh = blockSupportMesh + myPart.geometry
+"""
+The final section merges all the geometry and demonstrates slicing across the support structure previously generated.
+"""
+
+# Care must be taken to ensure matplotlib is loaded after the support generation using vispy
+
+import pyslm.visualise
+from pyslm.geometry import Layer, ContourGeometry
+
+innerHatchPaths, boundaryPaths = pyslm.support.GridBlockSupport.slice(meshSupports, 0.5)
+
+layer = Layer()
+gridCoords = pyslm.hatching.simplifyBoundaries(innerHatchPaths, 0.1)
+
+for coords in gridCoords:
+    layerGeom = ContourGeometry()
+    layerGeom.coords = coords.reshape(-1,2)
+    layer.geometry.append(layerGeom)
+
+boundarCoords = pyslm.hatching.simplifyBoundaries(boundaryPaths, 0.1)
+
+for coords in boundarCoords:
+    layerGeom = ContourGeometry()
+    layerGeom.coords = coords.reshape(-1,2)
+    layer.geometry.append(layerGeom)
+
+pyslm.visualise.plotSequential(layer, plotJumps=True, plotArrows=False)
 
 # Obtain the 2D Planar Section at this Z-position
 sections = isectMesh.section(plane_origin=[0.0, 0, 10.0], plane_normal=[0, 0, 1])

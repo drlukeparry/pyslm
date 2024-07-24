@@ -17,10 +17,14 @@ repository as it allows the user to see and execute the examples within the sour
 
     git clone https://github.com/drlukeparry/pyslm.git
 
-PySLM may be compiled directly from source. This requires compiling the code rather than pure vanilla installation of
-the source. Currently the prerequisites are the cython package and a compliant c++ build environment.
-In order to compile, it is necessary to have a valid c++ compiler environment depending on the user's
-platform and additionally cython in order to compile the ClipperLib module. For Windows this is likely to be MSVC
+PySLM (version >0.6) and onwards is now source only, and the ClipperLib library originally bundled with PySLM is not
+required therefore internal compilation via cython is not required. Thus, this simplifies the distribution and
+installation of PySLM.
+
+Legacy versions of PySLM (version <= 0.5) require compiling directly from source. This requires compiling the code
+rather than pure vanilla installation of the source. Currently the prerequisites are the cython package and a compliant
+c++ build environment. In order to compile, it is necessary to have a valid c++ compiler environment depending on the
+user's platform and additionally cython in order to compile the ClipperLib module. For Windows this is likely to be MSVC
 compiler, Linux - GCC/Clang, Mac OS X - Clang.
 
 The compilation of PySLM can be done using the following command
@@ -36,18 +40,19 @@ Installation with PyPI
 ========================
 
 Installation is currently supported across all platforms on Windows, Mac OS X and Linux environments.
-The pre-requisites for using PySLM can be installed via PyPi and/or Anaconda distribution. The main dependencies
-are contained within the
+The pre-requisites for using PySLM can be installed via PyPi and/or Anaconda distribution. PySLM is solely a source
+distribution, with all additional dependencies precompiled where possible across all main platforms. The main
+dependencies are contained within the
 `requirements.txt <https://github.com/drlukeparry/pyslm/blob/master/requirements.txt>`_
 file, however, the predominant dependencies are those required by `Trimesh <https://github.com/mikedh/trimesh>`_ -
-the library for loading,and manipulating and working with popular mesh formats.
+the library for loading and manipulating and working with popular mesh formats.
 
 .. code:: bash
 
     conda install -c conda-forge shapely, Rtree, networkx, scikit-image, cython, trimesh
     conda install trimesh
     
-or using PyPi
+Alternatively, the more common approach is using PyPi to install the dependencies.
 
 Packages are now pre-compiled (inc. build test) using github actions CI for use on a variety of Platforms
 (Windows 10, Ubuntu, Mac OS X). The pre-compiled packages are securely uploaded directly from github to PyPi repository
@@ -56,11 +61,11 @@ and should only be installed using *PythonSLM* package only.
 
 .. code:: bash
 
-    pip install shapely, Rtree, networkx, scikit-image, cython
+    pip install shapely, Rtree, networkx, scikit-image, pyclipr
     pip install trimesh
+
     
-    
-You can download the precompiled binaries as a Python package from PyPI using Pip. Just use:
+You can download the precompiled binaries as a Python package from PyPI using pip using:
 
 .. code-block:: bash
 
@@ -70,7 +75,7 @@ You can download the precompiled binaries as a Python package from PyPI using Pi
     Historically PySLM package was unavailable for use by the project. The name is secured and for user's security and
     to prevent confusion will be retained by the author.
 
-Installation dependencies for the support module
+Installation Support Module Dependencies
 ###################################################
 
 The support module requires a system with a working implementation of OpenGL 2.1 (available across the majority of
@@ -79,26 +84,25 @@ successfully tested across all platforms (Windows 10, Ubuntu, Mac OS X).
 
 Due to the technical complexity of the support module, a number of additional soft dependencies are currently
 required amongst a working Python OpenGL environment. These are not required for the core functionality of
-PySLM such as slicing and hatching to provide a maximise accessibility of the lbirary.
+PySLM such as slicing and hatching to provide a maximise accessibility of the library.
 
-The Python OpenGL environment can be installed with the following
-dependencies:
+The Python OpenGL environment can be installed with the following dependencies:
 
 .. code-block:: bash
 
     pip install PyQt5, vispy
 
-The remaining dependencies are required for the support module to function:
+The remaining dependencies are required for the support module to function correctly:
 
 .. code-block:: bash
 
-    pip install triangle, pycork, mapbox-earcut
+    pip install triangle, manifold3d, mapbox-earcut
 
-The `Pycork <http://github.com/drlukeparry/pycork>`_ library provides the boolean CSG operations used for intersecting
+The `manifold <https://github.com/elalish/manifold>`_ library provides the boolean CSG operations used for intersecting
 meshes between the part model and the support structures.
 
-Installing the support library (libSLM)
-#########################################
+Installing libSLM
+###################
 
 libSLM is a c++ support library for the translation (reading and writing) of machine build files commonly used with
 commercial SLM systems. Potentially the library could be extended to SLA platforms.
@@ -120,12 +124,12 @@ at the discretion of the author until prior notice.
 Installation
 ===============
 
-libSLM is fundamentally a c++ library for directly interfacing with machine build files.
+libSLM is a c++ library for directly interfacing with machine build files used on commercial L-PBF fusion systems.
 
 No strict dependencies are required for compiling libSLM, originally based on the Qt library. This design decision was
 taken to improve the cross-platform behaviour of the project. Python bindings are generated via
 `pybind <https://pybind11.readthedocs.io/en/stable/>`_, which is automatically pulled in by as sub-module by calling
-`git clone with `--recursive`.
+`git clone` with `--recursive`.
 
 
 .. code:: bash

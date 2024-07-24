@@ -4,6 +4,56 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+### Fixed
+
+### Changed
+
+## [0.6.0] - 2024-07-07
+
+### Added
+- Added documentation covering basic example usage for the operation of PySLM   [8eee1f96f13b4b7915ea862ee643984f8e1e2f41](https://github.com/drlukeparry/pyslm/commit/8eee1f96f13b4b7915ea862ee643984f8e1e2f41)
+- In `pyslm.support` added a method for sweeping polygons along a path `sweepPolygon` based on Trimesh  [7ac9e4fd771fa6abc65753c21735c1592dbc9aa1](https://github.com/drlukeparry/pyslm/commit/7ac9e4fd771fa6abc65753c21735c1592dbc9aa1)
+- In `pyslm.support` for `BlockSupportBase` that are connected directly to the baseplate are now smoothly created  [df2dd41e0b04160a7ed4c96f8f7c0aed71003430](https://github.com/drlukeparry/pyslm/commit/df2dd41e0b04160a7ed4c96f8f7c0aed71003430)
+- In `pyslm.support` added perforated teeth to the upper and lower surfaces of `GridBlockSupport`  [70c510cce31b0cb297873252fa72c2f67b386423](https://github.com/drlukeparry/pyslm/commit/70c510cce31b0cb297873252fa72c2f67b386423)
+- In `pyslm.support` added a method for checking the approximate intersection of a cylindrical strut `checkStrutCylinderIntersection`  [f2baa3383b1c01512d3a74d74af65931b14f7986](https://github.com/drlukeparry/pyslm/commit/f2baa3383b1c01512d3a74d74af65931b14f7986)
+- In `pyslm.support` added regions for strengthening the support on upper and lower regions of both the skin and slices in
+  `GridBlockSupport`  [0121971813e50296e3f6d9bab0beb431067443d2](https://github.com/drlukeparry/pyslm/commit/0121971813e50296e3f6d9bab0beb431067443d2)
+- In `pyslm.support.GridBlockSupport` added methods for labelling generated geometry based on the interior X,Y grid and across the skin [71fb3efd1a8376809850f83760639fa331181436](https://github.com/drlukeparry/pyslm/commit/71fb3efd1a8376809850f83760639fa331181436)
+- In `pyslm.support.GridBlockSupport` added methods for slicing the geometry into layers and performing sorting to provide correct orientation [4c7000b604b3f231d0160312aa2cd5a170de69f1](https://github.com/drlukeparry/pyslm/commit/4c7000b604b3f231d0160312aa2cd5a170de69f1)
+- Added methods `pyslm.hatching.poly2paths` , `pyslm.hatching.paths2clipper` and `pyslm.hatching.clipper2paths` for conversion 
+  between shapely polygons and pyclipr paths  [adcb371e62e45a5dbadfa46e4e5589a0f5cb28ae](https://github.com/drlukeparry/pyslm/commit/adcb371e62e45a5dbadfa46e4e5589a0f5cb28ae)
+- In `pyslm.support.GridBlockSupport` the grid truss slices include additional face-attributes `order` and `type` describing 
+  their order of generation across X,Y planes. This is used for the scan order when slicing and hatching these regions
+
+### Fixed
+- Fixed a bug in 'pyslm.hatching.BaseHatcher.hatch' - internal contour is offset when needed [344941fdd951152b69d81e97a957fd2709251151](https://github.com/drlukeparry/pyslm/commit/344941fdd951152b69d81e97a957fd2709251151) 
+- Fixed a bug in `pyslm.support.GridBlockSupport`  - fixes for identifying top and bottom paths of the skin and fixed ordering during slicing - [7d4c9e1294f17334f97016c22062eccd3111b2a6](https://github.com/drlukeparry/pyslm/commit/7d4c9e1294f17334f97016c22062eccd3111b2a6) 
+- Fixed a bug in `BlockSupportGenerator.identifySupportRegions` where supports connected to the build-plate were not self-intersected with the original mesh - [f1d9c95a5921bf6070799f05fd940cc056d852b1](https://github.com/drlukeparry/pyslm/commit/f1d9c95a5921bf6070799f05fd940cc056d852b1) 
+- Fixed a bug in `pyslm.analysis.getLayerGeometryTime` where the jump distance was not correctly calculated resulting 
+  in an `NaN` by dividing by zero by checking the build-style jump speed is greater than zero  [d169b30302e79c73ea37f9759feff72784dda4e6](https://github.com/drlukeparry/pyslm/commit/d169b30302e79c73ea37f9759feff72784dda4e6) 
+- Fixed a bug in `pyslm.analysis.getLayerGeometryTime` where the jump delay was not added and default argument is used 
+  alternatively in the calculation [3d996ef44284959d40b81918ecfbfba4ef240d0c](https://github.com/drlukeparry/pyslm/commit/3d996ef44284959d40b81918ecfbfba4ef240d0c) 
+- Fixed bug in `pyslm.support.render.Canvas` not capturing the depth correctly - [114ffa9259f844549c4aa509c5e3d4b2db4ab081](https://github.com/drlukeparry/pyslm/commit/114ffa9259f844549c4aa509c5e3d4b2db4ab081)
+- Invalid projection of extruded prismatic mesh in `support.GridBlockSupportGenerator.identifySupportMethods`. Generated mesh
+  is not automatically processed by Trimesh prior to extrusion to prevent mismatch between vertices. [df2dd41e0b04160a7ed4c96f8f7c0aed71003430](https://github.com/drlukeparry/pyslm/commit/df2dd41e0b04160a7ed4c96f8f7c0aed71003430)
+- Fixed the `pyslm.support` module to use manifold3D library instead of pycork  [df2dd41e0b04160a7ed4c96f8f7c0aed71003430](https://github.com/drlukeparry/pyslm/commit/df2dd41e0b04160a7ed4c96f8f7c0aed71003430)
+- Updated to Trimesh version 4.0 [081dede9a14357fe9fb706470a5d42e698b763a6](https://github.com/drlukeparry/pyslm/commit/081dede9a14357fe9fb706470a5d42e698b763a6)
+- Update to Shapely Library version 2.0 [081dede9a14357fe9fb706470a5d42e698b763a6](https://github.com/drlukeparry/pyslm/commit/081dede9a14357fe9fb706470a5d42e698b763a6)
+- Fixes for IslandHatcher when processing empty regions  [f9ff55ecc2709c3514b1d14f815cb2620856be97](https://github.com/drlukeparry/pyslm/commit/f9ff55ecc2709c3514b1d14f815cb2620856be97)
+- `pyslm.visualise.plot` will now plot point geometries when included [ddb7f27f6c18b6d494870e5823dbede7987e2e12](https://github.com/drlukeparry/pyslm/commit/ddb7f27f6c18b6d494870e5823dbede7987e2e12)
+- In `pyslm.visaulise.plot`, the method will correctly plot `shapely.geometry.MultiPolygon` after the update to Shapely 2.0 [99c7a475e10b9c138e061f56aa28f7780f2a5eac](https://github.com/drlukeparry/pyslm/commit/99c7a475e10b9c138e061f56aa28f7780f2a5eac)
+- Update imports to prevent namespace polluting
+- In `pyslm.analysis` fixed bug for build-time calculation using `pyslm.geometry.PointsGeometry` [7f1e42ae6b30ee157a96303fa6e0b6e5632eabfd](https://github.com/drlukeparry/pyslm/commit/7f1e42ae6b30ee157a96303fa6e0b6e5632eabfd) 
+
+### Changed
+- Change PySLM to use manifold library instead of pycork [bad0fc0285835e998a3acdb02afa7e0ed02619ee](https://github.com/drlukeparry/pyslm/commit/bad0fc0285835e998a3acdb02afa7e0ed02619ee)
+- Change PySLM to use pyclipr library [081dede9a14357fe9fb706470a5d42e698b763a6](https://github.com/drlukeparry/pyslm/commit/dda04c15b66ace3c487bc5e20acd806dda1ba89a)
+- `pyslm.visualise.plot` by default only plots for a single layer [02ccc1d503580cea802d996f6d6532c2f7526c8f](https://github.com/drlukeparry/pyslm/commit/02ccc1d503580cea802d996f6d6532c2f7526c8f)
+- Removal of custom pyclipper bindings and removing the requirement for compiling via cython [f434d77c8670bbb0bf5e289d9b7d2c011a9dcc92](https://github.com/drlukeparry/pyslm/commit/f434d77c8670bbb0bf5e289d9b7d2c011a9dcc92)
+- Cannot currently use` `mergeMesh` in `pyslm.support.GridBlockSupport` due to change to the manifold boolean CSG library
+
 ## [0.5.0] - 2022-04-26
 
 ### Added

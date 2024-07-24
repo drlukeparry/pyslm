@@ -1,12 +1,11 @@
 """
 Provides supporting functions to generate geometry for support structures
 """
-
+from typing import Any, List, Optional, Tuple
 import logging
 import collections
 
 import numpy as np
-from typing import Any, List, Optional, Tuple
 
 import trimesh
 from trimesh import grouping
@@ -18,10 +17,194 @@ from shapely.geometry import Polygon
 from mapbox_earcut import triangulate_float64, triangulate_float32
 from triangle import triangulate
 
-import pycork
 
-from pyslm import pyclipper
+def checkStrutCylinderIntersection(pntA: np.array, pntB: np.array, radius: float,
+                                   mesh: trimesh.Trimesh, returnLocation: Optional[bool] = False,
+                                   numPoints: Optional[int] = 6,
+                                   centreOnly: Optional[bool] = False):
+    """
+    Checks if the segment with number of cylinders between pnt and pnt2 intersects with the mesh. The number of
+    points (`numPoints`) determines the equal number of positions to perform the intersection radially at the
+    specified `radius`.
 
+    :param pntA: Start point of the line segment
+    :param pntB: End point of the line segment
+    :param radius: Radius of the cylinder to check intersection with
+    :param mesh: The mesh to check intersection with
+    :param returnLocation: If 'True' returns the hit location
+    :param numPoints: Number of points in the cylinder to check intersection with. Default is 6
+    :param centreOnly: Only perform the intersection between `pntA` and `pntB`
+
+    :return: If intersecting with mesh return `True`
+    """
+
+    from trimesh import util
+    from trimesh import transformations as tf
+
+    """  Calculate the points around the cylinder based on the number of points """
+    theta = np.linspace(0, 2 * np.pi, numPoints, endpoint=False)
+    verts_3d_prev = np.vstack([np.cos(theta), np.sin(theta), np.zeros(numPoints)]).T * radius
+
+    p1 = np.asanyarray(pntA).reshape(-1, 3)
+    p2 = np.asanyarray(pntB).reshape(-1, 3)
+
+    delta = p2 - p1
+    dist = np.linalg.norm(delta, axis=1)
+    norm = delta / dist
+
+    if centreOnly:
+        # Only perform the ray intersection test between points p1 and p2
+        hitLoc, index_ray, index_tri = mesh.ray.intersects_location(p1, norm, multiple_hits=False)
+    else:
+        x, y, z = util.generate_basis(norm.ravel())
+        tf_mat = np.ones((4, 4))
+        tf_mat[:3, :3] = np.c_[x, y, z]
+        tf_mat[:3, 3] = p1
+        verts_3d = tf.transform_points(verts_3d_prev, tf_mat)
+
+        norm = np.repeat(norm, numPoints, axis=0)
+        hitLoc, index_ray, index_tri = mesh.ray.intersects_location(verts_3d, norm, multiple_hits=False)
+
+    dist2 = 1e12
+
+    # If the ray-projection distance is less than the path length - then there is an intersection across
+    # the length of the line segment
+    if len(hitLoc) > 0:
+        v1 = hitLoc - p1
+        dist2 = np.linalg.norm(v1, axis=1)
+
+    hasIntersection = np.any(dist2 < dist)
+
+    if returnLocation:
+        return hasIntersection, hitLoc.ravel()
+    else:
+        return hasIntersection
+
+
+def sweepPolygon(polygon, path, angles=None, scaleFactors=None, **kwargs) -> trimesh.Trimesh:
+    """
+    Sweeps a polygon with a variable size across the length of the path. The function is based on that internally
+    used in trimesh.
+
+    :param polygon: Polygon to sweep
+    :param path: The path segment to sweep across
+    :param angles: Variable angles used to rotate the polygon across the path
+    :param scaleFactors: Variable scale-factors used to rotate the polygon across the path
+    :return: The swept mesh
+    """
+
+    from trimesh import util
+    from trimesh import transformations as tf
+    from trimesh.creation import triangulate_polygon
+    path = np.asanyarray(path, dtype=np.float64)
+
+    if not util.is_shape(path, (-1, 3)):
+        raise ValueError('Path must be (n, 3)!')
+
+    # Extract 2D vertices and triangulation
+    verts_2d = np.array(polygon.exterior.xy).T
+    base_verts_2d, faces_2d = triangulate_polygon(
+        polygon, **kwargs)
+    n = len(verts_2d)
+
+    # Create basis for first planar polygon cap
+    x, y, z = util.generate_basis(path[0] - path[1])
+    tf_mat = np.ones((4, 4))
+    tf_mat[:3, :3] = np.c_[x, y, z]
+    tf_mat[:3, 3] = path[0]
+
+    prevScalFactor = scaleFactors[0]
+    tf_mat1 = tf.scale_matrix(scaleFactors[0, 0], origin=path[0])
+
+    # Compute 3D locations of those vertices
+    verts_3d = np.c_[verts_2d, np.zeros(n)]
+    verts_3d = tf.transform_points(verts_3d, tf_mat)
+    verts_3d = tf.transform_points(verts_3d, tf_mat1)
+
+    base_verts_3d = np.c_[base_verts_2d,
+    np.zeros(len(base_verts_2d))]
+    base_verts_3d = tf.transform_points(base_verts_3d,
+                                        tf_mat)
+
+    base_verts_3d = tf.transform_points(base_verts_3d,
+                                        tf_mat1)
+
+    # keep matching sequence of vertices and 0- indexed faces
+    vertices = [base_verts_3d]
+    faces = [faces_2d]
+
+    # Compute plane normals for each turn --
+    # each turn induces a plane halfway between the two vectors
+    v1s = util.unitize(path[1:-1] - path[:-2])
+    v2s = util.unitize(path[1:-1] - path[2:])
+    norms = np.cross(np.cross(v1s, v2s), v1s + v2s)
+    norms[(np.abs(norms) < 1e-6).all(1)] = v1s[(np.abs(norms) < 1e-6).all(1)]
+    norms = util.unitize(norms)
+    final_v1 = util.unitize(path[-1] - path[-2])
+    norms = np.vstack((norms, final_v1))
+    v1s = np.vstack((v1s, final_v1))
+
+    # Create all side walls by projecting the 3d vertices into each plane in succession
+
+    prevScalFactor = scaleFactors[0]
+
+    for i in range(len(norms)):
+        verts_3d_prev = verts_3d
+
+        # Rotate if needed
+        if angles is not None:
+            tf_mat = tf.rotation_matrix(angles[i],
+                                        norms[i],
+                                        path[i])
+            verts_3d_prev = tf.transform_points(verts_3d_prev,
+                                                tf_mat)
+        """
+        Apply the scale factors across the paths if specified
+        The scale factors are applied incrementally in order, therefore as a result the previous scale factor
+        must be inverted to ensure the correct scaling is applied
+        """
+        if scaleFactors is not None:
+            tf_mat1 = tf.scale_matrix(1 / scaleFactors[i, 0], path[i])
+            verts_3d_prev = tf.transform_points(verts_3d_prev, tf_mat1)
+
+            tf_mat1 = tf.scale_matrix(scaleFactors[i + 1, 0], path[i + 1])
+            verts_3d_prev = tf.transform_points(verts_3d_prev, tf_mat1)
+
+        # Project vertices onto plane in 3D
+        ds = np.einsum('ij,j->i', (path[i + 1] - verts_3d_prev), norms[i])
+        ds = ds / np.dot(v1s[i], norms[i])
+
+        verts_3d_new = np.einsum('i,j->ij', ds, v1s[i]) + verts_3d_prev
+
+        # Add to face and vertex lists
+        new_faces = [[i + n, (i + 1) % n, i] for i in range(n)]
+        new_faces.extend([[(i - 1) % n + n, i + n, i] for i in range(n)])
+
+        # save faces and vertices into a sequence
+        faces.append(np.array(new_faces))
+        vertices.append(np.vstack((verts_3d, verts_3d_new)))
+
+        verts_3d = verts_3d_new
+
+    # do the main stack operation from a sequence to (n,3) arrays
+    # doing one vstack provides a substantial speedup by
+    # avoiding a bunch of temporary  allocations
+    vertices, faces = util.append_faces(vertices, faces)
+
+    # Create final cap of the sweep path
+    x, y, z = util.generate_basis(path[-1] - path[-2])
+    vecs = verts_3d - path[-1]
+    coords = np.c_[np.einsum('ij,j->i', vecs, x),
+    np.einsum('ij,j->i', vecs, y)]
+    base_verts_2d, faces_2d = triangulate_polygon(Polygon(coords), **kwargs)
+    base_verts_3d = (np.einsum('i,j->ij', base_verts_2d[:, 0], x) +
+                     np.einsum('i,j->ij', base_verts_2d[:, 1], y)) + path[-1]
+    faces = np.vstack((faces, faces_2d + len(vertices)))
+    vertices = np.vstack((vertices, base_verts_3d))
+
+    mesh = trimesh.Trimesh(vertices, faces)
+
+    return mesh
 
 def extrudeFace(extrudeMesh: trimesh.Trimesh,
                 height: Optional[float] = None,
@@ -107,52 +290,51 @@ def extrudeFace(extrudeMesh: trimesh.Trimesh,
 
 def boolUnion(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh:
     """
-    Performs a Boolean CSG union operation using the `pycork <https://github.com/drlukeparry/pycork>`_ library  between
-    two meshes.
+    Performs a Boolean CSG union operation using the `manifold3d <https://github.com/elalish/manifold>`_ library
+    between two meshes.
 
     .. note::
-        The meshes provided should ideally be watertight (manifold) and have no-self intersecting faces to ensure that
-        the underlying Cork Library can correctly perform the operation. The resultant mesh is processed natively
+        The meshes provided should  be watertight (manifold) and have no-self intersecting faces to ensure that
+        the underlying manifold3D Library can correctly perform the operation. The resultant mesh is processed natively
         using Trimesh to merge coincident vertices and remove degenerate faces.
-
 
     :param meshA: Mesh A
     :param meshB: Mesh B
     :return: The Boolean union between Mesh A and Mesh B.
     """
-    vertsOut, facesOut = pycork.union(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
-
-    return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
+    #vertsOut, facesOut = pycork.union(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
+    outMesh = trimesh.boolean.union([meshA, meshB], engine='manifold', check_volume=False)
+    return outMesh
 
 
 def boolIntersect(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
     """
-      Performs a Boolean CSG intersection operation using the `pycork <https://github.com/drlukeparry/pycork>`_ library
-      between two meshes.
+    Performs a Boolean CSG intersection operation using the `manifold3d <https://github.com/elalish/manifold>`_ library
+    between two meshes.
 
-      .. note::
-          The meshes provided should ideally be watertight (manifold) and have no-self intersecting faces to ensure that
-          the underlying Cork Library can correctly perform the operation. The resultant mesh is processed natively
-          using Trimesh to merge coincident vertices and remove degenerate faces.
-
+    .. note::
+        The meshes provided should  be watertight (manifold) and have no-self intersecting faces to ensure that
+        the underlying manifold3D Library can correctly perform the operation. The resultant mesh is processed natively
+        using Trimesh to merge coincident vertices and remove degenerate faces.
 
       :param meshA: Mesh A
       :param meshB: Mesh B
       :return: The Boolean intersection between Mesh A and Mesh B.
       """
-    vertsOut, facesOut = pycork.intersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
+    #vertsOut, facesOut = pycork.intersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
-    return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
+    outMesh = trimesh.boolean.intersection([meshA, meshB], engine='manifold', check_volume=False)
+    return outMesh
 
 
 def boolDiff(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh:
     """
-    Performs a Boolean CSG difference operation using the `pycork <https://github.com/drlukeparry/pycork>`_ library
+    Performs a Boolean CSG difference operation using the `manifold3d <https://github.com/elalish/manifold>`_ library
     between two meshes.
 
     .. note::
-        The meshes provided should ideally be watertight (manifold) and have no-self intersecting faces to ensure that
-        the underlying Cork Library can correctly perform the operation. The resultant mesh is processed natively
+        The meshes provided should  be watertight (manifold) and have no-self intersecting faces to ensure that
+        the underlying manifold3D Library can correctly perform the operation. The resultant mesh is processed natively
         using Trimesh to merge coincident vertices and remove degenerate faces.
 
 
@@ -160,27 +342,26 @@ def boolDiff(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh:
     :param meshB: Mesh B
     :return: The Boolean difference between Mesh A and Mesh B.
     """
-    vertsOut, facesOut = pycork.difference(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
+    #vertsOut, facesOut = pycork.difference(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
-    return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
+    outMesh = trimesh.boolean.difference([meshA, meshB], engine='manifold', check_volume=False)
+    return outMesh
 
 
 def resolveIntersection(meshA: trimesh.Trimesh) -> trimesh.Trimesh:
     """
-    Resolves all self-intersections within a meshn using the `pycork <https://github.com/drlukeparry/pycork>`_ library.
+    Resolves all self-intersections within a mesh
 
     .. note::
-        The meshes provided should ideally be watertight (manifold) and have no-self intersecting faces to ensure that
-        the underlying Cork Library can correctly perform the operation. The resultant mesh is processed natively
-        using Trimesh to merge coincident vertices and remove degenerate faces.
-
+        This function has become deprecated due to the transfer to the `manifold3d` library
 
     :param meshA: Mesh A
     :return: Mesh with all intersections resolved
     """
-    vertsOut, facesOut = pycork.resolveIntersection(meshA.vertices, meshA.faces)
 
-    return trimesh.Trimesh(vertices=vertsOut, faces=facesOut, process=True)
+    raise Exception('Unsupported')
+
+    return trimesh.Trimesh()
 
 
 def createPath2DfromPaths(paths: List[np.ndarray]) -> trimesh.path.Path2D:
@@ -210,7 +391,11 @@ def path2DToPathList(shapes: List[shapely.geometry.polygon.Polygon]) -> List[np.
 
     paths = []
 
+    if shapes is None:
+        return []
+
     for poly in shapes:
+
         coords = np.array(poly.exterior.coords)
         paths.append(coords)
 
@@ -237,21 +422,19 @@ def sortExteriorInteriorRings(polyNode,
     exteriorRings = []
     interiorRings = []
 
-    if polyNode.Contour:
+    if len(polyNode.polygon) > 0:
 
-        contour = pyslm.hatching.BaseHatcher.scaleFromClipper(polyNode.Contour)
+        contour = polyNode.polygon
 
         if closePolygon:
-            contour.append(contour[0])
+            contour = np.vstack([contour, contour[-1]])
 
-        contour = np.array(contour)[:, :2]
-
-        if polyNode.IsHole:
+        if polyNode.isHole:
             interiorRings.append(contour)
         else:
             exteriorRings.append(contour)
 
-    for node in polyNode.Childs:
+    for node in polyNode.children:
 
         exteriorChildRings, interiorChildRings = sortExteriorInteriorRings(node, closePolygon)
 
@@ -521,11 +704,11 @@ def triangulatePolygon(section,
     library Mapbox using the Ear Clipping algorithm - see `Mapbox <https://github.com/mapbox/earcut.hpp>`_ and
     the `Ear-Cut <https://pypi.org/project/mapbox-earcut/>`_ PyPi package .
 
-    By using the :class:`pyclipper.PyPolyNode` object, ClipperLib automatically generates a polygon hierarchy tree for
+    By using the :class:`pyclipr.PyPolyNode` object, ClipperLib automatically generates a polygon hierarchy tree for
     separating both external contours and internal holes, which can be passed directly to the earcut algorithm.
     Otherwise, this requires passing all paths and sorting these to identify interior holes.
 
-    :param section: A :class:`pyclipper.PyPolyNode` object containing a collection of polygons
+    :param section: A :class:`pyclipr.PyPolyNode` object containing a collection of polygons
     :param closed: If the polygo is already closed
     :return: A tuple of vertices and faces generated from the triangulation
     """

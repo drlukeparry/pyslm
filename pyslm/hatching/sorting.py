@@ -55,6 +55,48 @@ class FlipSort(BaseSort):
         return from3DHatchArray(sv)
 
 
+class ChainSort(BaseSort):
+    """
+    Chains together hatch sorting algorithms.
+    """
+
+    def __init__(self, sorters: List[BaseSort]):
+        super().__init__()
+
+        self._sorters = sorters
+
+    def __str__(self):
+        return 'Chain Sort'
+
+    def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        sv = scanVectors.copy()
+
+        for sorter in self._sorters:
+            sv = sorter.sort(sv)
+
+        return sv
+
+class HatchDirectionalSort(BaseSort):
+    """
+    Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
+    """
+    def __init__(self):
+        super().__init__()
+    def __str__(self):
+        return 'Alternating Hatch Sort'
+
+    def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        """ This approach simply flips the odd pair of hatches"""
+
+        sv = to3DHatchArray(scanVectors)
+        delta = np.diff(sv, axis=1).reshape(-1,2)
+        ang = np.arctan2(delta[:, 0], delta[:, 1])
+
+        sv[ang < 0] = np.flip(sv[ang < 0], 1)
+
+        sv[1::2] = np.flip(sv[1::2], 1)
+        return from3DHatchArray(sv)
+
 class AlternateSort(BaseSort):
     """
     Sort method flips pairs of scan vectors so that their direction alternates across adjacent vectors.
@@ -79,14 +121,15 @@ class LinearSort(BaseSort):
     and the projection along the X-axis is sorted in ascending order (+ve X direction).
     """
 
-    def __init__(self):
+    def __init__(self, hatchAngle: float = 0.0):
         super().__init__()
-        self._hatchAngle = 0.0
+        self._hatchAngle = hatchAngle
 
     @property
     def hatchAngle(self) -> float:
         """
-        The hatch angle reference across the scan vectors to be sorted
+        The hatch angle that acts as the reference axis which the scan vectors to be sorted across. This is provided
+        in degrees. 
         """
         return self._hatchAngle
 
@@ -95,22 +138,22 @@ class LinearSort(BaseSort):
         self._hatchAngle = angle
 
     def sort(self, scanVectors: np.ndarray) -> np.ndarray:
-        # requires an n x 2 x 2 array
+
+        sv = to3DHatchArray(scanVectors)
 
         # Sort along the x-axis and obtain the indices of the sorted array
-
         theta_h = np.deg2rad(self._hatchAngle)
 
         # Find the unit vector normal based on the hatch angle
         norm = np.array([np.cos(theta_h), np.sin(theta_h)])
 
-        midPoints = np.mean(scanVectors, axis=1)
+        midPoints = np.mean(sv, axis=1)
         idx2 = norm.dot(midPoints.T)
         idx3 = np.argsort(idx2)
 
         sortIdx = np.arange(len(midPoints))[idx3]
 
-        return scanVectors[sortIdx]
+        return from3DHatchArray(sv[sortIdx])
 
 
 class GreedySort(BaseSort):

@@ -1,5 +1,4 @@
 import numpy as np
-import numpy as np
 
 from enum import Enum
 import abc
@@ -36,12 +35,12 @@ class BuildStyle:
 
     * :attr:`laserPower`,
     * :attr:`laserSpeed`,
-    * :attr:`.pointDistance` and :attr:`pointExposureTime` - (required for pulsed mode lasers).
+    * :attr:`.pointDistance` and :attr:`pointExposureTime` - required for pulsed mode lasers.
 
     A unique buildstyle id (:attr:`bid`) must be set within each
     :class:`Model` group that it is stored in and later assigned for each :class:`LayerGeometry` group. Additional,
     metadata can be set that for some Machine Build File formats are used such as :attr:`name` and :attr:`description`.
-    For single and multi-laser systems, :attr:` laserId` corresponds with the parameter set associated with the laser.
+    For single and multi-laser systems, :attr:`laserId` corresponds with the parameter set associated with the laser.
     This offers opportunity to tailor the behavior of multiple beams applied to the same area such as providing
     a pre-heating or annealing exposure pass.
 
@@ -75,7 +74,7 @@ class BuildStyle:
     def bid(self) -> int:
         """
         A unique id used for each :class:`BuildStyle` object within each :class:`Model` that can be referenced by
-        a :class:`LayerGeometry`
+        a :class:`LayerGeometry`.
         """
         return self._bid
 
@@ -85,7 +84,7 @@ class BuildStyle:
 
     @property
     def name(self) -> str:
-        """ The name of the :class:`BuildStyle`"""
+        """ The name of the :class:`BuildStyle`."""
         return self._name
 
     @name.setter
@@ -105,7 +104,7 @@ class BuildStyle:
 
     @property
     def laserId(self) -> int:
-        """ The ID of the laser beam used for the exposure. Typically set to `1` for single laser systems """
+        """ The ID of the laser beam used for the exposure. Typically set to `1` for single laser systems. """
         return self._laserId
 
     @laserId.setter
@@ -145,7 +144,7 @@ class BuildStyle:
     @property
     def laserSpeed(self) -> float:
         """
-        The laser speed typically expresses as :math:`mm/s.
+        The laser speed typically expresses as `mm/s`.
 
         .. note::
             For pulsed laser mode systems this is typically ignored. """
@@ -178,8 +177,8 @@ class BuildStyle:
     @property
     def pointDelay(self) -> int:
         """
-        The delay added between individual point exposure (usually expressed as an integer [:math:`\\mu s]`).
-        This must be set to zero (default) if it is not explicitly used.
+        The delay added between individual point exposure (usually expressed as an integer :math:`\\mu s`).
+        This must be set to `zero` (default) if it is not explicitly used.
         """
         return self._pointDelay
 
@@ -190,7 +189,7 @@ class BuildStyle:
     @property
     def jumpDelay(self) -> int:
         """
-        The jump delay between scan vectors (usually expressed as an integer [:math:`\mu s`]). This must be set to
+        The jump delay between scan vectors (usually expressed as an integer :math:`\mu s`). This must be set to
         zero (default) if it is not explicitly used.
         """
         return self._jumpDelay
@@ -271,7 +270,7 @@ class Model:
 
     @property
     def buildStyles(self) -> List[BuildStyle]:
-        """ The BuildStyles associated with this model """
+        """ The BuildStyles associated with this model. """
         return self._buildStyles
 
     @buildStyles.setter
@@ -280,7 +279,7 @@ class Model:
 
     @property
     def mid(self) -> int:
-        """The unique id for this Model"""
+        """The unique id for this `Model`. """
         return self._mid
 
     @mid.setter
@@ -289,7 +288,7 @@ class Model:
 
     @property
     def name(self) -> str:
-        """ The name described by the model"""
+        """ The name described by the model. """
         return self._name
 
     @name.setter
@@ -336,8 +335,13 @@ class LayerGeometry(abc.ABC):
     A Layer Geometry is the base class type used for storing a group of scan vectors or exposures. This is assigned a
     model id (:attr:`mid`) and a build style (:attr:`bid`).
 
-    A set of coordinates are always available via :attr:`coords`. The coordinates should always be a numpy array that
-    with a shape of Nx2 corresponding to the LayerGeometry type.
+    A set of coordinates are always available via :attr:`coords`. The coordinates should always be provided as a numpy
+    array with a shape of :math:`N \\times 2` corresponding to the LayerGeometry type indexing such as:
+
+    * :class:`ContourGeometry`
+    * :class:`HatchGeometry`
+    * :class:`PointsGeometry`
+
     """
 
     def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0, coords: Optional[np.ndarray] = None):
@@ -367,7 +371,7 @@ class LayerGeometry(abc.ABC):
     @property
     def mid(self) -> int:
         """
-        The Model Id used for the LayerGeometry The Model Id refers to the collection of unique build-styles
+        The Model id used for the :class:`LayerGeometry`. The Model Id refers to the collection of unique build-styles
         assigned to a part within a build.
         """
         return self._mid
@@ -493,12 +497,17 @@ class ScanMode:
 
 class Layer:
     """
-    Slice Layer is a simple class structure for containing a set of SLM :class:`LayerGeometry` including specific
-    derivatives including: :class:`ContourGeometry`, :class:`HatchGeometry`, :class:`PointsGeometry` types stored in
-    :attr:`geometry` and also the current slice or layer position in :attr:`z`.
+    A `Layer` represents a slice in the printing process for L-PBF. Usually a build is composed of a series of Layers
+    which include additional laser parameters referenced in a :class:`Model`. This is a simple class structure for
+    containing a set of :class:`LayerGeometry` including specific derivatives including:
 
-    The layer z position is stored in an integer format to remove any specific rounding - typically this is specified
-    as the number of microns.
+    * Contours/Borders: :class:`ContourGeometry`,
+    * Hatches: :class:`HatchGeometry`,
+    * Point Exposures: :class:`PointsGeometry`.
+
+    These geometry objects are stored in :attr:`geometry`. Other properties for the layer include the current Z encoded
+    position in :attr:`layerId` or absolute layer position in :attr:`z`. The layer z position is stored in an integer
+    format to remove any specific rounding - typically this is specified as the number of microns.
     """
 
     def __init__(self, z: Optional[int] = 0, id: Optional[int] = 0):
@@ -514,6 +523,9 @@ class Layer:
         return self._layerFilePosition
 
     def isLoaded(self) -> bool:
+        """
+        Indicates if the layer is loaded.
+        """
         return True
 
     @property
@@ -560,7 +572,7 @@ class Layer:
         Complimentary method to match libSLM API. This appends any :class:`LayerGeometry` and derived classes into the
         Layer in sequential order.
 
-        :param geom: The LayerGeometry to add to the layer
+        :param geom: The `LayerGeometry` to add to the layer
         """
 
         self._geometry.append(geom)
@@ -585,7 +597,7 @@ class Layer:
         return geoms
 
     @property
-    def geometry(self) -> List[Any]:
+    def geometry(self) -> List[LayerGeometry]:
         """
         :class:`LayerGeometry` sections that are stored in the layer.
         """

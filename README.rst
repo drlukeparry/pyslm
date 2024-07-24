@@ -4,8 +4,7 @@ PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 .. https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
 
 .. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
-    :alt:  PySLM - Library for  Additive Manufacturing and 3D Printing including Selective Laser Melting
-
+    :alt:  PySLM - Library for Additive Manufacturing and 3D Printing including Selective Laser Melting
 .. image:: https://github.com/drlukeparry/pyslm/actions/workflows/pythonpublish.yml/badge.svg
     :target: https://github.com/drlukeparry/pyslm/actions
 .. image:: https://readthedocs.org/projects/pyslm/badge/?version=latest
@@ -13,33 +12,31 @@ PySLM Python Library for Selective Laser Melting and Additive Manufacturing
     :alt: Documentation Status
 .. image:: https://badge.fury.io/py/PythonSLM.svg
     :target: https://badge.fury.io/py/PythonSLM
-.. image:: https://badges.gitter.im/pyslm/community.svg
-    :target: https://gitter.im/pyslm/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
-    :alt: Chat on Gitter
 .. image:: https://static.pepy.tech/personalized-badge/pythonslm?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
  :target: https://pepy.tech/project/pythonslm
 
 
-PySLM is a Python library for supporting development of input files used in Additive Manufacturing or 3D Printing,
-in particular Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS) platforms typically used in both
-academia and industry. The core capabilities aim to include slicing, hatching and support generation and providing
-an interface to the binary build file formats available for platforms. The library is built of core classes which
-may provide the basic functionality to generate the scan vectors used on systems and also be used as building blocks
-to prototype and develop new algorithms.
+PySLM is a Python library for supporting development and generation of build files in Additive Manufacturing or 3D
+Printing, in particular Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS) platforms typically used
+in both academia and industry. The core capabilities aim to include slicing, hatching and support generation and
+providing an interface to the binary build file formats available for platforms. The library is built of core classes
+which may provide the basic functionality to generate the scan vectors used on systems and also be used as building
+blocks to prototype and develop new algorithms.
 
 This library provides design tools for use in Additive Manufacturing including the slicing, hatching, support generation
 and related analysis tools (e.g. overhang analysis, build-time estimation).
 
-PySLM is built-upon python libraries `Trimesh <https://github.com/mikedh/trimesh>`_ and based on some custom modifications
-to the `PyClipper <https://pypi.org/project/pyclipper/>`_ libraries, which are leveraged to provide the slicing and
-manipulation of polygons, such as offsetting and clipping of lines.
+PySLM is built-upon `Trimesh <https://github.com/mikedh/trimesh>`_ v4.0 for mesh handling and manipulation
+and the polygon clipping and offsetting provided by `Clipper 2 <https://github.com/AngusJohnson/Clipper2>`_ library
+via `Pyclipr <https://github.com/drlukeparry/pyclipr>`_, which together leveraged to provide the slicing and
+manipulation of polygons, such as offsetting and clipping of scan vectors used.
 
 The aims of this library is to provide a useful set of tools for prototyping novel pre-processing approaches to aid
-research and development of Additive Manufacturing processes, amongst an academic environment. The tools aim to compliment
-experimental and analytical studies that can enrich scientific understanding of the process. This includes data-fusion
-from expeirments and sensors within the process but also enahcning the capability of the process by providing greater control
-over the process. Furthermore, the open nature of the library intends to inform and educate those interested in the
-underlying algorithms of preparing toolpaths in Additive Manufacturing.
+research and development of Additive Manufacturing processes, amongst an academic environment. The tools aim to
+compliment experimental and analytical studies that can enrich scientific understanding of the process. This includes
+data-fusion from experiments and sensors within the process but also enhancing the capability of the process by
+providing greater control over the process. Furthermore, the open nature of the library intends to inform and educate
+those interested in the underlying algorithms of preparing toolpaths in Additive Manufacturing.
 
 Current Features
 ******************
@@ -69,12 +66,13 @@ The following scan strategies have been implemented as reference for AM platform
 
 **Support Structure Generation**
 
-PySLM provides underlying tools and a framework for identifying and generating support structures suitable for SLM.
-Tools are provided identifying overhang areas based on their mesh and connectivity information, but also
-usingprojection based method. The projection method takes advantage of GPU GLSL shaders for providing an efficient
-raytracing approach. Using the `PyCork <https://github.com/drlukeparry/pycork>`_ boolean CSG library, an algorithm for
-extracting precise defintion of volumetric support regions. These regions are segmented based on self-intersections with
-the mesh. From these volumes, porous grid-truss structure suitable for SLM based process can be generated.
+PySLM provides underlying tools and a framework for identifying and generating support structures suitable for SLM
+and other AM processes. Tools are provided identifying overhang areas based on their mesh and connectivity
+information, but also using a projection based method. The projection method takes advantage of GPU GLSL shaders for
+providing an efficient raytracing approach. Using the `Manifold <https://github.com/elalish/manifold>`_ boolean CSG
+library, an algorithm for extracting precise definition of volumetric support regions. These regions are segmented
+based on self-intersections with the mesh. From these volumes, porous grid-truss structure suitable for SLM based
+process can be generated.
 
 .. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslmSupportStructures.png
     :alt: The tools available in PySLM for locating overhang regions and support regions for 3D Printing and
@@ -86,7 +84,8 @@ the mesh. From these volumes, porous grid-truss structure suitable for SLM based
 * Projection based block and truss support structure generation
     * 3D intersected support volumes are generated from overhang regions using OpenGL ray-tracing approach
     * Generate a truss grid using support volumes suitable for Metal AM processes
-    * Exact support volume generation using the `pycork <https://github.com/drlukeparry/pycork>`_ library
+    * Perforated teeth for support connection
+    * Exact support volume generation using `Manifold <https://github.com/elalish/manifold>`_ CSG library
 
 **Visualisation:**
 
@@ -120,6 +119,7 @@ build file formats have been developed.
 
 * Renishaw MTT (**.mtt**),
 * DMG Mori Realizer (**.rea**),
+* CLI/CLI+ & .ilt (**.cli**/**.ilt**),
 * EOS SLI formats (**.sli**)
 * SLM Solutions (**.slm**).
 
@@ -128,25 +128,34 @@ For further information, see the latest `release notes <https://github.com/drluk
 
 Installation
 *************
-Installation is currently supported on Windows, Mac OS X and Linux environments. The pre-requisites for using PySLM can be installed
-via PyPi and/or Anaconda distribution.
+Installation is currently supported on Windows, Mac OS X and Linux environments. The pre-requisites for using PySLM
+can be installed via PyPi and/or Anaconda distribution.
 
 .. code:: bash
 
-    conda install -c conda-forge shapely, Rtree, networkx, scikit-image, cython
+    conda install -c conda-forge shapely, Rtree, networkx, scikit-image
     conda install trimesh
 
-Installation of PySLM can then be performed using pre-built python packages using the PyPi repository. Additionally to
-interface with commercial systems, the user can choose to install libSLM. Note, the user should contact the author to
-request machine build file translators, as this cannot be installed currently without having the machine build file
+If you are interested using the support generation module, there are additional dependencies that
+are required to be installed. These are not required for the core functionality of PySLM such as slicing and hatching.
+These require a working OpenGL environment to work via `vispy <https://vispy.org>`_ - the PyQt5 module provides the
+OpenGL backend for this currently, which is currently supported across all major platforms.
+
+.. code:: bash
+
+    pip install vispy pyqt5 triangle pyclipr manifold3d mapbox-earcut
+
+Installation of PySLM can be performed using pre-built python packages using the PyPi repository. Additionally to
+interface with commercial L-PBF systems, the user can choose to install libSLM. Note, the user should contact the author
+to request machine build file translators, as this cannot be installed currently without having the machine build file
 translators available.
 
 .. code:: bash
 
     pip install PythonSLM
 
-Alternatively, PySLM may be compiled directly from source. Currently the prerequisites are the cython package and a compliant c++
-build environment.
+Alternatively, PySLM may be compiled directly from source. For PySLM version (>v0.6) the entire library are now written
+exclusively in Python, therefore a seperate compiler infrastructure (cython) is not required.
 
 .. code:: bash
 
@@ -155,9 +164,9 @@ build environment.
 
 Usage
 ******
-A basic example below, shows how relatively straightforward it is to generate a single layer from a STL mesh which generates
-a the hatch infill using a Stripe Scan Strategy typically employed on some commercial systems to limit the maximum scan vector
-length generated in a region.
+A basic example below, shows how relatively straightforward it is to generate a single layer from a STL mesh which
+generates a the hatch infill using a Stripe Scan Strategy typically employed on some commercial systems to limit the
+maximum scan vector length generated in a region.
 
 .. code:: python
 
@@ -174,7 +183,7 @@ length generated in a region.
 
     # Create a StripeHatcher object for performing any hatching operations
     myHatcher = hatching.StripeHatcher()
-    myHatcher.stripeWidth = 5.0
+    myHatcher.stripeWidth = 5.0 # [mm]
 
     # Set the base hatching parameters which are generated within Hatcher
     myHatcher.hatchAngle = 10 # [°]
@@ -199,4 +208,5 @@ The result of the script output is shown here
    :align: center
    :alt:  PySLM - Illustration of a Stripe Scan Strategy employed in 3D printing
 
-For further guidance please look at documented examples are provided in `examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .
+For further guidance please look at documented examples are provided in
+`examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .
