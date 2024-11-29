@@ -599,7 +599,7 @@ class Part(DocumentObject):
             # Construct a merged grid for this layer (fixed layer)
             gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
 
-            sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
+            sliceImg = np.zeros(gridSize.astype(dtype=int), dtype=np.bool)
 
             # ToDO for now assume an empty slice -> should be a None Type
             if z < self.boundingBox[2] and z > self.boundingBox[4]:
@@ -608,14 +608,14 @@ class Part(DocumentObject):
             polys = self.getVectorSlice(z)
 
             gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
-            sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
+            sliceImg = np.zeros(gridSize.astype(dtype=int), dtype=np.bool)
 
             for poly in polys:
                 bounds = self._geometry.bounds
                 localOffset, grid, gridPoints = trimesh.path.raster.rasterize_polygon(poly, resolution)
 
-                startPos = np.floor((localOffset - bounds[0, :2]) / resolution).astype(np.int)
-                endPos = (startPos + grid.shape).astype(np.int)
+                startPos = np.floor((localOffset - bounds[0, :2]) / resolution).astype(int)
+                endPos = (startPos + grid.shape).astype(int)
 
                 sliceImg[startPos[0]:endPos[0], startPos[1]:endPos[1]] += grid
 

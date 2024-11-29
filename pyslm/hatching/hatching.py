@@ -58,7 +58,7 @@ def getExposurePoints(layer: Layer, models: List[Model], includePowerDeposited: 
             dir = -1.0 * delta / lineDist
 
             # Calculate the number of exposure points across the hatch vector based on its length
-            numPoints = np.ceil(lineDist / pointDistance).astype(np.int)
+            numPoints = np.ceil(lineDist / pointDistance).astype(int)
 
             # Pre-populate some arrays to extrapolate the exposure points from
             totalPoints = int(np.sum(numPoints))
@@ -102,7 +102,7 @@ def getExposurePoints(layer: Layer, models: List[Model], includePowerDeposited: 
             dir = 1.0 * delta / lineDist
 
             # Calculate the number of exposure points across the hatch vector based on its length
-            numPoints = np.ceil(lineDist / pointDistance).astype(np.int)
+            numPoints = np.ceil(lineDist / pointDistance).astype(int)
 
             # Pre-populate some arrays to extrapolate the exposure points from
             totalPoints = int(np.sum(numPoints))

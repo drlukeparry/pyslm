@@ -424,10 +424,10 @@ def plotHeatMap(part: Part, z: float, exposurePoints: np.ndarray, resolution: fl
 
     # Offset the coordinates based on the resolution and the bounding box of the part
     exposurePoints[:, :2] -= part.boundingBox[:2] + resolution / 2
-    expPointTrans = np.floor(exposurePoints[:, :2] / resolution).astype(np.int)
+    expPointTrans = np.floor(exposurePoints[:, :2] / resolution).astype(int)
 
     # Get a bitmap object to work on
-    bitmapSlice  = part.getBitmapSlice(z, resolution).astype(np.int)
+    bitmapSlice  = part.getBitmapSlice(z, resolution).astype(int)
     slice = np.zeros(bitmapSlice.shape)
 
     for i in range(len(expPointTrans)):
