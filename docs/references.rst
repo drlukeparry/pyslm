@@ -6,8 +6,10 @@ including commercial applications and projects.
 
 Some academic research that has been conducted using PySLM is listed below:
 
-Academic Research:
+Academic Research
 ------------------
+
+* Dimopoulos, A.; Chryssinas, G.; Mavroforaki, D.; Gan, T.-H.; Chatzakos, P. (*2024*). `An Interactive Web-Based Platform for Support Generation and Optimisation for Metal Laser Powder Bed Fusion. Materials 2024, 17, 1639`. `https://doi.org/10.3390/ma17071639 <https://doi.org/10.3390/ma17071639>`_
 
 * Hariharan, V. S., Kaushik, R., Phanikumar, G., & Murty, B. S. (*2023*). `Tailoring the Crystallographic Texture of Laser Powder Bed Fused Haynes 282 Through Scan Rotation Modification: Simulation & Experiments`. Available at SSRN 4379324. `http://dx.doi.org/10.2139/ssrn.4379324 <http://dx.doi.org/10.2139/ssrn.4379324>`_
 
