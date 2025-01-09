@@ -6,6 +6,8 @@ PySLM Python Library for Selective Laser Melting and Additive Manufacturing
     :alt:  PySLM - Library for Additive Manufacturing and 3D Printing including Selective Laser Melting
 .. image:: https://github.com/drlukeparry/pyslm/actions/workflows/pythonpublish.yml/badge.svg
     :target: https://github.com/drlukeparry/pyslm/actions
+.. image:: https://img.shields.io/github/license/drlukeparry/pyslm
+   :alt: GitHub License
 .. image:: https://readthedocs.org/projects/pyslm/badge/?version=latest
     :target: https://pyslm.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
@@ -13,7 +15,10 @@ PySLM Python Library for Selective Laser Melting and Additive Manufacturing
     :target: https://badge.fury.io/py/PythonSLM
 .. image:: https://static.pepy.tech/personalized-badge/pythonslm?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
     :target: https://pepy.tech/project/pythonslm
-
+.. image:: https://img.shields.io/badge/Made%20with-Python-1f425f.svg
+   :target: https://www.python.org/
+..  image:: https://img.shields.io/pypi/pyversions/pythonslm.svg
+   :target: https://pypi.python.org/pypi/pythonslm/
 
 PySLM is a Python library for supporting development and generation of build files in Additive Manufacturing or 3D
 Printing, in particular Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS) platforms typically used
