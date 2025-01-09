@@ -29,6 +29,29 @@ def simplifyBoundaries(paths: List[Any], tolerance: Optional[float] = 0.5, metho
     return boundaries
 
 
+def getContoursFromShapelyPolygon(poly: shapely.geometry.Polygon,
+                                  mergeRings: Optional[bool] = True) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Returns the  contours from boundaries extracted from exterior and interior paths of shapely geometry.
+
+    :param poly: Shapely polygons
+    :param mergeRings: If ``True`` combines the interior and exteriors within each path group
+    :return: The paths extracted from the polygon paths
+    """
+    outerRings = []
+    innerRings = []
+
+    outerRings += [np.array(tuple(poly.exterior.coords))]
+
+    for ring in poly.interiors:
+        innerRings += [np.array(tuple(ring.coords))]
+
+    if mergeRings:
+        return outerRings + innerRings
+    else:
+        return outerRings, innerRings
+
+
 def pathsToClosedPolygons(paths) -> List[shapely.geometry.Polygon]:
     """
     Converts closed paths to Shapely polygons with both exterior and interior boundaries. This method leverages the same
