@@ -234,10 +234,10 @@ def getLayerTime(layer: Layer, models: List[Model],
                  includeJumpTime: Optional[bool] = True,
                  laserJumpSpeed: Optional[float] = 5000) -> float:
     """
-    Returns the total time taken to scan across a :class:`~pyslm.geometry.Layer`. This includes the additional dwell time
-    laser pulses :attr:`BuildStyle.jumpDelay` and the jump time between both scan vectors and consecutive
-    :class:`~pyslm.geometry.LayerGeometry` groups. The time taken between adjacent scan vectors and layer geometries is assumed to have
-    an instantaneous acceleration at constant velocity.
+    Returns the total time taken to scan across a :class:`~pyslm.geometry.Layer`. This includes the additional dwell
+    time laser pulses :attr:`BuildStyle.jumpDelay` and the jump time between both scan vectors and consecutive
+    :class:`~pyslm.geometry.LayerGeometry` groups. The time taken between adjacent scan vectors and layer geometries
+    is assumed to have an instantaneous acceleration at constant velocity.
 
     :param layer: The `Layer` to process
     :param models: The `Model` list containing the :class:`~pyslm.geometry.BuildStyle` set used

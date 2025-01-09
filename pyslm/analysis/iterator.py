@@ -29,7 +29,7 @@ class TimeNode:
     and static and changes are not dynamically propagated, therefore caution is advised that the entire Cache tree
     is updated after a known change.
     """
-    def __init__(self, parent=None, id: Optional[int]=0, value: Optional[Any] = None):
+    def __init__(self, parent=None, id: Optional[int] = 0, value: Optional[Any] = None):
 
         self.parent = parent
         self.id = id
@@ -60,9 +60,9 @@ class ScanVectorIterator:
     for iterating across all the scan vectors presented in the file.
 
     .. note::
-        Currently, points or vectors are ignored for signle scan exposures in PointsGeometry
+        Currently, points or vectors are ignored for single scan exposures in PointsGeometry
     """
-    def  __init__(self,  layers: List[Layer]):
+    def __init__(self,  layers: List[Layer]):
 
         self._vectors = []
         self._layers = layers
@@ -123,7 +123,7 @@ class ScanVectorIterator:
 
     def __next__(self):
 
-        if self._layerScanVecIt < len( self._layerScanVectors):
+        if self._layerScanVecIt < len(self._layerScanVectors):
             scanVector = self._layerScanVectors[self._layerScanVecIt]
             self._layerScanVecIt += 1
             return scanVector
@@ -154,7 +154,7 @@ class Iterator(ABC):
     Additional information can be included for the iterator to account for additional dwell time between layers and
     in :attr:`dwellTime` and the layer dwell time :attr:`recoaterTime`.
     """
-    def  __init__(self, models: List[Model], layers: List[Layer]):
+    def __init__(self, models: List[Model], layers: List[Layer]):
 
         self._time = 0.0
         self._layerGeomTime = 0.0
@@ -267,10 +267,10 @@ class Iterator(ABC):
 
         return time
 
-    def getLayerGeomTime(self, layerId: int, layerGeomId: int ) -> float:
+    def getLayerGeomTime(self, layerId: int, layerGeomId: int) -> float:
         """
-        Gets the total time for each :class:`~pyslm.geometry.LayerGeometry` given a unique a :class:`~pyslm.geometry.Layer` index and a
-        :class:`~pyslm.geometry.LayerGeometry` index.
+        Gets the total time for each :class:`~pyslm.geometry.LayerGeometry` given a unique a
+        :class:`~pyslm.geometry.Layer` index and a :class:`~pyslm.geometry.LayerGeometry` index.
 
         :param layerId: The layer index in the list
         :param layerGeomId: The layer geometry index within the :class:`Layer`
@@ -289,8 +289,8 @@ class Iterator(ABC):
 
     def getTimeByLayerGeometryId(self, layerId: int, layerGeomId: int) -> float:
         """
-        Gets the current time for a :class:`~pyslm.geometry.LayerGeometry` given a unique a :class:`~pyslm.geometry.Layer`
-        index and a         :class:`~pyslm.geometry.LayerGeometry` index.
+        Gets the current time for a :class:`~pyslm.geometry.LayerGeometry` given a unique a
+        :class:`~pyslm.geometry.Layer` index and a :class:`~pyslm.geometry.LayerGeometry` index.
 
         :param layerId: The layer index in the list
         :param layerGeomId: The layer geometry index within the :class:`Layer`
@@ -315,7 +315,7 @@ class Iterator(ABC):
 
         return time
 
-    def getLayerGeometryNodeByTime(self, time: float) -> TimeNode:
+    def getLayerGeometryNodeByTime(self, time: float) -> Union[None, TimeNode]:
         """
         Gets the :class:`TimeNode` for a :class:`~pyslm.geometry.LayerGeometry` given a time.
 
@@ -324,7 +324,7 @@ class Iterator(ABC):
         """
         buildTime = layerEndTime = 0.0
 
-        for layerId, layerNode in enumerate(self.tree.children):
+        for layerNode in self.tree.children:
 
             layerEndTime += layerNode.getChildrenTime() + self.dwellTime
 
@@ -333,7 +333,7 @@ class Iterator(ABC):
 
                 layerGeomEndTime = buildTime
 
-                for layerGeomId, layerGeomNode in enumerate(layerNode.children):
+                for layerGeomNode in layerNode.children:
                     layerGeomEndTime += layerGeomNode.time
 
                     if buildTime < time < layerGeomEndTime:
@@ -376,7 +376,7 @@ class Iterator(ABC):
         """
         layerTime = 0.0
 
-        for layerId, layerNode in enumerate(self.tree.children):
+        for layerNode in self.tree.children:
 
             layerTimeStart = layerTime
             layerTime += layerNode.getChildrenTime() + self.dwellTime
@@ -497,7 +497,7 @@ class Iterator(ABC):
             return layerGeom
         else:
             # new layer
-            if self._layerInc < len(self.layers) -1:
+            if self._layerInc < len(self.layers) - 1:
 
                 self._layerInc += 1
                 self._layerGeomInc = 0
@@ -522,15 +522,15 @@ class LayerGeometryIterator(Iterator):
 
 class ScanIterator(Iterator):
     """
-    The Scan Iterator class provides funtionality to iterate at a variable :attr:`timestep` across a build file
+    The Scan Iterator class provides functionality to iterate at a variable :attr:`timestep` across a build file
     consisting of a :class:`~pyslm.geometry.Layer` list and :class:`~pyslm.geometry.Model` provided as its input.
     Typically, this is used in numerical simulation of powder-bed fusion processes and also its temporal
     visualisation. Properties include the current position are available via :meth:`getCurrentLaserPosition` and the
     current laser parameters in :meth:`getCurrentBuildStyle` and if the laser is currently active :meth:`isLaserOn`.
 
     .. note::
-        The Iterator classes *assumes* that the laser position during rastering is linearly interpolated across each scan
-        vector, based on the :attr:`timestep`, which can be modulated during the iterator.
+        The Iterator classes *assumes* that the laser position during rastering is linearly interpolated across each
+        scan vector, based on the :attr:`timestep`, which can be modulated during the iterator.
 
     ScanIterator builds upon :class:`Iterator` and utilises the TimeTree cache generated for each
     :class:`~pyslm.geometry.Layer` and its set of :class:`~pyslm.geometry.LayerGeometry` objects respectively. If the
@@ -585,13 +585,13 @@ class ScanIterator(Iterator):
         laserVelocity = getEffectiveLaserSpeed(buildStyle)
 
         if isinstance(layerGeom, ContourGeometry):
-            offsetDist = timeOffset  * laserVelocity
+            offsetDist = timeOffset * laserVelocity
 
             # Find the distances for all the scan vectors
             delta = np.diff(layerGeom.coords, axis=0)
-            dist = np.hypot(delta[:,0], delta[:,1])
+            dist = np.hypot(delta[:, 0], delta[:, 1])
             cumDist = np.cumsum(dist)
-            cumDist2 = np.insert(cumDist, 0,0)
+            cumDist2 = np.insert(cumDist, 0, 0)
 
             if offsetDist > cumDist2[-1]:
                 raise Exception('Error offset distance > cumDist {:.3f}, {:.3f}'.format(offsetDist, cumDist2[-1]))
@@ -616,8 +616,8 @@ class ScanIterator(Iterator):
 
             offsetDist = timeOffset * laserVelocity
 
-            coords = layerGeom.coords.reshape(-1,1).reshape(-1,2,2)
-            delta = np.diff(coords, axis=1).reshape(-1,2)
+            coords = layerGeom.coords.reshape(-1, 1).reshape(-1, 2, 2)
+            delta = np.diff(coords, axis=1).reshape(-1, 2)
             dist = np.hypot(delta[:, 0], delta[:, 1])
             cumDist = np.cumsum(dist)
             cumDist2 = np.insert(cumDist, 0, 0)
@@ -663,7 +663,7 @@ class ScanIterator(Iterator):
     def __next__(self):
 
         if self._time < self._layerGeomTime:
-            position = np.array((0,0))
+            position = np.array((0, 0))
         else:
             position = self.getCurrentLaserPosition()
 
