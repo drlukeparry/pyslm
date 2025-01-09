@@ -131,7 +131,11 @@ class GridBlockSupport(BlockSupportBase):
         return self._numSkinMeshSubdivideIterations
 
     @numSkinMeshSubdivideIterations.setter
-    def numSkinMeshSubdivideIterations(self, iterations: int):
+    def numSkinMeshSubdivideIterations(self, iterations: int) -> None:
+
+        if iterations < 0:
+            raise ValueError('Number of skin mesh subdivide iterations must be a positive integer or zero')
+
         self._numSkinMeshSubdivideIterations = int(iterations)
 
     @property
@@ -143,7 +147,11 @@ class GridBlockSupport(BlockSupportBase):
         return self._supportWallThickness
 
     @supportWallThickness.setter
-    def supportWallThickness(self, wallThickness: float):
+    def supportWallThickness(self, wallThickness: float) -> None:
+
+        if wallThickness < sys.float_info.epsilon:
+            raise ValueError('The support wall thickness must be a positive value')
+
         self._supportWallThickness = wallThickness
 
     @property
