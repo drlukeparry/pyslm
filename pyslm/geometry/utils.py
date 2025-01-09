@@ -1,10 +1,11 @@
-from typing import Dict,Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Union
 from warnings import warn
 
 import trimesh.transformations
 import numpy as np
 
 from . import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model
+
 
 def createLayerDict(layerList: List[Layer]) -> Dict[int, Layer]:
     """
@@ -66,20 +67,20 @@ def transformLayerGeoms(layerGeoms: Union[LayerGeometry, List[LayerGeometry]],
     if not isinstance(layerGeoms, Iterable):
         layerGeoms = [layerGeoms]
 
-    if not(transform.shape == (3,3) or transform.shape == (2,2)):
+    if not(transform.shape == (3, 3) or transform.shape == (2, 2)):
         raise ValueError('Transformation matrix should be 2x2 or 3x3')
 
     # Extract the affine transformation (excluding the translation)
     M = transform[0:2, 0:2]
 
     # Extract the translation vector
-    if transform.shape == (3,3):
+    if transform.shape == (3, 3):
         T = transform[0:2, 2]
     else:
-        T = np.array([0.,0.0])
+        T = np.array([0., 0.0])
 
     for geom in layerGeoms:
-        geom.coords = M.dot(geom.coords.T).T + T.reshape(1,2)
+        geom.coords = M.dot(geom.coords.T).T + T.reshape(1, 2)
 
 
 def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildStyle, None]:
@@ -101,6 +102,7 @@ def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildSty
         return bstyle
 
     return None
+
 
 def getLayerById(layers: List[Layer], layerId: int) -> Layer:
     """
@@ -143,7 +145,7 @@ class ModelValidator:
     * References to a correct :class:`Model` via its (:attr:`~BuildStyle.mid`) for each :class:`LayerGeometry` included
     * Ensure there are unique :class:`BuildStyle` entries for each :class:`Model` included
 
-    The key function that can be called is :meth:`validateBuild`, which is recommened to be called before attempting to
+    The key function that can be called is :meth:`validateBuild`, which is recommended to be called before attempting to
     export the layer and model information to a libSLM machine build file translator. Additional sub-functions are also
     available for checking specific objects used to construct the build-file.
     """
@@ -233,14 +235,16 @@ class ModelValidator:
             ModelValidator.validateBuildStyle(bstyle)
 
     @staticmethod
-    def validateBuild(models: List[Model], layers: List[Layer]):
+    def validateBuild(models: List[Model], layers: List[Layer]) -> bool:
         """
         Validates an AM Build which compromises of a list of models and layers
 
         :param models: A list of `Models` used in the build
         :param layers: A list of `Layers` used in the build
         :raise Exception: When an invalid `BuildStyle` is provided
+        :return: `True` if the structures are coherent and valid
         """
+
         # Build the indices for the models and the build styles
         modelIdx = ModelValidator._modelIndex(models)
         bstyleIdx = ModelValidator._buildStyleIndex(models)
