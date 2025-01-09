@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple, List
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import networkx as nx
 
@@ -8,7 +8,6 @@ import trimesh
 
 from . import geometry
 from ..core import Part
-
 
 def getAdjacentFaces(mesh: trimesh.Trimesh):
     """
@@ -82,9 +81,10 @@ def getFaceZProjectionWeight(mesh: trimesh.Trimesh,
         return sin_theta
 
 
-def getOverhangMesh(part: Part, overhangAngle: float,
+def getOverhangMesh(part: Part,
+                    overhangAngle: float,
                     splitMesh: Optional[bool] = False,
-                    useConnectivity: Optional[bool] = False) -> trimesh.Trimesh:
+                    useConnectivity: Optional[bool] = False) -> Union[trimesh.Trimesh, List[trimesh.Trimesh]]:
     """
     Gets the overhang mesh from a :class:`Part`. If the individual regions for the overhang mesh require separating,
     the parameter :code:`splitMesh` should be set to `True`. This will split mesh regions by their facial connectivity
@@ -102,7 +102,7 @@ def getOverhangMesh(part: Part, overhangAngle: float,
 
     theta = getSupportAngles(part, unitNormal=v0, useConnectivity=useConnectivity)
 
-    supportFaceIds = np.argwhere(theta > 180 - overhangAngle).flatten()
+    supportFaceIds = np.argwhere(theta > 180.0 - overhangAngle).flatten()
 
     overhangMesh = trimesh.Trimesh(vertices=part.geometry.vertices,
                                    faces=part.geometry.faces[supportFaceIds])
@@ -115,7 +115,7 @@ def getOverhangMesh(part: Part, overhangAngle: float,
 
 def approximateSupportMomentArea(part: Part, overhangAngle: float) -> float:
     """
-    The support moment area is a metric, which projects the distance from the base-plate (:math:`z=0`) for
+    The support moment area is a metric, which projects the distance from the baseplate (:math:`z=0`) for
     each support surface multiplied by the area. It gives a two parameter component cost function for the support area.
 
     .. note::
@@ -172,7 +172,7 @@ def approximateSupportMapByCentroid(part: Part, overhangAngle: float,
     This method to approximate the surface area, projects  a single ray :math:`(0,0,-1)`, form each triangle in the
     overhang mesh -originating from the centroid or optionally each triangle vertex by setting the
     :code:`includeTriangleVertices` parameter. A self-intersection test with the mesh is performed  and this is used to
-    calculate the distance from the hit location or if no intersection is made the base-plate (:math:`z=0.0`),
+    calculate the distance from the hit location or if no intersection is made the baseplate (:math:`z=0.0`),
     which may be used later to generate a support heightmap.
 
     :param part: The :class:`Part` to analyse
@@ -195,9 +195,9 @@ def approximateSupportMapByCentroid(part: Part, overhangAngle: float,
                                                                          ray_directions=ray_dir,
                                                                          multiple_hits=False)
 
-    heightMap = np.zeros((coords.shape[0], 1), dtype=np.float)
+    heightMap = np.zeros((coords.shape[0], 1), dtype=np.float32)
     heightMap[index_ray] = hitLoc[:, 2].reshape(-1, 1)
-    
+
     heightMap = np.abs(heightMap - coords[:, 2])
 
     return heightMap
@@ -227,7 +227,7 @@ def approximateProjectionSupportCost(part: Part, overhangAngle: float,
 
 
 def generateHeightMap(mesh: trimesh.Trimesh,
-                       upVec = [0,0,1.0],
+                       upVec: Optional[Iterable] = (0.0, 0.0, 1.0),
                        resolution: Optional[float] = 0.5,
                        offsetPoly: Optional[trimesh.path.Path2D] = None) -> Tuple[np.ndarray]:
     """
@@ -244,9 +244,8 @@ def generateHeightMap(mesh: trimesh.Trimesh,
     """
 
     if not offsetPoly:
-        # Generate a polgyon covering the part's bouding box
-        offsetPoly = trimesh.load_path(geometry.generatePolygonBoundingBox(mesh.bounds.reshape(2,3)))
-
+        # Generate a polygon covering the part's bounding box
+        offsetPoly = trimesh.load_path(geometry.generatePolygonBoundingBox(mesh.bounds.reshape(2, 3)))
 
     # Rasterise the surface of overhang to generate projection points
     supportArea = np.array(offsetPoly.rasterize(resolution, offsetPoly.bounds[0, :])).T
@@ -287,7 +286,7 @@ def generateHeightMap(mesh: trimesh.Trimesh,
 
 
 def generateHeightMap2(mesh: trimesh.Trimesh,
-                       upVec = [0,0,1.0],
+                       upVec: Optional[Iterable] = (0.0, 0.0, 1.0),
                        resolution: Optional[float] = 0.5,
                        offsetPoly: Optional[trimesh.path.Path2D] = None) -> Tuple[np.ndarray]:
     """
@@ -304,9 +303,8 @@ def generateHeightMap2(mesh: trimesh.Trimesh,
     """
 
     if not offsetPoly:
-        # Generate a polgyon covering the part's bouding box
-        offsetPoly = trimesh.load_path(geometry.generatePolygonBoundingBox(mesh.bounds.reshape(2,3)))
-
+        # Generate a polygon covering the part's bounding box
+        offsetPoly = trimesh.load_path(geometry.generatePolygonBoundingBox(mesh.bounds.reshape(2, 3)))
 
     # Rasterise the surface of overhang to generate projection points
     supportArea = np.array(offsetPoly.rasterize(resolution, offsetPoly.bounds[0, :])).T
