@@ -1,10 +1,9 @@
 from typing import Any, List, Optional, Tuple, Union
 import numpy as np
+
 import trimesh.path.polygons
 import shapely.geometry
-
-from shapely.geometry import Polygon
-from skimage.measure import approximate_polygon
+import skimage.measure
 
 
 def simplifyBoundaries(paths: List[Any], tolerance: Optional[float] = 0.5, method: Optional[str] = '') -> Any:
@@ -25,7 +24,7 @@ def simplifyBoundaries(paths: List[Any], tolerance: Optional[float] = 0.5, metho
     if isinstance(paths[0], shapely.geometry.Polygon):
         boundaries = [path.simplify(tolerance, preserve_topology=True) for path in paths]
     else:
-        boundaries = [approximate_polygon(path, tolerance) for path in paths]
+        boundaries = [skimage.measure.approximate_polygon(path, tolerance) for path in paths]
 
     return boundaries
 
@@ -48,8 +47,7 @@ def pathsToClosedPolygons(paths) -> List[shapely.geometry.Polygon]:
         interior = list(tree[root].keys())
         shell = closedPolygons[root].exterior.coords
         holes = [closedPolygons[i].exterior.coords for i in interior]
-        complete.append(Polygon(shell=shell,
-                                holes=holes))
+        complete.append(shapely.geometry.Polygon(shell=shell, holes=holes))
 
     return complete
 
@@ -87,9 +85,9 @@ def from3DHatchArray(hatchVectors: np.ndarray) -> np.ndarray:
     return hatchVectors.reshape(-1, 2)
 
 
-def poly2Paths(polygons: Union[shapely.geometry.Polygon, shapely.geometry.MultiPolygon]) -> List[np.array]:
+def poly2Paths(polygons: Union[shapely.geometry.Polygon, shapely.geometry.MultiPolygon]) -> List[np.ndarray]:
     """
-    Converts a Shapely Polygon or MultiPolygon to a list of paths
+    Converts a :class:`shapely.geometry.Polygon` or :class:`shapely.geometry.MultiPolygon` to a list of paths
 
     :param polygons: A polygon to convert to individual paths
     :return: A list of paths (interior and exterior) for each polygon
@@ -105,10 +103,9 @@ def poly2Paths(polygons: Union[shapely.geometry.Polygon, shapely.geometry.MultiP
         paths = pathsExterior + pathsInterior
 
     else:
-        raise ValueError('Type of polygons is not supported')
+        raise TypeError('Type of polygons is not supported')
 
     return paths
-
 
 def paths2clipper(paths: Any) -> List[np.array]:
     """
@@ -120,7 +117,7 @@ def paths2clipper(paths: Any) -> List[np.array]:
     return [np.hstack([path, np.arange(len(path)).reshape(-1, 1)]) for path in paths]
 
 
-def clipper2Paths(paths, scaleFactor: float, close: bool = False) -> List[np.array]:
+def clipper2Paths(paths, scaleFactor: float, close: Optional[bool] = False) -> List[np.array]:
     """
     Returns scaled closed paths from clipper paths
 
@@ -129,7 +126,7 @@ def clipper2Paths(paths, scaleFactor: float, close: bool = False) -> List[np.arr
     :param close: If True, the paths are closed by appending the first point to the end of the path
     :return:
     """
-    out = [np.array(path)[:,:2]/scaleFactor for path in paths]
+    out = [np.array(path)[:, :2]/scaleFactor for path in paths]
 
     if close:
         outPaths = []
@@ -138,4 +135,3 @@ def clipper2Paths(paths, scaleFactor: float, close: bool = False) -> List[np.arr
         out = outPaths
 
     return out
-
