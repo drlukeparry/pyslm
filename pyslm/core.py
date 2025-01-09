@@ -1,9 +1,12 @@
+import warnings
 from abc import ABC
 from typing import Any, List, Optional, Tuple
 import logging
+import sys
 
 import numpy as np
 import networkx as nx
+
 import trimesh
 
 
@@ -554,12 +557,16 @@ class Part(DocumentObject):
     def path2DToPathList(shapes: List[Polygon]) -> List[np.ndarray]:
         """
         Returns the list of paths and coordinates from a cross-section (i.e. Trimesh Path2D). This is required to be
-        done for performing boolean operations and offsetting with the internal PyClipper package.
+        done for performing boolean operations and off`setting with the internal PyClipper package.
 
         :param shapes: A list of :class:`shapely.geometry.Polygon` representing a cross-section or container of
                         closed polygons
         :return: A list of paths (Numpy Coordinate Arrays) describing fully closed and oriented paths.
         """
+
+        # deprecated function
+        warnings.warn('This function is deprecated and will be removed in future versions', DeprecationWarning)
+
         paths = []
 
         for poly in shapes:
@@ -584,39 +591,13 @@ class Part(DocumentObject):
         :return: A bitmap image for the current slice at position
         """
 
+        if self._geometry is None:
+            raise RuntimeError(f"Geometry was not set for Part ({self.name})")
+
         vectorSlice = self.getTrimeshSlice(z)
 
         bitmapOrigin = self.boundingBox[:2] if origin is None else origin
 
         sliceImage = vectorSlice.rasterize(pitch=resolution, origin=bitmapOrigin)
+
         return np.array(sliceImage)
-
-
-        if False:
-            # Old reference implementation will be removed in future
-
-            # Get slice returns the current bitmap slice for a mesh at z position
-            # Construct a merged grid for this layer (fixed layer)
-            gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
-
-            sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
-
-            # ToDO for now assume an empty slice -> should be a None Type
-            if z < self.boundingBox[2] and z > self.boundingBox[4]:
-                return sliceImg
-
-            polys = self.getVectorSlice(z)
-
-            gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
-            sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
-
-            for poly in polys:
-                bounds = self._geometry.bounds
-                localOffset, grid, gridPoints = trimesh.path.raster.rasterize_polygon(poly, resolution)
-
-                startPos = np.floor((localOffset - bounds[0, :2]) / resolution).astype(np.int)
-                endPos = (startPos + grid.shape).astype(np.int)
-
-                sliceImg[startPos[0]:endPos[0], startPos[1]:endPos[1]] += grid
-
-            return sliceImg
