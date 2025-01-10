@@ -1,6 +1,6 @@
 import logging
 
-from typing import Any, List, Tuple, Optional
+from typing import Any, Callable, List, Optional, Tuple, Union
 from collections.abc import Iterable
 
 import matplotlib.pyplot as plt
@@ -13,28 +13,7 @@ from shapely.geometry import Polygon, MultiPolygon
 
 from .core import Part
 from .geometry import Layer, HatchGeometry, ContourGeometry, PointsGeometry
-
-
-def getContoursFromShapelyPolygon(poly: Polygon, mergeRings: Optional[bool] = True) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Returns the  contours from boundaries extracted from exterior and interior paths of shapely geometry.
-
-    :param poly: Shapely polygons
-    :param mergeRings: If ``True`` combines the interior and exteriors within each path group
-    :return: The paths extracted from the polygon paths
-    """
-    outerRings = []
-    innerRings = []
-
-    outerRings += [np.array(tuple(poly.exterior.coords))]
-
-    for ring in poly.interiors:
-        innerRings += [np.array(tuple(ring.coords))]
-
-    if mergeRings:
-        return outerRings + innerRings
-    else:
-        return outerRings, innerRings
+from .hatching.utils import getContoursFromShapelyPolygon
 
 
 def plotPolygon(polygons: List[Any], zPos = 0.0,
