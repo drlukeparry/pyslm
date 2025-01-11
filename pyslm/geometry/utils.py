@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Union
+from typing import Dict, Iterable, List, Tuple, Union
 from warnings import warn
 
 import trimesh.transformations
@@ -151,18 +151,17 @@ class ModelValidator:
     """
 
     @staticmethod
-    def _buildStyleIndex(models: List[Model]):
+    def _buildStyleIndex(models: List[Model]) -> Dict[Tuple[int, int], BuildStyle]:
 
         index = dict()
         for model in models:
             for bstyle in model.buildStyles:
                 index[model.mid, bstyle.bid] = bstyle
 
-                print(bstyle.bid, model.mid)
         return index
 
     @staticmethod
-    def _modelIndex(models: List[Model]):
+    def _modelIndex(models: List[Model]) -> Dict[int, Model]:
 
         index = {}
         for model in models:
@@ -171,11 +170,12 @@ class ModelValidator:
         return index
 
     @staticmethod
-    def validateBuildStyle(bstyle: BuildStyle):
+    def validateBuildStyle(bstyle: BuildStyle) -> bool:
         """
         Validates a single :class:`BuildStyle` ensuring that its individual parameters are not malformed.
 
         :param bstyle: The BuildStyle to validate
+        :return: `True` if the structure is coherent and valid
         :raise Exception: When an invalid BuildStyle is provided
         """
         if bstyle.bid < 1 or not isinstance(bstyle.bid, int):
@@ -208,12 +208,15 @@ class ModelValidator:
         if bstyle.laserId < 1 or not isinstance(bstyle.laserId, int):
             raise Exception("BuildStyle({:d}).laserId must be a positive integer (>0)".format(bstyle.bid))
 
+        return True
+
     @staticmethod
-    def validateModel(model: Model):
+    def validateModel(model: Model) -> bool:
         """
-        Validates a single :class:`Model` ensuring that its individual BuildStyles are not malformed.
+        Validates a single :class:`Model` ensuring that its individual :class:`BuildStyle` are not malformed.
 
         :param model: The `Model` to validate
+        :return: `True` if the structure  of the Model is coherent and valid
         :raise Exception: When an invalid `BuildStyle` is provided
         """
 
@@ -233,6 +236,8 @@ class ModelValidator:
                 bstyleList.append(bstyle.bid)
 
             ModelValidator.validateBuildStyle(bstyle)
+
+        return True
 
     @staticmethod
     def validateBuild(models: List[Model], layers: List[Layer]) -> bool:

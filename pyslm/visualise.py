@@ -141,7 +141,6 @@ def plotSequential(layer: Layer,
 
     if handle:
         fig, ax = handle
-
     else:
         fig, ax = plt.subplots()
         ax.axis('equal')
@@ -162,7 +161,7 @@ def plotSequential(layer: Layer,
 
     if len(scanVectors) == 0:
         logging.warning('pyslm.visualise.plotSequential: Empty layer')
-        return
+        return fig, ax
 
     scanVectors = np.vstack(scanVectors)
 
@@ -265,8 +264,8 @@ def plot(layer: Layer,
             """ Plot """
             if type(index) is str and str and hasattr(hatchGeoms[0], index):
                 values = [np.tile(getattr(hGeom, index), [int(len(hGeom.coords)/2), 1]) for hGeom in hatchGeoms]
-                values = np.vstack()
-                lc.set_array(values.ravel())
+                values = np.vstack(values).ravel()
+                lc.set_array(values)
 
             elif type(index) is str and index == 'length':
 
@@ -365,7 +364,7 @@ def plot(layer: Layer,
 def plotHeatMap(part: Part,
                 z: float,
                 exposurePoints: np.ndarray,
-                resolution: Optional[float] = 0.25) -> Tuple[plt.Figure, plt.Axes]:
+                resolution: float = 0.25) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots an effective heat map given the exposure points and at a given z position. The heatmap is discretised by
     summing the energy input of all exposure points onto an image and then capturing the aerial heat input by dividing

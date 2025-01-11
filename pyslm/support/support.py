@@ -25,7 +25,7 @@ import time
 import warnings
 
 import scipy.ndimage.filters
-from skimage.measure import find_contours
+import skimage.measure
 
 import shapely.geometry
 import shapely.affinity
@@ -59,14 +59,14 @@ class SupportStructure(abc.ABC):
                  supportObject: Optional[Part] = None,
                  supportVolume: Optional[trimesh.Trimesh] = None,
                  supportSurface: Optional[trimesh.Trimesh] = None,
-                 intersectsPart: Optional[bool] = False):
+                 intersectsPart: bool = False):
 
         self._supportVolume = supportVolume
         self._supportObject = supportObject
         self._supportSurface = supportSurface
         self._intersectsPart = intersectsPart
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'SupportStructure'
 
     @abc.abstractmethod
@@ -100,7 +100,7 @@ class SupportStructure(abc.ABC):
 
         flattenPath.apply_translation(polygonTransform[:2, 3])  # np.array([polygonTransform[0, 3],
 
-        #flattenPath = flattenPath.simplify_spline(smooth=1000)
+        # flattenPath = flattenPath.simplify_spline(smooth=1000)
         polygon = flattenPath.polygons_full[0]
 
         return polygon
@@ -123,7 +123,7 @@ class SupportStructure(abc.ABC):
         :return: The total projected (flattened) surface support area
         """
         if self._supportSurface:
-            return self.flattenSupportRegion(self._supportSurface).area
+            return float(self.flattenSupportRegion(self._supportSurface).area)
         else:
             return 0.0
 
@@ -189,11 +189,11 @@ class BlockSupportBase(SupportStructure):
                  supportObject: Optional[Part] = None,
                  supportVolume: Optional[trimesh.Trimesh] = None,
                  supportSurface: Optional[trimesh.Trimesh] = None,
-                 intersectsPart: Optional[bool] = False):
+                 intersectsPart: bool = False):
 
         super().__init__(supportObject, supportVolume, supportSurface, intersectsPart)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'BlockSupportBase'
 
     def geometry(self) -> trimesh.Trimesh:
@@ -207,7 +207,7 @@ class BlockSupportBase(SupportStructure):
         """
         The calculated volume of the support volume region.
         """
-        return self._supportVolume.volume
+        return float(self._supportVolume.volume)
 
     @property
     def supportVolume(self) -> trimesh.Trimesh:
@@ -242,14 +242,14 @@ class BlockSupportBase(SupportStructure):
         return blockSupportSides
 
     @staticmethod
-    def triangulateSections(sections) -> trimesh.Trimesh:
+    def triangulateSections(sections: list[trimesh.path.Path2D]) -> trimesh.Trimesh:
         """
         A static method to take a collection of section slice or cross-section and triangulate them into a combined
         mesh. The triangulated meshed are then transformed based on the original transformation generated internally
         when using :meth:`trimesh.Trimesh.section`.
 
         :param sections: The sections to triangulate into a mesh
-        :return: A mesh containing the  concatenated triangulated polygon sections
+        :return: A mesh containing the concatenated triangulated polygon sections
         """
         sectionMesh = trimesh.Trimesh()
 
@@ -292,10 +292,10 @@ class BaseSupportGenerator(abc.ABC):
     which indicates that this vertex requires an additional point support generating.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'BaseSupportGenerator'
 
     @staticmethod
@@ -336,8 +336,8 @@ class BaseSupportGenerator(abc.ABC):
 
     @staticmethod
     def findOverhangEdges(part: Part,
-                          overhangAngle: Optional[float] = 45.0,
-                          edgeOverhangAngle: Optional[float] = 10.0):
+                          overhangAngle: float = 45.0,
+                          edgeOverhangAngle: float = 10.0) -> List[Tuple[int,int]]:
         """
         Identifies edges which requires additional support based on both the support surface and support edge angle.
 
@@ -359,6 +359,7 @@ class BaseSupportGenerator(abc.ABC):
         adjacentFaceAngles = np.rad2deg(mesh.face_adjacency_angles)
 
         overhangEdges = []
+
         # Iterate through all the edges in the model
         for i in range(len(edgeVerts)):
 
@@ -437,7 +438,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
     be taken to keep this low as it will artificially offset the boundary of the support
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         super().__init__()
 
@@ -450,7 +451,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         self._innerSupportEdgeGap = 0.2  # mm (default = 0.1)
         self._outerSupportEdgeGap = 0.5  # mm  - offset between part supports and baseplate supports
 
-        self._triangulationSpacing = 2  # mm (default = 1)
+        self._triangulationSpacing = 2.0  # mm (default = 1)
         self._simplifyPolygonFactor = 0.5
 
         self._overhangAngle = 45.0  # [deg]
@@ -458,7 +459,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         self._useApproxBasePlateSupport = False  #
         self._splineSimplificationFactor = 20.0
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'BlockSupportGenerator'
 
     @staticmethod
@@ -483,7 +484,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         return self._splineSimplificationFactor
 
     @splineSimplificationFactor.setter
-    def splineSimplificationFactor(self, value: float):
+    def splineSimplificationFactor(self, value: float) -> None:
         self._splineSimplificationFactor = value
 
     @property
@@ -526,7 +527,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         return self._outerSupportEdgeGap
 
     @outerSupportEdgeGap.setter
-    def outerSupportEdgeGap(self, spacing: float):
+    def outerSupportEdgeGap(self, spacing: float) -> None:
         self._outerSupportEdgeGap = spacing
 
     @property
@@ -550,7 +551,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         return self._minimumAreaThreshold
 
     @minimumAreaThreshold.setter
-    def minimumAreaThreshold(self, areaThresholdValue: float):
+    def minimumAreaThreshold(self, areaThresholdValue: float) -> None:
         self._minimumAreaThreshold = areaThresholdValue
 
     @property
@@ -585,8 +586,9 @@ class BlockSupportGenerator(BaseSupportGenerator):
         The resolution should be selected to appropriately capture the complexity of the features within the part.
 
         .. note::
-            There is a restriction on the maximum size based on the framebuffer memory available in the OpenGL context
-            provided by the chosen Operating System and drivers
+            There is a restriction on the maximum size based on the framebuffer memory available in the
+            OpenGL context provided by the chosen Operating System and drivers
+
         """
         return self._rayProjectionResolution
 
@@ -598,7 +600,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         """ Not implemented """
         raise NotImplementedError('Not Implemented')
 
-    def generateIntersectionHeightMap(self):
+    def generateIntersectionHeightMap(self) -> None:
         """ Not implemented """
         raise NotImplementedError('Not Implemented')
 
@@ -723,7 +725,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
     def identifySupportRegions(self, part: Part,
                                overhangAngle: float,
-                               findSelfIntersectingSupport: Optional[bool] = True) -> List[BlockSupportBase]:
+                               findSelfIntersectingSupport: bool = True) -> List[BlockSupportBase]:
         """
         Extracts the overhang mesh and generates block regions given a part and target overhang angle. The algorithm
         uses a combination of boolean operations and ray intersection/projection to discriminate support regions.
@@ -871,8 +873,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
             This is used to separate both self-intersecting supports and those which are simply connected
             to the base-plate.
             """
-            outlines = find_contours(grads, self.gradThreshold(self.rayProjectionResolution, self.overhangAngle),
-                                     mask=heightMap > 2)
+            gradThreshold = self.gradThreshold(self.rayProjectionResolution, self.overhangAngle)
+            outlines = skimage.measure.find_contours(grads, gradThreshold, mask=heightMap > 2.0)
 
             # Transform the outlines from image to global coordinates system
             outlinesTrans = []

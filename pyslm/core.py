@@ -16,10 +16,11 @@ from shapely.ops import unary_union
 
 from scipy.spatial.qhull import ConvexHull
 
+from .hatching import utils as hatchUtils
 
 class DocumentObject(ABC):
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self._name = name
         self._label = 'Document Object'
         self._attributes = []
@@ -41,28 +42,28 @@ class DocumentObject(ABC):
     def name(self) -> str:
         return self._name
 
-    def _setAttributes(self, attributes: List[Any]):
+    def _setAttributes(self, attributes: List[Any]) -> None:
         self._attributes = attributes
 
-    def setName(self, name):
+    def setName(self, name) -> None:
         self._name = name
 
-    def boundingBox(self):  # const
+    def boundingBox(self) -> np.ndarray:  # const
         raise NotImplementedError('Abstract method should be implemented in derived class')
 
-    def extents(self):
+    def extents(self) -> np.ndarray:
         raise NotImplementedError('Abstract method should be implemented in derived class')
 
 
 class Document:
 
-    def __init__(self):
+    def __init__(self) -> None:
         logging.info('Initialising the Document Graph')
 
         # Create a direct acyclic graph using NetworkX
         self._graph = nx.DiGraph()
 
-    def addObject(self, obj: DocumentObject):
+    def addObject(self, obj: DocumentObject) -> None:
 
         if not issubclass(type(obj), DocumentObject):
             raise ValueError('Feature {:s} is not a Document Object'.format(obj))
@@ -139,7 +140,7 @@ class Document:
         return list(nx.dag.topological_sort(self._graph))
 
     @property
-    def partBoundingBox(self):
+    def partBoundingBox(self) -> np.ndarray:
         """
         A (nx6) array containing the bounding box for all the parts. This is needed for calculating the grid
         """
@@ -153,13 +154,13 @@ class Document:
         graphList.reverse()
         return graphList[0].boundingBox
 
-    def drawNetworkGraph(self):
+    def drawNetworkGraph(self) -> None:
         import networkx.drawing
         nodeLabels = [i.name for i in self._graph]
         networkLabels = dict(zip(self._graph, nodeLabels))
         networkx.drawing.draw(self._graph, labels=networkLabels)
         # networkx.drawing.draw_graphviz(self._graph, labels=networkLabels)
-
+        return None
 
 
 class Part(DocumentObject):
@@ -191,12 +192,12 @@ class Part(DocumentObject):
     Default value is equivalent to 1 micron.
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
 
         super().__init__(name)
 
         self._geometry = None
-        self._geometryCache = None
+        self._geometryCache = trimesh.Trimesh()
 
         self._bbox = np.zeros((1, 6))
 
@@ -205,7 +206,7 @@ class Part(DocumentObject):
         self._origin = np.array((0.0, 0.0, 0.0))
         self._dirty = True
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Part <{:s}>'.format(self.name)
 
     @property
@@ -215,6 +216,7 @@ class Part(DocumentObject):
         """
 
         return self._partType
+
     def isDirty(self) -> bool:
         """
         When a transformation or the geometry object has been changed via methods in the part, the state is toggled
@@ -309,8 +311,8 @@ class Part(DocumentObject):
         return M
 
     def setGeometry(self, geometry: Any,
-                    fixGeometry: Optional[bool] = True,
-                    mergeVertices: Optional[bool] = True) -> None:
+                    fixGeometry: bool = True,
+                    mergeVertices: bool = True) -> None:
         """
         Sets the Part geometry based on either a :class:`trimesh.Trimesh` object or a  file path to a mesh that is
         importable by Trimesh.
@@ -438,7 +440,7 @@ class Part(DocumentObject):
         if not self.geometry.is_volume:
             raise ValueError('Part is not a valid volume')
 
-        return self.geometry.volume
+        return float(self.geometry.volume)
 
     @property
     def surfaceArea(self) -> float:
@@ -448,7 +450,7 @@ class Part(DocumentObject):
         return float(self.geometry.area)
 
     @property
-    def geometry(self) -> Union[trimesh.Trimesh, None]:
+    def geometry(self) -> Optional[trimesh.Trimesh]:
         """
         The geometry of the part with the transformations applied.
         """
@@ -469,8 +471,7 @@ class Part(DocumentObject):
         self._geometryCache.apply_transform(self.getTransform())
         self._dirty = False
 
-
-    def getTrimeshSlice(self, z: float) -> trimesh.path.Path2D:
+    def getTrimeshSlice(self, z: float) -> Optional[trimesh.path.Path2D]:
         """
         The vector slice is created by using `trimesh` to slice the mesh into a polygon - returns a Path2D object
 
@@ -494,7 +495,7 @@ class Part(DocumentObject):
                                          plane_normal=[0.0, 0.0, 1.0])
 
         if sections is None:
-            return []
+            return None
 
         # Obtain the 2D Planar Section at this Z-position
         planarSection, transform = sections.to_planar(transformMat)
@@ -507,10 +508,11 @@ class Part(DocumentObject):
         return planarSection
 
     def getVectorSlice(self, z: float,
-                       fixPolygons: Optional[bool] = True,
+                       returnCoordPaths: bool = True,
+                       fixPolygons: bool = True,
                        simplificationFactor: Optional[float] = None,
-                       simplificationPreserveTopology: Optional[bool] = True,
-                       simplificationFactorMode: Optional[str] = 'absolute') -> Any:
+                       simplificationPreserveTopology: bool = True,
+                       simplificationFactorMode: str = 'absolute') -> List[Any]:
         """
         The vector slice is created by using `trimesh` to slice the mesh into a polygon
 
@@ -525,7 +527,7 @@ class Part(DocumentObject):
         """
         planarSection = self.getTrimeshSlice(z)
 
-        if not planarSection:
+        if planarSection is None:
             return []
 
         # Obtain a closed list of shapely polygons
@@ -539,7 +541,7 @@ class Part(DocumentObject):
                 meanLen = np.mean(planarSection.extents)
                 simpFactor = simplificationFactor * meanLen
             elif simplificationFactorMode == 'line':
-                pass
+                raise NotImplementedError('Line simplification mode not implemented')
             else:
                 raise Exception('simplification mode invalid')
 
@@ -600,7 +602,7 @@ class Part(DocumentObject):
         Returns a bitmap (binary) image of the slice at position :math:`z` position. The resolution parameter
         can change the required definition for rasterising the slice layer.
 
-        :param z: The z-position to take the slice from
+        :param z: The z-position for slicing the mesh
         :param resolution: The resolution of the bitmap to generate [pixels/length unit]
         :param origin: The offset for (0,0) in the bitmap image - defaults to the bounding box minimum (optional)
 
@@ -611,6 +613,9 @@ class Part(DocumentObject):
             raise RuntimeError(f"Geometry was not set for Part ({self.name})")
 
         vectorSlice = self.getTrimeshSlice(z)
+
+        if vectorSlice is None:
+            return np.zeros((0, 0))
 
         bitmapOrigin = self.boundingBox[:2] if origin is None else origin
 

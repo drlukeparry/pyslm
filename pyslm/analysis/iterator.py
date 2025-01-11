@@ -154,7 +154,7 @@ class Iterator(ABC):
     Additional information can be included for the iterator to account for additional dwell time between layers and
     in :attr:`dwellTime` and the layer dwell time :attr:`recoaterTime`.
     """
-    def __init__(self, models: List[Model], layers: List[Layer]):
+    def __init__(self, models: List[Model], layers: List[Layer]) -> None:
 
         self._time = 0.0
         self._layerGeomTime = 0.0
@@ -170,7 +170,7 @@ class Iterator(ABC):
         # Variables for cache
         self._cacheValid = False
         self._cache = []
-        self._tree = None
+        self._tree = TimeNode()
 
     @property
     def time(self) -> float:
@@ -357,12 +357,12 @@ class Iterator(ABC):
         node = self.getLayerGeometryNodeByTime(time)
         return node.value if node else None
 
-    def getLayerGeometryIdByTime(self, time: float) -> int:
+    def getLayerGeometryIdByTime(self, time: float) -> Optional[int]:
         """
         Gets the :class:`~pyslm.geometry.LayerGeometry` id for a given time in a build.
 
         :param time: The time for locating the LayerGeometry
-        :return: Node Index
+        :return: Node Index if available else None
         """
         node = self.getLayerGeometryNodeByTime(time)
         return node.id if node else None
@@ -470,7 +470,7 @@ class Iterator(ABC):
         layerGeomNode = self.getLayerGeometryNodeByTime(time)
 
         if not layerGeomNode:
-            raise Exception('Seek time {.3f} is not within the build time'.format(time))
+            raise Exception('Seek time {:.3f} is not within the build time'.format(time))
 
         self._time = time
         self._layerInc = layerGeomNode.parent.id
@@ -512,7 +512,7 @@ class Iterator(ABC):
 
 class LayerGeometryIterator(Iterator):
 
-    def __init__(self, models: List[Model], layers: List[Layer]):
+    def __init__(self, models: List[Model], layers: List[Layer]) -> None:
         super().__init__(models, layers)
 
     def __iter__(self):
@@ -538,7 +538,7 @@ class ScanIterator(Iterator):
     the individual scan vectors depending on its type in :meth:`getPointInLayerGeometry` using the current
     :class:`~pyslm.geometry.BuildStyle` associated with the LayerGeometry.
     """
-    def __init__(self, models: List[Model], layers: List[Layer]):
+    def __init__(self, models: List[Model], layers: List[Layer]) -> None:
         super().__init__(models, layers)
 
         self._timestep: float = 1e-3
@@ -552,8 +552,8 @@ class ScanIterator(Iterator):
         return self._timestep
 
     @timestep.setter
-    def timestep(self, value: float):
-        self._timestep = value
+    def timestep(self, timestep: float) -> None:
+        self._timestep = timestep
 
     def isLaserOn(self) -> bool:
         """
@@ -563,6 +563,7 @@ class ScanIterator(Iterator):
         """
         layerStartTime = self._layerGeomTime
         layerEndTime = layerStartTime + self.getLayerGeomTime(self._layerInc, self._layerGeomInc)
+
         if layerStartTime < self._time < layerEndTime:
             return True
         else:
@@ -574,10 +575,10 @@ class ScanIterator(Iterator):
         :class:`~pyslm.geometry.LayerGeometry`. It iterates across each scan vector based on a total distance
         accumulated and locates the scan vector to interpolate the position.
 
-        :param timeOffset: Time offset within the LayerGeometry
-        :param layerGeom: The LayerGeometry to interpolate the laser point across
+        :param timeOffset: Time offset within the Layer Geometry
+        :param layerGeom: The Layer Geometry to interpolate the laser point across
 
-        :return:  The current position of the laser of the time
+        :return: The current position of the laser of the time
         """
 
         buildStyle = geomUtils.getBuildStyleById(self.models, layerGeom.mid, layerGeom.bid)
@@ -596,14 +597,14 @@ class ScanIterator(Iterator):
             if offsetDist > cumDist2[-1]:
                 raise Exception('Error offset distance > cumDist {:.3f}, {:.3f}'.format(offsetDist, cumDist2[-1]))
 
-            id = 0
+            idx = 0
             for i, vec in enumerate(cumDist2):
                 if offsetDist < vec:
-                    id = i
+                    idx = i
                     break
 
-            linearOffset = (offsetDist - cumDist2[id-1]) / dist[id-1]
-            point = layerGeom.coords[id-1] + delta[id-1] * linearOffset
+            linearOffset = (offsetDist - cumDist2[idx-1]) / dist[idx-1]
+            point = layerGeom.coords[idx-1] + delta[idx-1] * linearOffset
 
             # note scipy interpolate works
             """
@@ -622,14 +623,14 @@ class ScanIterator(Iterator):
             cumDist = np.cumsum(dist)
             cumDist2 = np.insert(cumDist, 0, 0)
 
-            id = 0
+            idx = 0
             for i, vec in enumerate(cumDist2):
                 if offsetDist < vec:
-                    id = i
+                    idx = i
                     break
 
-            linearOffset = (offsetDist - cumDist2[id-1]) / dist[id-1]
-            point = coords[id-1][0] + delta[id-1] * linearOffset
+            linearOffset = (offsetDist - cumDist2[idx-1]) / dist[idx-1]
+            point = coords[idx-1][0] + delta[idx-1] * linearOffset
 
         return point
 
