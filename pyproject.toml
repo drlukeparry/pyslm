@@ -20,25 +20,25 @@ keywords = [
 ]
 classifiers = [
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
     "matplotlib",
     "networkx",
-    "numpy",
+    "numpy>1.21",
     "pyclipr",
     "Rtree",
     "scikit-image",
     "scipy",
     "setuptools",
-    "shapely",
-    "trimesh",
+    "shapely>2.0",
+    "trimesh>4.0"
 ]
 
 [project.optional-dependencies]
@@ -78,6 +78,9 @@ support = [
     "trimesh",
     "vispy",
 ]
+build = ["build", "hatchling", "requests", "twine"]
+codegen = ["pytest", "numpy", "ruff"]
+lint = ["ruff", "pre-commit"]
 
 [project.urls]
 Documentation = "https://pyslm.readthedocs.io/en/latest/"
@@ -85,17 +88,45 @@ Homepage = "https://github.com/drlukeparry/pyslm"
 Source = "https://github.com/drylukeparry/pyslm/pyslm/"
 Tracker = "https://github.com/drlukeparry/pyslm/issues"
 
+[build-system]
+requires = ["requests", "hatchling"]
+build-backend = "hatchling.build"
+
 [tool.hatch.version]
 path = "pyslm/version.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "pyslm",
+    "tests",
+    "examples",
 ]
 
 [tool.hatch.build.targets.wheel]
 include = [
     "pyslm",
+    "models",
+    "examples"
+
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests"
+]
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "N", "B", "RUF"]
+exclude = ["build/", "docs/",  "examples/", "tests/", "__pycache__", ".github"]
+ignore = [
+    "E501",   # Line too long
+    "N802",   # Function name should be lowercase
+    "N803",  # Argument name should be lowercase
+    "N806",  # Variable in function should be lowercase
+    "N815",  # mixedCase variable in function
+    "E731",   # Do not assign a `lambda` expression, use a `def`
 ]
 
 [tool.mypy]
