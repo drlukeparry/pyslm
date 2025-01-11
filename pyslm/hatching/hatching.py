@@ -1,6 +1,6 @@
 import abc
 import time
-from typing import assert_never, Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 import logging
 
 import numpy as np

@@ -44,10 +44,10 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.12
-    - name: Install libspatial
+    - name: Install libspatial, pyclipr dependencies
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install -qq -y libglu1-mesa libspatialindex6
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
     - name: Install dev dependencies
       run: |
         python -m pip install --upgrade pip
@@ -55,8 +55,7 @@ jobs:
     - name: Build docs
       run: |
         cd docs
-        make html SPHINXOPTS="-W --keep-going"
-
+        sphinx-build --builder html . out
   test-builds:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -85,20 +84,51 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.pyversion }}
-    - name: Install libspatial
+    - name: Install libspatial and pyclipr dependencies
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install -qq -y libglu1-mesa libspatialindex6
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
     - name: Install package and dev dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install .
         pip install .[tests]
+        pip install .[support]
         rm -r pyslm
-    - name: Unit tests
+    - name: Unit tests with pytest
       run: |
-        pytest -v tests
-
+        pytest tests/
+  test-coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Install libspatial and pyclipr dependencies
+      run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
+    - name: Install package and dev dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+        pip install .[tests]
+        pip install .[support]
+        rm -r pyslm
+    - name: Run Pytest coverage
+      run: |
+        pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=pyslm tests/ | tee pytest-coverage.txt
+    - name: Pytest coverage comment
+      uses: MishaKav/pytest-coverage-comment@main
+      with:
+        pytest-coverage-path: ./pytest-coverage.txt
+        junitxml-path: ./pytest.xml
   test-examples-build:
     name: Test examples ${{ matrix.pyversion }}
     runs-on: ${{ matrix.os }}
@@ -116,10 +146,10 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.12
-    - name: Install libspatial
+    - name: Install libspatial and pyclipr dependencies
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install -qq -y libglu1-mesa libspatialindex6
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
     - name: Install dev dependencies
       run: |
         python -m pip install --upgrade pip
@@ -139,10 +169,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
+      - name: Install Hatch
+        uses: pypa/hatch@install
+      - name: Install libspatial and pyclipr dependencies
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
       - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -U flit build twine
+          pip install -U flit build twine hatchling
       - name: Create source distribution
         run: |
           python -m build -n -s

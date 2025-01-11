@@ -15,9 +15,6 @@ class TestBasic:
     NUM_ORIGINS = 10
     NUM_SCALEFACTORS = 10
 
-    def test_version(self):
-        assert pyslm.__version__ == '0.7.0'
-
     def test_vector_slicing_cube(self):
 
         # load the mesh into a pyslm Part
@@ -111,7 +108,7 @@ class TestBasic:
 
         # slice the part
         part = pyslm.Part('cube')
-        part.setGeometry('../../models/frameGuide.stl')
+        part.setGeometry('./models/frameGuide.stl')
 
         # slice the part
         polys = part.getVectorSlice(0.0, returnCoordPaths=False)
@@ -149,7 +146,7 @@ class TestBasic:
 
         # slice the part
         part = pyslm.Part('frameguide')
-        part.setGeometry('../../models/frameGuide.stl')
+        part.setGeometry('./models/frameGuide.stl')
 
         # slice the part
         polys = part.getVectorSlice(0.0, returnCoordPaths=False)

@@ -50,15 +50,25 @@ docs = [
     "networkx",
     "numpy",
     "pyclipr",
+    "mapbox-earcut",
     "autodocsumm",
+    "sphinx-autodoc-typehints",
+    "m2r2",
+    "sphinx_automodapi",
     "scikit-image",
     "scipy",
     "shapely",
     "sphinx",
+    "docutils==0.20",
+    "mock",
     "sphinx-paramlinks",
     "pypandoc",
     "sphinx_rtd_theme",
+    "furo",
+    "triangle",
     "trimesh",
+    "vispy",
+    "PyQt5"
 ]
 easy = [
     "colorlog",
@@ -67,6 +77,11 @@ easy = [
     "shapely",
     "triangle",
     "trimesh",
+]
+tests = [
+    "pytest",
+    "pytest-cov",
+    "coverage-badge"
 ]
 support = [
     "mapbox-earcut",
@@ -119,7 +134,7 @@ testpaths = [
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "N", "B", "RUF"]
-exclude = ["build/", "docs/",  "examples/", "tests/", "__pycache__", ".github"]
+exclude = ["setup.py", "build/*", "dist/*", "docs/*",  "examples/*", "tests/*", "__pycache__", ".github"]
 ignore = [
     "E501",   # Line too long
     "N802",   # Function name should be lowercase
