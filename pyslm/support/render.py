@@ -181,7 +181,7 @@ class Canvas(app.Canvas):
 def projectHeightMap(mesh: trimesh.Trimesh,
                      resolution: float = 0.05,
                      flipDir: bool = False,
-                     bbox: np.ndarray = None):
+                     bbox: np.ndarray = None) -> np.ndarray:
 
     c = Canvas(mesh, resolution, flipDir, bbox)
 

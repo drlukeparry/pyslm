@@ -18,7 +18,7 @@ from scipy.spatial.qhull import ConvexHull
 
 from .hatching import utils as hatchUtils
 
-class DocumentObject(ABC):
+class DocumentObject:
 
     def __init__(self, name: str) -> None:
         self._name = name
@@ -280,7 +280,7 @@ class Part(DocumentObject):
 
         self._dirty = True
 
-    def dropToPlatform(self, zPos: Optional[float] = 0.0) -> None:
+    def dropToPlatform(self, zPos: float = 0.0) -> None:
         """
         Drops the part at a set height (`zPos`) from its lowest point from the platform (assumed :math:`z=0`).
 
@@ -583,7 +583,8 @@ class Part(DocumentObject):
         """
 
         # deprecated function
-        warnings.warn('This function is deprecated and will be removed in future versions', DeprecationWarning)
+        warnings.warn('This function is deprecated and will be removed in future versions',
+                      DeprecationWarning, stacklevel=2)
 
         paths = []
 

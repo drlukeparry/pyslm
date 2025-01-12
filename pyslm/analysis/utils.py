@@ -164,8 +164,8 @@ def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
             raise ValueError('Build Style ({:s}) should have a valid point exposure time and point distance set'.format(bstyle.name))
 
         """
-        Note a multiplier is currently needed as it is assumed point distance is in microns 
-        and point exposure time in micro-seconds
+        Note a multiplier is currently needed as it is assumed point distance is in microns and point exposure
+        time in micro-seconds
         """
 
         # Calculate the point jump time based on the jump speed [mm/s] - typically around 5000 mm/s

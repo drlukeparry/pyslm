@@ -19,7 +19,7 @@ class Header:
     The Header provides basic information about the machine build file, such as the name of the file
     (:attr:`filename`), version and the :attr:`zUnit` used for calculating the actual Layer z position in the machine.
 
-    Typically, the :attr:`zUnit` is set to 1000 :math:`\mu m` corresponding to a conversion factor from mm to microns.
+    Typically, the :attr:`zUnit` is set to 1000 :math:`\\mu m` corresponding to a conversion factor from mm to microns.
     The :attr:`version` tuple is set corresponding to the chosen machine build format specification available in libSLM
     and what is compatible with the firmware of the SLM system.
     """
@@ -190,7 +190,7 @@ class BuildStyle:
     @property
     def jumpDelay(self) -> int:
         """
-        The jump delay between scan vectors (usually expressed as an integer :math:`\mu s`). This must be set to
+        The jump delay between scan vectors (usually expressed as an integer :math:`\\mu s`). This must be set to
         zero (default) if it is not explicitly used.
         """
         return self._jumpDelay

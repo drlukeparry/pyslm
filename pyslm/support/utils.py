@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import networkx as nx
 
@@ -61,7 +61,7 @@ def getFaceZProjectionWeight(mesh: trimesh.Trimesh,
     """
     Utility which returns the inverse projection of the faces relative to the +ve Z direction in order to isolate side
     faces. This could be considered the inverse component of the overhang angle. It is calculated by using the
-    following trigonometric identify :math:`\sin(\\theta) = \sqrt{1-\cos^2(\\theta)`.
+    following trigonometric identify :math:`\\sin(\\theta) = \\sqrt{1-\\cos^2(\\theta)`.
 
     :param mesh: The mesh to identify the projection weights
     :param useConnectivity: Uses mesh connectivity to interpolate the surface normals across

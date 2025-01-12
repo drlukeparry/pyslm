@@ -10,7 +10,7 @@ from . import utils
 class BaseSort(abc.ABC):
 
     def __init__(self) -> None:
-        pass
+        return None
 
     def __str__(self) -> str:
         return 'BaseSort'

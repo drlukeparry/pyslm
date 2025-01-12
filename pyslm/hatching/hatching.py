@@ -1,14 +1,12 @@
 import abc
-import time
-from typing import Any, List, Optional, Tuple, Union
-import logging
+from typing import List, Union
 
 import numpy as np
 
 import pyclipr
 import shapely.geometry
 
-from .sorting import AlternateSort, BaseSort, LinearSort
+from .sorting import BaseSort
 from ..geometry import Layer, Model, ContourGeometry, HatchGeometry
 
 
@@ -170,7 +168,7 @@ class BaseHatcher(abc.ABC):
     """
 
     def __init__(self) -> None:
-        pass
+        return None
 
     def __str__(self) -> str:
         return 'BaseHatcher'
@@ -637,8 +635,9 @@ class Hatcher(BaseHatcher):
     def layerAngleIncrement(self) -> float:
         """
         An additional offset used to increment the hatch angle between layers in degrees. This is typically set to
-        66.6 :math:`^\circ` per layer to provide additional uniformity of the scan vectors across multiple layers.
-        By default, this is set to `0.0`. """
+        66.6 :math:`^\\circ` per layer to provide additional uniformity of the scan vectors across multiple layers.
+        By default, this is set to `0.0`.
+        """
         return self._layerAngleIncrement
 
     @layerAngleIncrement.setter

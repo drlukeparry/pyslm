@@ -133,15 +133,16 @@ testpaths = [
 ]
 
 [tool.ruff.lint]
-select = ["F", "E", "W", "N", "B", "RUF"]
+select = ["F", "E", "W", "B", "RUF"]
 exclude = ["setup.py", "build/*", "dist/*", "docs/*",  "examples/*", "tests/*", "__pycache__", ".github"]
 ignore = [
+    "B904",   # Bare exception
     "E501",   # Line too long
-    "N802",   # Function name should be lowercase
-    "N803",  # Argument name should be lowercase
-    "N806",  # Variable in function should be lowercase
-    "N815",  # mixedCase variable in function
+    "E722",   # Bare exceptions
+    "F401",   # Unused imports
+    "F841",   # Unused variables
     "E731",   # Do not assign a `lambda` expression, use a `def`
+    "RUF005"
 ]
 
 [tool.mypy]

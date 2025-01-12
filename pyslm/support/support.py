@@ -34,7 +34,6 @@ import numpy as np
 import trimesh
 import trimesh.path
 import trimesh.path.traversal
-import pyclipr
 
 from ..core import Part
 from ..hatching import utils as hatchingUtils
@@ -270,7 +269,7 @@ class BlockSupportBase(SupportStructure):
         return sectionMesh
 
 
-class BaseSupportGenerator(abc.ABC):
+class BaseSupportGenerator:
     """
     The BaseSupportGeneration class provides common methods used for generating the support structures
     (:class:`SupportStructure`) typically used in Additive Manufacturing.
@@ -655,7 +654,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
         :return: A tuple containing various height maps
         """
 
-        warnings.warn('This function is deprecated and will be removed in the future', DeprecationWarning)
+        warnings.warn('This function is deprecated and will be removed in the future',
+                      DeprecationWarning, stacklevel=2)
 
         # Rasterise the surface of overhang to generate projection points
         supportArea = np.array(offsetPoly.rasterize(self.rayProjectionResolution, offsetPoly.bounds[0, :])).T

@@ -139,7 +139,7 @@ class ScanVectorIterator:
                 raise StopIteration
 
 
-class Iterator(ABC):
+class Iterator:
     """
     Basic Iterator which parses through both a list of :class:`~pyslm.geometry.Layer` and
     :class:`~pyslm.geometry.LayerGeometry` groups and incrementally goes through the geometry based on time values

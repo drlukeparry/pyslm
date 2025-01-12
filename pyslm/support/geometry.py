@@ -14,16 +14,16 @@ from trimesh import grouping
 import shapely.geometry
 
 # Triangulation Libraries
-from mapbox_earcut import triangulate_float64, triangulate_float32
+from mapbox_earcut import triangulate_float32
 from triangle import triangulate
 
 
 def checkStrutCylinderIntersection(pntA: np.ndarray, pntB: np.ndarray,
                                    radius: float,
                                    mesh: trimesh.Trimesh,
-                                   returnLocation: Optional[bool] = False,
-                                   numPoints: Optional[int] = 6,
-                                   centreOnly: Optional[bool] = False):
+                                   returnLocation: bool = False,
+                                   numPoints: int = 6,
+                                   centreOnly: bool = False):
     """
     Checks if the segment with number of cylinders between pnt and pnt2 intersects with the mesh. The number of
     points (`numPoints`) determines the equal number of positions to perform the intersection radially at the
@@ -202,7 +202,7 @@ def sweepPolygon(polygon: shapely.geometry.Polygon,
     vecs = verts_3d - path[-1]
     coords = np.c_[np.einsum('ij,j->i', vecs, x),
     np.einsum('ij,j->i', vecs, y)]
-    base_verts_2d, faces_2d = triangulate_polygon(Polygon(coords), **kwargs)
+    base_verts_2d, faces_2d = triangulate_polygon(shapely.geometry.Polygon(coords), **kwargs)
     base_verts_3d = (np.einsum('i,j->ij', base_verts_2d[:, 0], x) +
                      np.einsum('i,j->ij', base_verts_2d[:, 1], y)) + path[-1]
     faces = np.vstack((faces, faces_2d + len(vertices)))
@@ -413,7 +413,7 @@ def path2DToPathList(shapes: List[shapely.geometry.polygon.Polygon]) -> List[np.
 
 
 def sortExteriorInteriorRings(polyNode: pyclipr.PolyTree,
-                              closePolygon: Optional[bool] = False) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+                              closePolygon: bool = False) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     A recursive function that sorts interior and exterior rings or paths from PyClirer (:class:`pylcipr.PolyTree`)
     objects.
@@ -449,7 +449,7 @@ def sortExteriorInteriorRings(polyNode: pyclipr.PolyTree,
 
 
 def triangulateShapelyPolygon(polygon: shapely.geometry.Polygon,
-                              triangle_args: Optional[str]=None,
+                              triangle_args: Optional[str] = None,
                               **kwargs):
     """
     Triangulate a Shapely Polygon  using a python interface to `triangle.c`.
@@ -700,7 +700,7 @@ def _polygon_to_kwargs(polygon):
     return result
 
 
-def triangulatePolygon(section, closed: Optional[bool] = False) -> Tuple[np.ndarray, np.ndarray]:
+def triangulatePolygon(section, isClosed: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function triangulates polygons generated natively by PyClipper, from :class:`pyclipper.PyPolyNode` objects. This
     is specifically used to optimally generate the polygon triangulations using an external triangulation library
@@ -712,7 +712,7 @@ def triangulatePolygon(section, closed: Optional[bool] = False) -> Tuple[np.ndar
     Otherwise, this requires passing all paths and sorting these to identify interior holes.
 
     :param section: A :class:`pyclipr.PyPolyNode` object containing a collection of polygons
-    :param closed: If the polygon is already closed
+    :param isClosed: If the polygon is closed
     :return: A tuple of vertices and faces generated from the triangulation
     """
 
@@ -732,7 +732,7 @@ def triangulatePolygon(section, closed: Optional[bool] = False) -> Tuple[np.ndar
 
         interiorPath2D = []
         for path in interior:
-            if closed:
+            if isClosed:
                 coords = np.array(path)[:-1, :2]
             else:
                 coords = np.array(path)[:, :2]
@@ -777,7 +777,6 @@ def generatePolygonBoundingBox(bbox: np.ndarray) -> shapely.geometry.Polygon:
 
     bx = bbox[:, 0]
     by = bbox[:, 1]
-    bz = bbox[:, 2]
 
     a = [np.min(bx), np.max(bx)]
     b = [np.min(by), np.max(by)]

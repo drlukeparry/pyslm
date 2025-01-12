@@ -3,7 +3,7 @@ Provides classes and methods for the creation of grid block supports for use typ
 """
 import sys
 from enum import IntEnum
-from typing import Any, Optional, List, Tuple, Union
+from typing import Any, Optional, List, Tuple
 import logging
 
 import warnings
@@ -321,7 +321,8 @@ class GridBlockSupport(BlockSupportBase):
     @staticmethod
     def holeGeometry() -> shapely.geometry.Polygon:
         """ Depreciated function """
-        warnings.warn('This function is deprecated and will be removed in the future', DeprecationWarning)
+        warnings.warn('This function is deprecated and will be removed in the future',
+                      DeprecationWarning, stacklevel=2)
         return shapely.geometry.Polygon([[-1.5, 0], [0, 1.], [1.5, 0], [0, -1.0], [-1.5, 0]])
 
     @staticmethod
@@ -816,7 +817,8 @@ class GridBlockSupport(BlockSupportBase):
         :param section:
         :return:
         """
-        warnings.warn('This function is deprecated and will be removed in the future', DeprecationWarning)
+        warnings.warn('This function is deprecated and will be removed in the future',
+                      DeprecationWarning, stacklevel=2)
 
         if section is None:
             return trimesh.path.Path2D()
@@ -1041,7 +1043,7 @@ class GridBlockSupport(BlockSupportBase):
 
             # Uncomment below to identify issues with support generation
             # blockSupportSides.show()
-            warnings.warn('Warning: number of isolated curves')
+            warnings.warn('Warning: number of isolated curves', stacklevel=2)
             return []
 
         (top, bottom) = (supportSurf[0], supportSurf[1])
@@ -1204,9 +1206,9 @@ class GridBlockSupport(BlockSupportBase):
                 teethFinalBottom[:, 1] += patternList[idx, 1]
 
             """
-            The bottom vertex of the path is lower than top indicates (counter-clockwise) when
-            the polygon has its paths correctly sorted internally using pyclipr or Shapely. This orientation 
-            gives an indication if the geometry lies at the top or the bottom of the support volume
+            The bottom vertex of the path is lower than top indicates (counter-clockwise) when the polygon has its
+            paths correctly sorted internally using pyclipr or Shapely. This orientation gives an indication if the
+            geometry lies at the top or the bottom of the support volume
             """
 
             if self._useUpperSupportTeeth:
@@ -1254,13 +1256,13 @@ class GridBlockSupport(BlockSupportBase):
             # Use the intersecting boundaries of the support volume instead
             myPolyVerts = np.vstack(vertexList)
 
-            """ 
+            """
             Resample the boundary
             """
             myPolyVerts = trimesh.path.traversal.resample_path(myPolyVerts, step=0.25)
 
             """
-            Add additional support to the upper and lower surfaces 
+            Add additional support to the upper and lower surfaces
             """
             if self._supportWallThickness > 1e-5:
 
@@ -1343,8 +1345,8 @@ class GridBlockSupport(BlockSupportBase):
 
             vy = np.hstack([vy, np.zeros([len(vy), 1])])
 
-            """We subdivide and discretise the mesh further in-order to provide sufficient discretisiation of the 
-            support mesh. This ensures that the mesh correctly conforms to the boundary of the support block volume - 
+            """We subdivide and discretise the mesh further in-order to provide sufficient discretisiation of the
+            support mesh. This ensures that the mesh correctly conforms to the boundary of the support block volume -
             especially at sharp apexes or corners"""
             tmpMesh = trimesh.Trimesh(vertices=vy, faces=fy, process=True, validate=True)
             tmpMesh.merge_vertices()
@@ -1352,10 +1354,10 @@ class GridBlockSupport(BlockSupportBase):
             vy, fy = tmpMesh.vertices, tmpMesh.faces
 
             """
-            Subdivide the generated skin mesh to increase the mesh resolution prior to re-mapping the generated 
-            2D polygon back to the conforming 3D skin 
+            Subdivide the generated skin mesh to increase the mesh resolution prior to re-mapping the generated
+            2D polygon back to the conforming 3D skin
             """
-            for i in range(self._numSkinMeshSubdivideIterations):
+            for _ in range(self._numSkinMeshSubdivideIterations):
                 vy, fy = trimesh.remesh.subdivide(vy, fy)
 
             """
@@ -1421,7 +1423,7 @@ class GridBlockSupport(BlockSupportBase):
 
             else:
                 # Triangulate the polygon
-                vx, fx = triangulatePolygon(section)
+                vx, fx = geometry.triangulatePolygon(section)
 
             if len(fx) == 0:
                 continue
@@ -1528,7 +1530,8 @@ class GridBlockSupport(BlockSupportBase):
         newFaces = np.vstack([mesh.faces + idxCumSum[i] for i, mesh in enumerate(meshList)])
 
         faceAttr = {}
-        for i, mesh in enumerate(meshList):
+
+        for mesh in meshList:
             for key, value in mesh.face_attributes.items():
                 if key not in faceAttr:
                     faceAttr[key] = []
@@ -1555,21 +1558,6 @@ class GridBlockSupport(BlockSupportBase):
         out = zip(lines, transforms, faces)
         return list(out)
 
-        if False:
-
-            # turn the line segments into Path2D objects
-            paths = [None] * len(lines)
-            for i, faces, segments, T in zip(range(len(lines)),
-                                             faces,
-                                             lines,
-                                             transforms):
-                if len(segments) > 0:
-                    paths[i] = load_path(
-                        segments,
-                        metadata={'to_3D': T, 'face_index': faces})
-            return paths
-
-        return lines, transforms, faces
 
     def generateGridSlices(self) -> Tuple[List[trimesh.path.Path2D], List[trimesh.path.Path2D]]:
         """
@@ -1844,7 +1832,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
     @useLowerSupportTeeth.setter
     def useLowerSupportTeeth(self, state: bool) -> None:
         self._useLowerSupportTeeth = state
-        
+
     @property
     def supportBorderDistance(self) -> float:
         """

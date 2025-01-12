@@ -21,13 +21,15 @@ class Island(InnerHatchRegion):
     _boundary = None
     """ Private class attribute which is used to cache the boundary generated"""
 
-    def __init__(self, origin: np.ndarray = np.array([[0.0, 0.0]]),
+    def __init__(self, origin: Optional[np.ndarray] = None,
                  orientation: Optional[float] = 0.0,
                  islandWidth: Optional[float] = 0.0,
                  islandOverlap: Optional[float] = 0.0,
                  hatchDistance: Optional[float] = 0.1):
 
         super().__init__()
+
+        origin = np.array([[0.0, 0.0]]) if origin is None else origin
 
         self.posId = 0
         self.id = 0

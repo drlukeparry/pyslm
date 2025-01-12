@@ -1,5 +1,5 @@
 from typing import Dict, Iterable, List, Tuple, Union
-from warnings import warn
+import warnings
 
 import trimesh.transformations
 import numpy as np
@@ -264,7 +264,8 @@ class ModelValidator:
         for layer in layers:
 
             if len(layer.geometry) == 0:
-                warn("Warning: Layer ({:d}) does not contain any layer geometry. It is advised to check this is valid".format(layer.layerId))
+                warnings.warn("Warning: Layer ({:d}) does not contain any layer geometry. It is advised to check this is valid".format(layer.layerId),
+                              stacklevel=2)
 
             for layerGeom in layer.geometry:
                 model = modelIdx.get(layerGeom.mid, None)
@@ -282,7 +283,7 @@ class ModelValidator:
         """ Check to see if all models were assigned to a layer geometry"""
         for model in models:
             if not modelTopLayerIdx.get(model.mid, False):
-                warn("Warning: Model({:s}) was not used in any layer)".format(model.name))
+                warnings.warn(f"Warning: Model({model.name}) was not used in any layer)", stacklevel=2)
 
             if model.topLayerId != modelTopLayerIdx[model.mid]:
                 raise Exception("Top Layer Id {:d} of Model ({:d}) differs in the layers used ({:d})".format(model.topLayerId,
