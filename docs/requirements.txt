@@ -5,7 +5,8 @@ sphinx-paramlinks
 autodocsumm
 pypandoc
 sphinx_rtd_theme
-m2r2
+m2r2==0.3.4
+docutils==0.21.2
 mock
 numpy
 scipy
