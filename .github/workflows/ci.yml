@@ -129,6 +129,7 @@ jobs:
       with:
         pytest-coverage-path: ./pytest-coverage.txt
         junitxml-path: ./pytest.xml
+
   test-examples-build:
     name: Test examples ${{ matrix.pyversion }}
     runs-on: ${{ matrix.os }}
