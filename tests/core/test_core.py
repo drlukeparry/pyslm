@@ -108,7 +108,7 @@ class TestBasic:
 
         # slice the part
         part = pyslm.Part('Bracket')
-        part.setGeometry('../../models/frameGuide.stl')
+        part.setGeometry('./models/frameGuide.stl')
 
         # slice the part
         polys = part.getVectorSlice(0.0, returnCoordPaths=False)
@@ -147,7 +147,7 @@ class TestBasic:
         # slice the part
         part = pyslm.Part('bracket')
 
-        part.setGeometry('../../models/frameGuide.stl')
+        part.setGeometry('./models/frameGuide.stl')
 
         # slice the part
         polys = part.getVectorSlice(0.0, returnCoordPaths=False)

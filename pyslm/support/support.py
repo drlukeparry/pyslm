@@ -852,16 +852,25 @@ class BlockSupportGenerator(BaseSupportGenerator):
             cutMeshUpper.remove_unreferenced_vertices()
 
             # Toggle to use full intersecting mesh
-            # cutMeshUpper = cutMesh
+            TOL_OFFSET = 1000
+            cutMeshUpperCpy = cutMeshUpper.copy()
+            cutMeshUpperCpy.vertices[:, 2] += TOL_OFFSET
+
+            subregionCpy = subregion.copy()
+            subregionCpy.vertices[:, 2] += TOL_OFFSET
 
             # Use a ray-tracing approach to identify self-intersections. This provides a method to isolate regions that
             # either are self-intersecting or not.
 
             logging.info('\t - start generated support height map')
-            heightMap, heightMapUpper, heightMapLower = self._identifySelfIntersectionHeightMap(subregion, offsetPoly, cutMeshUpper, bbox)
+
+            heightMap, heightMapUpper, heightMapLower = self._identifySelfIntersectionHeightMap(subregionCpy, offsetPoly, cutMeshUpperCpy, bbox)
+
+
             logging.info('\t - finished generated support height map')
 
             heightMap = np.pad(heightMap, ((2, 2), (2, 2)), 'constant', constant_values=((1, 1), (1, 1)))
+            heightMapUpper = np.pad(heightMapUpper.T, ((2, 2), (2, 2)), 'constant', constant_values=((1, 1), (1, 1)))
 
             vx, vy = np.gradient(heightMap)
             grads = np.sqrt(vx ** 2 + vy ** 2)
@@ -874,7 +883,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
             to the base-plate.
             """
             gradThreshold = self.gradThreshold(self.rayProjectionResolution, self.overhangAngle)
-            outlines = skimage.measure.find_contours(grads, gradThreshold, mask=heightMap > 2.0)
+
+            outlines = skimage.measure.find_contours(grads, gradThreshold, mask=heightMap > (TOL_OFFSET-1))
 
             # Transform the outlines from image to global coordinates system
             outlinesTrans = []
@@ -1030,8 +1040,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
                                                     supportVolume=blockSupportMesh,
                                                     supportSurface=subregion,
                                                     intersectsPart=True)
-
-                baseSupportBlock._upperSurface = surf2
 
                 supportBlockRegions.append(baseSupportBlock)
 
