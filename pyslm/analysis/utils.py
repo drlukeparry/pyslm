@@ -53,7 +53,8 @@ def getLayerGeometryPathLength(layerGeom: LayerGeometry) -> float:
         totalPathDist = np.sum(lineDist)
 
     if isinstance(layerGeom, PointsGeometry):
-        raise Exception('Cannot pass a PointsGeometry to calculate the total path length')
+        totalPathDist = 0.0
+        #raise Exception('Cannot pass a PointsGeometry to calculate the total path length')
 
     return float(totalPathDist)
 
