@@ -59,7 +59,7 @@ class TestBasic:
     @pytest.fixture
     def orientations(self):
         rng = np.random.default_rng(seed=15)
-        orientations = [rng.uniform(low=-180.0,high=180.0, size=(3,1)) for _ in range(self.NUM_ORIENTATIONS)]
+        orientations = [rng.uniform(low=-180.0, high=180.0, size=(3,1)) for _ in range(self.NUM_ORIENTATIONS)]
         return orientations
 
     @pytest.fixture
@@ -107,13 +107,13 @@ class TestBasic:
     def test_vector_slicing_complex_path(self):
 
         # slice the part
-        part = pyslm.Part('cube')
-        part.setGeometry('./models/frameGuide.stl')
+        part = pyslm.Part('Bracket')
+        part.setGeometry('../../models/frameGuide.stl')
 
         # slice the part
         polys = part.getVectorSlice(0.0, returnCoordPaths=False)
         assert len(polys) == 2
-        
+
         polys = part.getVectorSlice(0.0, returnCoordPaths=False, fixPolygons=True)
         assert len(polys) == 2 # 2 polygons expected
 
@@ -145,8 +145,9 @@ class TestBasic:
         AREAL_ERROR = RESOLUTION * 1e2
 
         # slice the part
-        part = pyslm.Part('frameguide')
-        part.setGeometry('./models/frameGuide.stl')
+        part = pyslm.Part('bracket')
+
+        part.setGeometry('../../models/frameGuide.stl')
 
         # slice the part
         polys = part.getVectorSlice(0.0, returnCoordPaths=False)

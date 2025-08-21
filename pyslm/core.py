@@ -144,8 +144,8 @@ class Document:
         """
         A (nx6) array containing the bounding box for all the parts. This is needed for calculating the grid
         """
-        pbbox = np.vstack([part.boundingBox for part in self.parts])
-        return np.hstack([np.min(pbbox[:, :3], axis=0), np.max(pbbox[:, 3:], axis=0)])
+        document_bbox = np.vstack([part.boundingBox for part in self.parts])
+        return np.hstack([np.min(document_bbox[:, :3], axis=0), np.max(document_bbox[:, 3:], axis=0)])
 
     @property
     def boundingBox(self) -> np.ndarray:
@@ -239,7 +239,7 @@ class Part(DocumentObject):
     @rotation.setter
     def rotation(self, rotation: Iterable) -> None:
 
-        rotation = np.asanyarray(rotation)
+        rotation = np.asanyarray(rotation, dtype=np.float64).flatten()
 
         if len(rotation) != 3:
             raise ValueError('Rotation value should be 1x3 Numpy array')
@@ -255,7 +255,7 @@ class Part(DocumentObject):
     @origin.setter
     def origin(self, origin: Iterable) -> None:
 
-        origin = np.asanyarray(origin)
+        origin = np.asanyarray(origin, dtype=np.float64).flatten()
 
         if len(origin) != 3:
             raise ValueError('Origin value should be 1x3 Numpy array')
@@ -273,10 +273,13 @@ class Part(DocumentObject):
     @scaleFactor.setter
     def scaleFactor(self, sf: Iterable):
 
-        self._scaleFactor = np.asanyarray(sf).flatten()
+        self._scaleFactor = np.asanyarray(sf, dtype=np.float64).flatten()
 
         if len(self._scaleFactor) == 1:
             self._scaleFactor = self._scaleFactor * np.ones([3,])
+
+        if np.any(self._scaleFactor < sys.float_info.epsilon):
+            raise ValueError('Scale factor must be a positive scalar')
 
         self._dirty = True
 
@@ -287,7 +290,7 @@ class Part(DocumentObject):
         :param zPos: The position the bottom of the part should be suspended above :math:`z=0`
         """
 
-        self.origin[2] = -1.0 * self.boundingBox[2] + zPos
+        self.origin[2] = -1.0 * (self.boundingBox[2] - self.origin[2]) + zPos
         self._dirty = True
 
     def getTransform(self) -> np.ndarray:
@@ -300,9 +303,10 @@ class Part(DocumentObject):
         Sy = trimesh.transformations.scale_matrix(factor=self._scaleFactor[1], direction=[0, 1, 0])
         Sz = trimesh.transformations.scale_matrix(factor=self._scaleFactor[2], direction=[0, 0, 1])
         S = Sx*Sy*Sz
+
         T = trimesh.transformations.translation_matrix(self._origin)
 
-        alpha, beta, gamma = np.deg2rad((self._rotation))
+        alpha, beta, gamma = np.deg2rad(self._rotation)
 
         R_e = trimesh.transformations.euler_matrix(alpha, beta, gamma, 'rxyz')
 
@@ -326,7 +330,7 @@ class Part(DocumentObject):
             self._geometry = geometry
         else:
             logging.info('Geometry information <{:s}> - [{:s}]'.format(self.name, geometry))
-            self._geometry = trimesh.load_mesh(geometry, process=False, use_embree=False, Validate_faces=False)
+            self._geometry = trimesh.load_mesh(geometry, process=False, use_embree=False, validate=False)
 
         if mergeVertices:
             self._geometry.merge_vertices()
@@ -343,6 +347,9 @@ class Part(DocumentObject):
 
     def checkGeometry(self) -> bool:
 
+        if self.geometry is None:
+            raise RuntimeError(f"Geometry was not set for Part ({self.name})")
+
         if not self.geometry.is_watertight:
             logging.warning('The geometry for {:s} is not watertight'.format(self.name))
             return False
@@ -355,10 +362,14 @@ class Part(DocumentObject):
 
          :param mesh: The trimesh object loaded
          """
+
+        if not isinstance(mesh, trimesh.Trimesh):
+            raise TypeError('Geometry must be a Trimesh object')
+
         self._geometry = mesh
         self._dirty = True
 
-    def getProjectedHull(self, returnPoly: Optional[bool] = False) -> Union[shapely.geometry.Polygon, np.ndarray]:
+    def getProjectedHull(self, returnPoly: bool = False) -> Union[shapely.geometry.Polygon, np.ndarray]:
         """
         The convex hull of the part projected in the Z-direction. This is for convenience when trying to find the
         approximate boundary of the part when used for optimising the layout of parts.
@@ -366,6 +377,9 @@ class Part(DocumentObject):
         :param returnPoly: Returns a Shapely Polygon if `True` otherwise a numpy array of the convex hull vertices
         :return: The convex hull of the part
         """
+
+        if self.geometry is None:
+            raise RuntimeError(f"Geometry was not set for Part ({self.name})")
 
         coords = self.geometry.vertices[:, :2]
 
@@ -385,6 +399,9 @@ class Part(DocumentObject):
 
         :return: A Shapely Polygon representing the projected area of the part
         """
+
+        if self.geometry is None:
+            raise RuntimeError(f"Geometry was not set for Part ({self.name})")
 
         facesCpy = self.geometry.faces
 
@@ -406,10 +423,10 @@ class Part(DocumentObject):
         corners of the bounding box.
         """
 
-        if not self.geometry:
-            raise ValueError('Geometry was not set')
-        else:
-            return  self.geometry.bounds.flatten()
+        if self.geometry is None:
+            raise RuntimeError(f"Geometry was not set for Part ({self.name})")
+
+        return self.geometry.bounds.flatten()
 
     @property
     def extents(self) -> np.ndarray:
@@ -418,8 +435,8 @@ class Part(DocumentObject):
         numpy array consisting of the linear Cartesian dimensions of the part.
         """
 
-        if not self.geometry:
-            raise ValueError('Geometry was not set')
+        if self.geometry is None:
+            raise RuntimeError(f"Geometry was not set for Part ({self.name})")
 
         bbox = self.boundingBox
 
@@ -434,11 +451,15 @@ class Part(DocumentObject):
 
         .. note::
 
-            The volume is calculated using the Trimesh volume property therefore the part must be water-tight to
+            The volume is calculated using the Trimesh volume property, therefore the part must be water-tight to
             obtain correct volumes.
         """
+
+        if self.geometry is None:
+            raise RuntimeError(f"Part ({self.name}) does not have a geometry set")
+
         if not self.geometry.is_volume:
-            raise ValueError('Part is not a valid volume')
+            raise RuntimeError(f"Part ({self.name}) does not contain a valid volume")
 
         return float(self.geometry.volume)
 
@@ -447,6 +468,9 @@ class Part(DocumentObject):
         """
         The total surface area of the part geometry
         """
+        if self.geometry is None:
+            raise RuntimeError(f"Part ({self.name}) does not have a geometry set")
+
         return float(self.geometry.area)
 
     @property
@@ -454,7 +478,7 @@ class Part(DocumentObject):
         """
         The geometry of the part with the transformations applied.
         """
-        if not self._geometry:
+        if  self._geometry is None:
             return None
 
         if self.isDirty():
@@ -477,13 +501,13 @@ class Part(DocumentObject):
 
         :param z: The slice's z-position
         :return: The vector slice at the given z level
-
         """
-        if not self.geometry:
-            raise ValueError('Geometry was not set')
+
+        if self.geometry is None:
+            raise RuntimeError(f"Geometry was not set for Part ({self.name})")
 
         if z < self.boundingBox[2] or z > self.boundingBox[5]:
-            return []
+            return None
 
         transformMat = np.array(([1.0, 0.0, 0.0, 0.0],
                                  [0.0, 1.0, 0.0, 0.0],
@@ -525,6 +549,12 @@ class Part(DocumentObject):
 
         :return: The vector slice at the given z level
         """
+
+        # warnings.warn("This function is deprecated and will be removed in future versions", DeprecationWarning)
+
+        if self.geometry is None:
+            raise RuntimeError(f"Geometry was not set for Part ({self.name})")
+
         planarSection = self.getTrimeshSlice(z)
 
         if planarSection is None:
@@ -543,7 +573,7 @@ class Part(DocumentObject):
             elif simplificationFactorMode == 'line':
                 raise NotImplementedError('Line simplification mode not implemented')
             else:
-                raise Exception('simplification mode invalid')
+                raise ValueError(f"Simplification mode ({simplificationFactorMode} invalid")
 
             simpPolys = []
 
@@ -561,13 +591,10 @@ class Part(DocumentObject):
 
         # fix polygon
         if fixPolygons:
-            fixPolys = []
-            for polygon in polygons:
-                fixPolys.append(polygon.buffer(Part.POLYGON_FIX_EPSILON))
-            polygons = fixPolys
+            polygons = [poly.buffer(Part.POLYGON_FIX_EPSILON) for poly in polygons]
 
         if returnCoordPaths:
-            return Part.path2DToPathList(polygons)
+            return list(itertools.chain.from_iterable([hatchUtils.poly2Paths(poly) for poly in polygons]))
         else:
             return polygons
 
@@ -610,7 +637,7 @@ class Part(DocumentObject):
         :return: A bitmap image for the current slice at position
         """
 
-        if self._geometry is None:
+        if self.geometry is None:
             raise RuntimeError(f"Geometry was not set for Part ({self.name})")
 
         vectorSlice = self.getTrimeshSlice(z)
