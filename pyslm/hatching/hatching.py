@@ -215,7 +215,7 @@ class BaseHatcher(abc.ABC):
         Offsets a single path for a single polygon.
 
         :param paths: Closed polygon path list for offsetting
-        :param offset: The offset applied to the poylgon
+        :param offset: The offset applied to the polygon
         :return: A list of boundaries offset from the subject
         """
 
@@ -443,7 +443,7 @@ class InnerHatchRegion(abc.ABC):
         :attr:`InnerHatchRegion.orientation` using the 3D rotation matrix in :meth:`InnerHatchRegion.rotationMatrix3D`.
 
         :param coords: (nx3) coordinates to be transformed
-        :return:  The transformed coordinates
+        :return: The transformed coordinates
         """
 
         R = self.rotationMatrix3D()

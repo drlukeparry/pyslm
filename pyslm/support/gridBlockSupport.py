@@ -108,7 +108,7 @@ class GridBlockSupport(BlockSupportBase):
         self._trussWidth = 1.0
         self._trussAngle = 45.0
         self._mergeMesh = False
-        self._numSkinMeshSubdivideIterations = int(2)
+        self._numSkinMeshSubdivideIterations = 2
 
         self._supportTeethHeight = 1.5  # [mm]
         self._supportTeethTopLength = 0.1  # [mm]
