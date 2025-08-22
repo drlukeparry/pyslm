@@ -5,21 +5,24 @@ PySLM Python Library for Selective Laser Melting and Additive Manufacturing
 .. image:: https://github.com/drlukeparry/pyslm/raw/dev/docs/images/pyslm.png
     :alt:  PySLM - Library for Additive Manufacturing and 3D Printing including Selective Laser Melting
 
-.. image:: https://readthedocs.org/projects/pyslm/badge/?version=latest
+|ci-badge| |rtd-badge| |pypi-badge| |license-badge| |pepy-badge|  |python-badge| |py-version-badge|
+
+.. |ci-badge| image:: https://img.shields.io/github/actions/workflow/status/drlukeparry/PySLM/ci.yml
+    :alt: GitHub Actions Workflow Status
+.. |rtd-badge| image:: https://readthedocs.org/projects/pyslm/badge/?version=latest
     :target: https://pyslm.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
-.. image:: https://badge.fury.io/py/PythonSLM.svg
+.. |pypi-badge| image:: https://badge.fury.io/py/PythonSLM.svg
     :target: https://badge.fury.io/py/PythonSLM
-.. image:: https://static.pepy.tech/personalized-badge/pythonslm?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
+.. |license-badge| image:: https://img.shields.io/github/license/drlukeparry/pyslm
+     :alt: GitHub License
+.. |pepy-badge| image:: https://static.pepy.tech/personalized-badge/pythonslm?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
     :target: https://pepy.tech/project/pythonslm
-.. image:: https://img.shields.io/badge/Made%20with-Python-1f425f.svg
+.. |python-badge| image:: https://img.shields.io/badge/Made%20with-Python-1f425f.svg
    :target: https://www.python.org/
-..  image:: https://img.shields.io/pypi/pyversions/pythonslm.svg
-   :target: https://pypi.python.org/pypi/pythonslm/
-.. image:: https://github.com/drlukeparry/pyslm/actions/workflows/pythonpublish.yml/badge.svg
-    :target: https://github.com/drlukeparry/pyslm/actions
-.. image:: https://img.shields.io/github/license/drlukeparry/pyslm
-   :alt: GitHub License
+.. |py-version-badge| image:: https://img.shields.io/pypi/pyversions/pythonslm.svg
+    :target: https://pypi.python.org/pypi/pythonslm/
+
 
 PySLM is a Python library for supporting development and generation of build files in Additive Manufacturing or 3D
 Printing, in particular Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS) platforms typically used
@@ -160,12 +163,12 @@ translators available.
     pip install PythonSLM
 
 Alternatively, PySLM may be compiled directly from source. For PySLM version (>v0.6) the entire library are now written
-exclusively in Python, therefore a seperate compiler infrastructure (cython) is not required.
+exclusively in Python, therefore a separate compiler infrastructure (cython) is not required.
 
 .. code:: bash
 
     git clone https://github.com/drlukeparry/pyslm.git && cd ./pyslm
-    python setup.py install
+    pip install .
 
 Usage
 ********
