@@ -3,7 +3,7 @@ import numpy as np
 from enum import Enum
 import abc
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 
 
 class LaserMode:
@@ -13,18 +13,19 @@ class LaserMode:
     Pulse = 1
     """ Pulsed mode (Default option) """
 
+
 class Header:
     """
     The Header provides basic information about the machine build file, such as the name of the file
     (:attr:`filename`), version and the :attr:`zUnit` used for calculating the actual Layer z position in the machine.
 
-    Typically the :attr:`zUnit` is set to 1000 :math:`\mu m` corresponding to a conversion factor from mm to microns.
+    Typically, the :attr:`zUnit` is set to 1000 :math:`\\mu m` corresponding to a conversion factor from mm to microns.
     The :attr:`version` tuple is set corresponding to the chosen machine build format specification available in libSLM
     and what is compatible with the firmware of the SLM system.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self.filename = ""
-        self.version = (0,0)
+        self.version = (0, 0)
         self.zUnit = 1000
 
 
@@ -48,7 +49,7 @@ class BuildStyle:
         For single laser systems the :attr:`laserId` is set to `1`
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._name = ""
         self._description = ""
         self._bid = 0
@@ -61,14 +62,14 @@ class BuildStyle:
         self._pointExposureTime = 0
         self._pointDelay = 0
         self._jumpDelay = 0
-        self._jumpSpeed = 0
+        self._jumpSpeed = 0.0
 
-    def __str__(self):
-        str = "Build Style: (name: {:s}, id: {:d})\n".format(self._name, self._bid)
-        str += "  laser power: {:.1f} W, laser speed: {:.1f}, laser id: {:d}\n".format(self._laserPower,
-                                                                                       self._laserSpeed,
-                                                                                       self._laserId)
-        return str
+    def __str__(self) -> str:
+        outStr = "Build Style: (name: {:s}, id: {:d})\n".format(self._name, self._bid)
+        outStr += "  laser power: {:.1f} W, laser speed: {:.1f}, laser id: {:d}\n".format(self._laserPower,
+                                                                                          self._laserSpeed,
+                                                                                          self._laserId)
+        return outStr
 
     @property
     def bid(self) -> int:
@@ -79,7 +80,7 @@ class BuildStyle:
         return self._bid
 
     @bid.setter
-    def bid(self, bid):
+    def bid(self, bid: int) -> None:
         self._bid = bid
 
     @property
@@ -88,7 +89,7 @@ class BuildStyle:
         return self._name
 
     @name.setter
-    def name(self, name: str):
+    def name(self, name: str) -> None:
         self._name = name
 
     @property
@@ -99,7 +100,7 @@ class BuildStyle:
         return self._description
 
     @description.setter
-    def description(self, desc: str):
+    def description(self, desc: str) -> None:
         self._description = desc
 
     @property
@@ -108,7 +109,7 @@ class BuildStyle:
         return self._laserId
 
     @laserId.setter
-    def laserId(self, value: int):
+    def laserId(self, value: int) -> None:
         self._laserId = value
 
     @property
@@ -120,7 +121,7 @@ class BuildStyle:
         return self._laserMode
 
     @laserMode.setter
-    def laserMode(self, value):
+    def laserMode(self, value: int) -> None:
         self._laserMode = value
 
     @property
@@ -129,7 +130,7 @@ class BuildStyle:
         return self._laserPower
 
     @laserPower.setter
-    def laserPower(self, laserPower: float):
+    def laserPower(self, laserPower: float) -> None:
         self._laserPower = laserPower
 
     @property
@@ -151,7 +152,7 @@ class BuildStyle:
         return self._laserSpeed
 
     @laserSpeed.setter
-    def laserSpeed(self, laserSpeed: float):
+    def laserSpeed(self, laserSpeed: float) -> None:
         self._laserSpeed = laserSpeed
 
     @property
@@ -162,7 +163,7 @@ class BuildStyle:
         return self._pointExposureTime
 
     @pointExposureTime.setter
-    def pointExposureTime(self, pointExposureTime: int):
+    def pointExposureTime(self, pointExposureTime: int) -> None:
         self._pointExposureTime = pointExposureTime
 
     @property
@@ -171,7 +172,7 @@ class BuildStyle:
         return self._pointDistance
 
     @pointDistance.setter
-    def pointDistance(self, pointDistance: int):
+    def pointDistance(self, pointDistance: int) -> None:
         self._pointDistance = pointDistance
 
     @property
@@ -183,19 +184,19 @@ class BuildStyle:
         return self._pointDelay
 
     @pointDelay.setter
-    def pointDelay(self, delay: int):
+    def pointDelay(self, delay: int) -> None:
         self._pointDelay = delay
 
     @property
     def jumpDelay(self) -> int:
         """
-        The jump delay between scan vectors (usually expressed as an integer :math:`\mu s`). This must be set to
+        The jump delay between scan vectors (usually expressed as an integer :math:`\\mu s`). This must be set to
         zero (default) if it is not explicitly used.
         """
         return self._jumpDelay
 
     @jumpDelay.setter
-    def jumpDelay(self, delay: int):
+    def jumpDelay(self, delay: int) -> None:
         self._jumpDelay = delay
 
     @property
@@ -207,13 +208,13 @@ class BuildStyle:
         return self._jumpSpeed
 
     @jumpSpeed.setter
-    def jumpSpeed(self, speed: int):
+    def jumpSpeed(self, speed: int) -> None:
         self._jumpSpeed = speed
 
     def setStyle(self, bid: int, focus: int, power: float,
-                 pointExposureTime: int, pointExposureDistance: int, laserSpeed: Optional[float] = 0.0,
-                 laserId: Optional[int] = 1, laserMode: Optional[LaserMode] = 1,
-                 name: Optional[str] = "", description: Optional[str] = ""):
+                 pointExposureTime: int, pointExposureDistance: int, laserSpeed: float = 0.0,
+                 laserId: int = 1, laserMode: LaserMode = 1,
+                 name: str = "", description: str = "") -> None:
 
         self._bid = bid
         self._laserFocus = focus
@@ -233,11 +234,10 @@ class Model:
     and assignable :class:`BuildStyle` used a specific :class:`LayerGeometry`. The buildstyles are stored in
     :attr:`buildStyles`.
 
-    Each Model must have a unique model-id (:attr:`mid`). Additionally, for some build formats, the top layer id
-    (:attr:`topLayerId`) should correspond :attr:`Layer.id` value of the last layer's :class:`LayerGeometry` that
-    uses this Model. It is recommended that :class:`ModelValidator` should
-    be used to verify that all Models have a unique model-id and that the correct :attr:`topLayerId` is set, using the
-    following methods
+    Each Model must have a unique model id (:attr:`mid`). Additionally, for some build formats, the top layer id (
+    :attr:`topLayerId`) should correspond :attr:`Layer.id` value of the last layer's :class:`LayerGeometry` that uses
+    this Model. It is recommended that :class:`ModelValidator` should be used to verify that all Models have a unique
+    model-id and that the correct :attr:`topLayerId` is set, using the following methods
 
     .. code-block:: python
 
@@ -257,7 +257,7 @@ class Model:
     * :attr:`buildStyleName` - Name of the Build Style Used for this Model (e.g. parameter set)
     * :attr:`buildStyleDescription`- Description of the Model Build Style set.
     """
-    def __init__(self, mid: Optional[int] = 0):
+    def __init__(self, mid: int = 0) -> None:
         self._mid = mid
         self._topLayerId = 0
         self._name = ""
@@ -265,7 +265,7 @@ class Model:
         self._buildStyleName = ""
         self._buildStyles = []
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.buildStyles)
 
     @property
@@ -274,7 +274,7 @@ class Model:
         return self._buildStyles
 
     @buildStyles.setter
-    def buildStyles(self, buildStyles: List[BuildStyle]):
+    def buildStyles(self, buildStyles: List[BuildStyle]) -> None:
         self._buildStyles = buildStyles
 
     @property
@@ -283,7 +283,7 @@ class Model:
         return self._mid
 
     @mid.setter
-    def mid(self, mid: int):
+    def mid(self, mid: int) -> None:
         self._mid = mid
 
     @property
@@ -292,7 +292,7 @@ class Model:
         return self._name
 
     @name.setter
-    def name(self, name: str):
+    def name(self, name: str) -> None:
         self._name = name
 
     @property
@@ -301,16 +301,16 @@ class Model:
         return self._topLayerId
 
     @topLayerId.setter
-    def topLayerId(self, topLayer: int):
+    def topLayerId(self, topLayer: int) -> None:
         self._topLayerId = topLayer
 
     @property
-    def buildStyleDescription(self):
+    def buildStyleDescription(self) -> str:
         """ The description of the BuildStyles applied to the Model """
         return self._buildStyleDescription
 
     @buildStyleDescription.setter
-    def buildStyleDescription(self, description: str):
+    def buildStyleDescription(self, description: str) -> None:
         self._buildStyleDescription = description
 
     @property
@@ -319,7 +319,7 @@ class Model:
         return self._buildStyleName
 
     @buildStyleName.setter
-    def buildStyleName(self, name):
+    def buildStyleName(self, name) -> None:
         self._buildStyleName = name
 
 
@@ -344,7 +344,8 @@ class LayerGeometry(abc.ABC):
 
     """
 
-    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0, coords: Optional[np.ndarray] = None):
+    def __init__(self, mid: int = 0, bid: int = 0, coords: np.ndarray = None) -> None:
+
         self._bid = bid
         self._mid = mid
 
@@ -362,7 +363,7 @@ class LayerGeometry(abc.ABC):
         return self._coords
 
     @coords.setter
-    def coords(self, coordValues: np.ndarray):
+    def coords(self, coordValues: np.ndarray) -> None:
         if coordValues.shape[-1] != 2:
             raise ValueError('Coordinates provided to layer geometry must have (X,Y) values only')
 
@@ -377,7 +378,7 @@ class LayerGeometry(abc.ABC):
         return self._mid
 
     @mid.setter
-    def mid(self, modelId: int):
+    def mid(self, modelId: int) -> None:
         self._mid = modelId
 
     @property
@@ -389,7 +390,7 @@ class LayerGeometry(abc.ABC):
         return self._bid
 
     @bid.setter
-    def bid(self, buildStyleId: int):
+    def bid(self, buildStyleId: int) -> None:
         self._bid = buildStyleId
 
     @abc.abstractmethod
@@ -403,20 +404,20 @@ class LayerGeometry(abc.ABC):
 
 class HatchGeometry(LayerGeometry):
     """
-    HatchGeometry represents a :class:`LayerGeometry` consisting of a series coordinates pairs :math:`[(x_0,y_0), (x_1,x_2)]`
-    representing the start and end points of a scan vectors. This allows the point source to jump between scan vectors,
-    unlike :class:`ContourGeometry`. Typically, the scan vectors are used for infilling large internal regions and
-    are arranged parallel at a set distance from each other.
+    HatchGeometry represents a :class:`LayerGeometry` consisting of a series coordinates pairs :math:`[(x_0,y_0),
+    (x_1,x_2)]` representing the start and end points of a scan vectors. This allows the point source to jump between
+    scan vectors, unlike :class:`ContourGeometry`. Typically, the scan vectors are used for infilling large internal
+    regions and are arranged parallel at a set distance from each other.
     """
-    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0,
-                       coords: Optional[np.ndarray] = None):
+    def __init__(self, mid: int = 0, bid: int = 0,
+                       coords: Optional[np.ndarray] = None) -> None:
 
         super().__init__(mid, bid, coords)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Hatch Geometry <bid, {:d}, mid, {:d}>'.format(self._bid, self._mid)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.numHatches()
 
     def type(self):
@@ -436,7 +437,9 @@ class ContourGeometry(LayerGeometry):
      efficiently follow a path without jumping,  unlike :class:`HatchGeometry`. Typically, the scan vectors are used for
      generated the boundaries of a part across a layer.
      """
-    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0, coords: Optional[np.ndarray] = None):
+    def __init__(self, mid: int = 0,
+                 bid: int = 0,
+                 coords: Optional[np.ndarray] = None) -> None:
 
         super().__init__(mid, bid, coords)
 
@@ -446,10 +449,10 @@ class ContourGeometry(LayerGeometry):
         """
         return self.coords.shape[0] - 1
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.numContours()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Contour Geometry'
 
     def type(self):
@@ -467,7 +470,7 @@ class PointsGeometry(LayerGeometry):
         It is impracticable and inefficient to use these for large aerial regions.
 
      """
-    def __init__(self, mid: Optional[int] = 0, bid: Optional[int] = 0, coords: Optional[np.ndarray] = None):
+    def __init__(self, mid: int = 0, bid: int = 0, coords: Optional[np.ndarray] = None) -> None:
 
         super().__init__(mid, bid, coords)
 
@@ -475,10 +478,10 @@ class PointsGeometry(LayerGeometry):
         """ Number of individual point exposures within the geometry group"""
         return self.coords.shape[0]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.numPoints()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Points Geometry'
 
     def type(self):
@@ -487,12 +490,17 @@ class PointsGeometry(LayerGeometry):
 
 class ScanMode:
     """
-    The scan mode is an enumeration class used to re-order all :class:`LayerGeometry` when accessing the entire collection
-    from the :class:`Layer`.
+    The scan mode is an enumeration class used to re-order all :class:`LayerGeometry` when accessing the entire
+    collection from the :class:`Layer`.
     """
-    Default = 0
-    ContourFirst = 1
-    HatchFirst = 2
+
+    Default: int = 0
+
+    ContourFirst: int = 1
+    """ Contour First Scan Mode """
+
+    HatchFirst: int = 2
+    """ Hatch First Scan Mode """
 
 
 class Layer:
@@ -510,7 +518,7 @@ class Layer:
     format to remove any specific rounding - typically this is specified as the number of microns.
     """
 
-    def __init__(self, z: Optional[int] = 0, id: Optional[int] = 0):
+    def __init__(self, z: int = 0, id: int = 0):
         self._z = z
         self._id = id
         self._geometry = []
@@ -530,11 +538,13 @@ class Layer:
 
     @property
     def name(self) -> str:
-        """ The name of the Layer"""
+        """
+        The name of the Layer
+        """
         return self._name
 
     @name.setter
-    def name(self, name : str):
+    def name(self, name: str):
         self._name = name
 
     @property
@@ -545,20 +555,20 @@ class Layer:
         return self._id
 
     @layerId.setter
-    def layerId(self, id: int):
+    def layerId(self, id: int) -> None:
         self._id = id
 
     @property
     def z(self) -> int:
         """
         The Z Position of the :class:`Layer` is given as an integer to ensure that no rounding errors are given to the
-        slm systen. Under most situations this should correspond as the product of the layer id (:attr:`Layer.layerId`)
+        slm system. Under most situations this should correspond as the product of the layer id (:attr:`Layer.layerId`)
         and the zUnit - layer thickness (:attr:`Header.zUnit`).
         """
         return self._z
 
     @z.setter
-    def z(self, z: int):
+    def z(self, z: int) -> None:
         self._z = z
 
     def __len__(self):
@@ -567,7 +577,7 @@ class Layer:
     def __str__(self):
         return 'Layer <z = {:.3f}>'.format(self._z)
 
-    def appendGeometry(self, geom: LayerGeometry):
+    def appendGeometry(self, geom: LayerGeometry) -> None:
         """
         Complimentary method to match libSLM API. This appends any :class:`LayerGeometry` and derived classes into the
         Layer in sequential order.
@@ -605,10 +615,10 @@ class Layer:
         return self._geometry
 
     @geometry.setter
-    def geometry(self, geoms: List[LayerGeometry]):
+    def geometry(self, geoms: List[LayerGeometry]) -> None:
         self._geometry = geoms
 
-    def getContourGeometry(self) -> List[HatchGeometry]:
+    def getContourGeometry(self) -> List[ContourGeometry]:
         """
         Returns a list of all :class:`ContourGeometry` stored in the layer.
         """
@@ -642,4 +652,3 @@ class Layer:
                 geoms.append(geom)
 
         return geoms
-

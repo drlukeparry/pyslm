@@ -1,6 +1,3 @@
-#from .analysis import *
+from .version import __version__
+
 from .core import Document, DocumentObject, Part
-#from .geometry import *
-#from .visualise import *
-
-

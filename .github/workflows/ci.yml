@@ -1,0 +1,207 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  lint-build:
+    name: Linting
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Install dependencies
+      run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+    - name: Ruff lint
+      run: |
+          ruff check --output-format=github .
+
+  docs-build:
+    name: Docs
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Install libspatial, pyclipr dependencies
+      run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
+    - name: Install dev dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -U -e .[docs]
+    - name: Build docs
+      run: |
+        cd docs
+        sphinx-build --builder html . out
+  test-builds:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Test py39
+            os: ubuntu-latest
+            pyversion: '3.9'
+          - name: Test py310
+            os: ubuntu-latest
+            pyversion: '3.10'
+          - name: Test py311
+            os: ubuntu-latest
+            pyversion: '3.11'
+          - name: Test py312
+            os: ubuntu-latest
+            pyversion: '3.12'
+          - name: Test py313
+            os: ubuntu-latest
+            pyversion: '3.13'
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python ${{ matrix.pyversion }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.pyversion }}
+    - name: Install libspatial and pyclipr dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
+    - name: Install package and dev dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+        pip install .[tests]
+        pip install .[support]
+        rm -r pyslm
+    - name: Unit tests with pytest
+      run: |
+        pytest tests/
+  test-coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Install libspatial and pyclipr dependencies
+      run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
+    - name: Install package and dev dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+        pip install .[tests]
+        pip install .[support]
+        rm -r pyslm
+    - name: Run Pytest coverage
+      run: |
+        pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=pyslm tests/ | tee pytest-coverage.txt
+    - name: Pytest coverage comment
+      uses: MishaKav/pytest-coverage-comment@main
+      with:
+        pytest-coverage-path: ./pytest-coverage.txt
+        junitxml-path: ./pytest.xml
+
+  test-examples-build:
+    name: Test examples ${{ matrix.pyversion }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            pyversion: '3.10'
+          - os: ubuntu-latest
+            pyversion: '3.12'
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Install libspatial and pyclipr dependencies
+      run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
+    - name: Install dev dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[examples]
+    - name: Show pyslm version
+      run: |
+        python -c "import pyslm; print(pyslm.__version__)"
+
+  release-build:
+    name: Build release on ubuntu-latest
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Install Hatch
+        uses: pypa/hatch@install
+      - name: Install libspatial and pyclipr dependencies
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -U flit build twine hatchling
+      - name: Create source distribution
+        run: |
+          python -m build -n -s
+      - name: Build wheel
+        run: |
+          python -m build -n -w
+      - name: Test sdist
+        shell: bash
+        run: |
+          rm -rf ./pyslm
+          pushd $HOME
+          pip install $GITHUB_WORKSPACE/dist/*.tar.gz
+          python -c "import pyslm; print(pyslm.__version__)"
+          popd
+          # don't run tests, we just want to know if the sdist can be installed
+          pip uninstall -y pyslm
+          git reset --hard HEAD
+      - name: Twine check
+        run: |
+          twine check dist/*
+      - name: Upload distributions
+        uses: actions/upload-artifact@v6
+        with:
+          path: dist
+          name: dist

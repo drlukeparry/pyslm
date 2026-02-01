@@ -1,27 +1,29 @@
 """
 Provides supporting functions to generate geometry for support structures
 """
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 import logging
 import collections
 
 import numpy as np
+import pyclipr
 
 import trimesh
 from trimesh import grouping
 
-import shapely.geometry.polygon
-from shapely.geometry import Polygon
+import shapely.geometry
 
 # Triangulation Libraries
-from mapbox_earcut import triangulate_float64, triangulate_float32
+from mapbox_earcut import triangulate_float32
 from triangle import triangulate
 
 
-def checkStrutCylinderIntersection(pntA: np.array, pntB: np.array, radius: float,
-                                   mesh: trimesh.Trimesh, returnLocation: Optional[bool] = False,
-                                   numPoints: Optional[int] = 6,
-                                   centreOnly: Optional[bool] = False):
+def checkStrutCylinderIntersection(pntA: np.ndarray, pntB: np.ndarray,
+                                   radius: float,
+                                   mesh: trimesh.Trimesh,
+                                   returnLocation: bool = False,
+                                   numPoints: int = 6,
+                                   centreOnly: bool = False):
     """
     Checks if the segment with number of cylinders between pnt and pnt2 intersects with the mesh. The number of
     points (`numPoints`) determines the equal number of positions to perform the intersection radially at the
@@ -81,7 +83,11 @@ def checkStrutCylinderIntersection(pntA: np.array, pntB: np.array, radius: float
         return hasIntersection
 
 
-def sweepPolygon(polygon, path, angles=None, scaleFactors=None, **kwargs) -> trimesh.Trimesh:
+def sweepPolygon(polygon: shapely.geometry.Polygon,
+                 path: np.ndarray,
+                 angles: Optional[np.ndarray] = None,
+                 scaleFactors: Optional[np.ndarray] = None,
+                 **kwargs) -> trimesh.Trimesh:
     """
     Sweeps a polygon with a variable size across the length of the path. The function is based on that internally
     used in trimesh.
@@ -196,7 +202,7 @@ def sweepPolygon(polygon, path, angles=None, scaleFactors=None, **kwargs) -> tri
     vecs = verts_3d - path[-1]
     coords = np.c_[np.einsum('ij,j->i', vecs, x),
     np.einsum('ij,j->i', vecs, y)]
-    base_verts_2d, faces_2d = triangulate_polygon(Polygon(coords), **kwargs)
+    base_verts_2d, faces_2d = triangulate_polygon(shapely.geometry.Polygon(coords), **kwargs)
     base_verts_3d = (np.einsum('i,j->ij', base_verts_2d[:, 0], x) +
                      np.einsum('i,j->ij', base_verts_2d[:, 1], y)) + path[-1]
     faces = np.vstack((faces, faces_2d + len(vertices)))
@@ -302,12 +308,12 @@ def boolUnion(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh
     :param meshB: Mesh B
     :return: The Boolean union between Mesh A and Mesh B.
     """
-    #vertsOut, facesOut = pycork.union(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
+
     outMesh = trimesh.boolean.union([meshA, meshB], engine='manifold', check_volume=False)
     return outMesh
 
 
-def boolIntersect(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh):
+def boolIntersect(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Trimesh:
     """
     Performs a Boolean CSG intersection operation using the `manifold3d <https://github.com/elalish/manifold>`_ library
     between two meshes.
@@ -359,7 +365,7 @@ def resolveIntersection(meshA: trimesh.Trimesh) -> trimesh.Trimesh:
     :return: Mesh with all intersections resolved
     """
 
-    raise Exception('Unsupported')
+    raise Exception('Unsupported functionality with manifold3d library')
 
     return trimesh.Trimesh()
 
@@ -382,7 +388,7 @@ def createPath2DfromPaths(paths: List[np.ndarray]) -> trimesh.path.Path2D:
 def path2DToPathList(shapes: List[shapely.geometry.polygon.Polygon]) -> List[np.ndarray]:
     """
     Returns the list of paths and coordinates from a cross-section (i.e. :class:`Trimesh.path.Path2D` objects).
-    This is required to be done for performing boolean operations and offsetting with the internal PyClipper package.
+    This is required to be done for performing boolean operations and offsetting with the internal PyClipr package.
 
     :param shapes: A list of Shapely Polygons representing a cross-section or container of
                     closed polygons
@@ -406,18 +412,16 @@ def path2DToPathList(shapes: List[shapely.geometry.polygon.Polygon]) -> List[np.
     return paths
 
 
-def sortExteriorInteriorRings(polyNode,
-                              closePolygon: Optional[bool] = False) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+def sortExteriorInteriorRings(polyNode: pyclipr.PolyTree,
+                              closePolygon: bool = False) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
-    A recursive function that sorts interior and exterior rings or paths from PyClipper (:class:`pylcipper.PyPolyNode`)`
+    A recursive function that sorts interior and exterior rings or paths from PyClirer (:class:`pylcipr.PolyTree`)
     objects.
 
-    :param polyNode: The :class:`pyclipper.PyPolyNode` tree defining the polygons and interior holes
+    :param polyNode: The :class:`pyclipr.PyPolyTree` tree defining the polygons and interior holes
     :param closePolygon: If `True`, the contours passed are closed
     :return: A tuple consisting of exterior and interior rings
     """
-
-    import pyslm.hatching
 
     exteriorRings = []
     interiorRings = []
@@ -445,15 +449,17 @@ def sortExteriorInteriorRings(polyNode,
 
 
 def triangulateShapelyPolygon(polygon: shapely.geometry.Polygon,
-                        triangle_args: Optional[str]=None,
-                        **kwargs):
+                              triangle_args: Optional[str] = None,
+                              **kwargs):
     """
     Triangulate a Shapely Polygon  using a python interface to `triangle.c`.
+
+    Ensure that the triangle library is installed using the following command:
 
     .. code-block:: bash
         pip install triangle
 
-    :param polygon: Shapely Polygon object to be triangulated
+    :param polygon: Shapely polygon object to be triangulated
     :param triangle_args: Passed to triangle.triangulate i.e: '`p`', '`pq30`'
     :param kwargs:
     :return: Returns a tuple of vertices and faces
@@ -472,7 +478,7 @@ def triangulateShapelyPolygon(polygon: shapely.geometry.Polygon,
     return result['vertices'], result['triangles']
 
 def triangulatePolygonFromPaths(exterior: np.ndarray, interiors: List[np.ndarray],
-                                triangle_args: str = None,
+                                triangle_args: Optional[str] = None,
                                 **kwargs):
     """
     Given a list of exterior and interiors triangulation using a
@@ -503,13 +509,12 @@ def triangulatePolygonFromPaths(exterior: np.ndarray, interiors: List[np.ndarray
 
 def _polygon_to_kwargs2(exterior: np.ndarray, interiors:  List[np.ndarray]):
     """
-    Given both exterior and interior boundaries, create input for the
-    the triangle mesh generator. This is version #2 which has been  adapted from
-    the Trimesh library to be more efficient for the specific use cases
+    Given both exterior and interior boundaries, create input for the triangle mesh generator. This is version #2
+    which has been adapted from the Trimesh library to be more efficient for the specific use cases
 
     :param exterior: List of exterior paths
     :param interiors: List of interior paths
-    :return:  Has keys: vertices, segments, holes
+    :return: Has keys: vertices, segments, holes
     """
 
     #if not polygon.is_valid:
@@ -548,14 +553,14 @@ def _polygon_to_kwargs2(exterior: np.ndarray, interiors:  List[np.ndarray]):
 
             vertices.append(cleaned)
             facets.append(round_trip2(start, len(cleaned)))
-            test = Polygon(cleaned)
+            test = shapely.geometry.Polygon(cleaned)
             lenCoords = len(cleaned)
         else:
             coords = boundary
             coords = boundary[:-1,:]
             vertices.append(coords)
             facets.append(round_trip2(start, len(coords)))
-            test = Polygon(coords)
+            test = shapely.geometry.Polygon(coords)
             lenCoords = len(coords)
 
         repPnt = test.representative_point()
@@ -603,9 +608,8 @@ def _polygon_to_kwargs2(exterior: np.ndarray, interiors:  List[np.ndarray]):
 
 def _polygon_to_kwargs(polygon):
     """
-    Given a Shapely Polygon creates the input for the
-    the triangle mesh generator. This is version #2 which has been  adapted from
-    the Trimesh library to be more efficient for the specific use cases
+    Given a Shapely Polygon creates the input for triangle mesh generator. This is version #2 which has been  adapted
+    from the Trimesh library to be more efficient for the specific use cases
 
     :param polygon: Shapely Polygon to proces
     :return:  Has keys: vertices, segments, holes
@@ -644,13 +648,13 @@ def _polygon_to_kwargs(polygon):
 
             vertices.append(cleaned)
             facets.append(round_trip(start, len(cleaned)))
-            test = Polygon(cleaned)
+            test = shapely.geometry.Polygon(cleaned)
             lenCoords = len(cleaned)
         else:
             coords = np.array(boundary.coords)[:-1,:]
             vertices.append(coords)
             facets.append(round_trip(start, len(coords)))
-            test = Polygon(coords)
+            test = shapely.geometry.Polygon(coords)
             lenCoords = len(coords)
 
         repPnt = test.representative_point()
@@ -696,20 +700,19 @@ def _polygon_to_kwargs(polygon):
     return result
 
 
-def triangulatePolygon(section,
-                       closed: Optional[bool] = False) -> Tuple[np.ndarray, np.ndarray]:
+def triangulatePolygon(section, isClosed: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Function triangulates polygons generated natively by PyClipper, from :class:`pyclipper.PyPolyNode` objects.
-    This is specifically used to optimally generate the polygon triangulations using an external triangulation
-    library Mapbox using the Ear Clipping algorithm - see `Mapbox <https://github.com/mapbox/earcut.hpp>`_ and
-    the `Ear-Cut <https://pypi.org/project/mapbox-earcut/>`_ PyPi package .
+    Function triangulates polygons generated natively by PyClipper, from :class:`pyclipper.PyPolyNode` objects. This
+    is specifically used to optimally generate the polygon triangulations using an external triangulation library
+    Mapbox using the Ear Clipping algorithm - see `Mapbox <https://github.com/mapbox/earcut.hpp>`_ and the `Ear-Cut
+    <https://pypi.org/project/mapbox-earcut/>`_ PyPi package .
 
     By using the :class:`pyclipr.PyPolyNode` object, ClipperLib automatically generates a polygon hierarchy tree for
     separating both external contours and internal holes, which can be passed directly to the earcut algorithm.
     Otherwise, this requires passing all paths and sorting these to identify interior holes.
 
     :param section: A :class:`pyclipr.PyPolyNode` object containing a collection of polygons
-    :param closed: If the polygo is already closed
+    :param isClosed: If the polygon is closed
     :return: A tuple of vertices and faces generated from the triangulation
     """
 
@@ -719,7 +722,7 @@ def triangulatePolygon(section,
 
     """
     For multiple polygons, we know the exteriors must not overlap therefore they can be treat as independent meshes
-    when they sorted    
+    when they sorted into exterior and interior rings
     """
     for polygon in section.Childs:
 
@@ -729,7 +732,7 @@ def triangulatePolygon(section,
 
         interiorPath2D = []
         for path in interior:
-            if closed:
+            if isClosed:
                 coords = np.array(path)[:-1, :2]
             else:
                 coords = np.array(path)[:, :2]
@@ -774,7 +777,6 @@ def generatePolygonBoundingBox(bbox: np.ndarray) -> shapely.geometry.Polygon:
 
     bx = bbox[:, 0]
     by = bbox[:, 1]
-    bz = bbox[:, 2]
 
     a = [np.min(bx), np.max(bx)]
     b = [np.min(by), np.max(by)]

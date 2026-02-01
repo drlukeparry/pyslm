@@ -3,7 +3,8 @@ import trimesh
 from vispy import app, gloo
 from vispy.util.transforms import translate, rotate, ortho
 
-app.use_app('pyqt5')  # Set backend
+import matplotlib.pyplot as plt
+#app.use_app('pyside6')  # Set backend
 
 vert = """
 
@@ -93,8 +94,8 @@ class Canvas(app.Canvas):
         app.Canvas.__init__(self, 'interactive', show=False, resizable=True, autoswap=False, decorate=False,
                             size=(self.visSize[0], self.visSize[1]))
 
-        print('size', self._visSize)
-        print('dpi', self.dpi)
+        #print('size', self._visSize)
+        #print('dpi', self.dpi)
 
         self.filled = self.filled.astype(np.uint32).flatten()
         self.filled_buf = gloo.IndexBuffer(self.filled)
@@ -150,7 +151,7 @@ class Canvas(app.Canvas):
 
         gloo.set_viewport(0, 0, self._visSize[0]*2, self._visSize[1]*2)
         self.finalSize = (event.physical_size[0], event.physical_size[1])
-        print('event physical size', event.physical_size[0], event.physical_size[1])
+        #print('event physical size', event.physical_size[0], event.physical_size[1])
         # Zself.projection = ortho(self.box[0, 0], self.box[1, 0], self.box[0, 1], self.box[1, 1], -10, 40)
         self.projection = ortho(self.bbox[1, 0], self.bbox[0, 0],
                                 self.bbox[1, 1], self.bbox[0, 1],
@@ -181,11 +182,16 @@ class Canvas(app.Canvas):
 def projectHeightMap(mesh: trimesh.Trimesh,
                      resolution: float = 0.05,
                      flipDir: bool = False,
-                     bbox: np.ndarray = None):
+                     bbox: np.ndarray = None) -> np.ndarray:
 
     c = Canvas(mesh, resolution, flipDir, bbox)
 
     c.show(visible=True)
     c.close()
 
-    return c.rgb[:, :, 1]
+    if c.rgb is None:
+        pass
+        #mesh.show()
+        #raise Exception()
+    else:
+        return c.rgb[:, :, 1]

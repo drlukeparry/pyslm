@@ -3,6 +3,7 @@ import numpy as np
 
 from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model, utils
 
+
 def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
     """
     Calculates the jump distance of the laser between adjacent exposure points and hatches, principally used for
@@ -52,7 +53,8 @@ def getLayerGeometryPathLength(layerGeom: LayerGeometry) -> float:
         totalPathDist = np.sum(lineDist)
 
     if isinstance(layerGeom, PointsGeometry):
-        raise Exception('Cannot pass a PointsGeometry to calculate the total path length')
+        totalPathDist = 0.0
+        #raise Exception('Cannot pass a PointsGeometry to calculate the total path length')
 
     return float(totalPathDist)
 
@@ -163,8 +165,8 @@ def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
             raise ValueError('Build Style ({:s}) should have a valid point exposure time and point distance set'.format(bstyle.name))
 
         """
-        Note a multiplier is currently needed as it is assumed point distance is in microns 
-        and point exposure time in micro-seconds
+        Note a multiplier is currently needed as it is assumed point distance is in microns and point exposure
+        time in micro-seconds
         """
 
         # Calculate the point jump time based on the jump speed [mm/s] - typically around 5000 mm/s
@@ -182,9 +184,9 @@ def getEffectiveLaserSpeed(bstyle: BuildStyle) -> float:
 
 
 def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
-                         includeJumpTime: Optional[bool] = False,
-                         jumpSpeed: Optional[float] = 5000.0,
-                         jumpDelay: Optional[float] = 0.0) -> float:
+                         includeJumpTime: bool = False,
+                         jumpSpeed: float = 5000.0,
+                         jumpDelay: float = 0.0) -> float:
     """
     Returns the total time taken to scan across a :class:`~pyslm.geometry.LayerGeometry`.
 
@@ -231,13 +233,13 @@ def getLayerGeometryTime(layerGeom: LayerGeometry, models: List[Model],
 
 
 def getLayerTime(layer: Layer, models: List[Model],
-                 includeJumpTime: Optional[bool] = True,
-                 laserJumpSpeed: Optional[float] = 5000) -> float:
+                 includeJumpTime: bool = True,
+                 laserJumpSpeed: float = 5000.0) -> float:
     """
-    Returns the total time taken to scan across a :class:`~pyslm.geometry.Layer`. This includes the additional dwell time
-    laser pulses :attr:`BuildStyle.jumpDelay` and the jump time between both scan vectors and consecutive
-    :class:`~pyslm.geometry.LayerGeometry` groups. The time taken between adjacent scan vectors and layer geometries is assumed to have
-    an instantaneous acceleration at constant velocity.
+    Returns the total time taken to scan across a :class:`~pyslm.geometry.Layer`. This includes the additional dwell
+    time laser pulses :attr:`BuildStyle.jumpDelay` and the jump time between both scan vectors and consecutive
+    :class:`~pyslm.geometry.LayerGeometry` groups. The time taken between adjacent scan vectors and layer geometries
+    is assumed to have an instantaneous acceleration at constant velocity.
 
     :param layer: The `Layer` to process
     :param models: The `Model` list containing the :class:`~pyslm.geometry.BuildStyle` set used

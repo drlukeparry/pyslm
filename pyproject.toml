@@ -1,0 +1,162 @@
+[project]
+name = "PythonSLM"
+dynamic = ["version"]
+description = "Python Package for Additive Manufacturing and 3D Printing Development"
+readme = "README.rst"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+authors = [
+    { name = "Luke Parry", email = "dev@lukeparry.uk" },
+    { name = "Luktug", email = "contact@luktug.co.uk" }
+]
+keywords = [
+    "3D Printing",
+    "Additive Manufacturing",
+    "AM",
+    "Geometry",
+    "L-PBF",
+    "SLM",
+    "Selective Laser Melting",
+]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "matplotlib",
+    "networkx",
+    "numpy>1.21",
+    "pyclipr",
+    "Rtree",
+    "scikit-image",
+    "scipy",
+    "setuptools",
+    "shapely>2.0",
+    "trimesh>4.0"
+]
+
+[project.optional-dependencies]
+docs = [
+    "matplotlib",
+    "trimesh",
+    "cython",
+    "jupyter",
+    "networkx",
+    "numpy",
+    "pyclipr",
+    "mapbox-earcut",
+    "autodocsumm",
+    "sphinx-autodoc-typehints",
+    "m2r2==0.3.4",
+    "docutils==0.21.2",
+    "sphinx_automodapi",
+    "scikit-image",
+    "scipy",
+    "shapely",
+    "sphinx",
+    "mock",
+    "sphinx-paramlinks",
+    "pypandoc",
+    "sphinx_rtd_theme",
+    "furo",
+    "triangle",
+    "trimesh",
+    "vispy",
+    "PyQt5"
+]
+easy = [
+    "colorlog",
+    "scikit-image",
+    "setuptools",
+    "shapely",
+    "triangle",
+    "trimesh",
+]
+tests = [
+    "pytest",
+    "pytest-cov",
+    "coverage-badge"
+]
+support = [
+    "mapbox-earcut",
+    "manifold3d",
+    "PyQt5",
+    "setuptools",
+    "shapely",
+    "triangle",
+    "trimesh",
+    "vispy",
+]
+build = ["build", "hatchling", "requests", "twine"]
+codegen = ["pytest", "numpy", "ruff"]
+lint = ["ruff", "pre-commit"]
+
+[project.urls]
+Documentation = "https://pyslm.readthedocs.io/en/latest/"
+Homepage = "https://github.com/drlukeparry/pyslm"
+Source = "https://github.com/drylukeparry/pyslm/pyslm/"
+Tracker = "https://github.com/drlukeparry/pyslm/issues"
+
+[build-system]
+requires = ["requests", "hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "pyslm/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "pyslm",
+    "tests",
+    "examples",
+]
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "pyslm",
+    "models",
+    "examples"
+
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests"
+]
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "B", "RUF"]
+exclude = ["setup.py", "build/*", "dist/*", "docs/*",  "examples/*", "tests/*", "__pycache__", ".github"]
+ignore = [
+    "B904",   # Bare exception
+    "E501",   # Line too long
+    "E722",   # Bare exceptions
+    "F401",   # Unused imports
+    "F841",   # Unused variables
+    "E731",   # Do not assign a `lambda` expression, use a `def`
+    "RUF005"
+]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+show_error_codes = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+disable_error_code = ["import-untyped", "var-annotated"]
+warn_unreachable = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+strict_optional = true
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true

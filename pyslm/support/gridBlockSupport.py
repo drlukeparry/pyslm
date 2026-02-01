@@ -1,13 +1,13 @@
 """
 Provides classes and methods for the creation of grid block supports for use typically in metal Additive Manufacturing
 """
+import sys
 from enum import IntEnum
-from typing import Any, Optional, List, Tuple, Union
+from typing import Any, Optional, List, Tuple
 import logging
 
 import warnings
 
-import scipy.ndimage.filters
 import trimesh
 from scipy import interpolate
 
@@ -21,10 +21,12 @@ import trimesh.path.traversal
 import pyclipr
 
 from .support import BlockSupportBase, BlockSupportGenerator
-from .utils import *
-from .geometry import *
+from . import utils
+from . import geometry
 from ..hatching import BaseHatcher
 from ..hatching import utils as hatchingUtils
+from ..core import Part
+
 
 class GridMeshType(IntEnum):
     """
@@ -46,6 +48,7 @@ class GridMeshType(IntEnum):
     A slice along the y-direction
     """
 
+
 class GridBlockSupport(BlockSupportBase):
     """
     Represents a block support that internally generates a grid truss structure representing the support structure. The
@@ -58,8 +61,8 @@ class GridBlockSupport(BlockSupportBase):
     if required. A surrounding border with a conformal truss grid is also generated using
     :meth:`~GridBlockSupport.generateSupportSkins`.
 
-    A truss network is generated to reduce the amount of support material processed, but additionally provides internal
-    perforations which aid powder support removal after production. The truss network in 2D is generated
+    A truss network is generated to reduce the amount of support material processed, but additionally provides
+    internal perforations which aid powder support removal after production. The truss network in 2D is generated
     along with supporting functions for creating a mesh. The generation of the truss grid is relatively expensive to
     generated compared to the polygon intersection and may be disabled by setting
     :attr:`~GridBlockSupport.generateTrussGrid`).
@@ -78,11 +81,10 @@ class GridBlockSupport(BlockSupportBase):
     If the user desires to strengthen the support near the upper and lower surfaces near the support teeth,
     and additional offsetting can be applied using :attr:`~GridBlockSupport.supportWallThickness`.
 
-    The truss is designed to self-intersect at set distance based on both the :attr:`trussAngle` and
-    the :attr:`gridSpacing` so that they combine as a consistently connected support mesh. Upon
-    generating a polygon for each support slice, this is triangulated via :meth:`triangulatePolygon`
-    to create a mesh which may be sliced and hatched later. Optionally these may be combined into a single mesh, for
-    exporting externally.
+    The truss is designed to self-intersect at set distance based on both the :attr:`trussAngle` and the
+    :attr:`gridSpacing` so that they combine as a consistently connected support mesh. Upon generating a polygon for
+    each support slice, this is triangulated via :meth:`triangulatePolygon` to create a mesh which may be sliced and
+    hatched later. Optionally these may be combined into a single mesh, for exporting externally.
     """
 
     _pairTolerance = 1e-1
@@ -90,35 +92,34 @@ class GridBlockSupport(BlockSupportBase):
     Pair tolerance used for matching upper and lower paths of the support boundary. This is an internal tolerance
     used but may be re-defined by the user."""
 
-
-    def __init__(self, supportObject: Part = None,
-                       supportVolume: trimesh.Trimesh = None,
-                       supportSurface: trimesh.Trimesh = None,
+    def __init__(self, supportObject: Optional[Part] = None,
+                       supportVolume: Optional[trimesh.Trimesh] = None,
+                       supportSurface: Optional[trimesh.Trimesh] = None,
                        intersectsPart: bool = False):
 
         super().__init__(supportObject, supportVolume, supportSurface, intersectsPart)
 
-        self._gridSpacing = [3, 3] # mm
+        self._gridSpacing = [3.0, 3.0] # mm
         self._useSupportBorder = True
         self._useSupportSkin = True
         self._supportWallThickness = 0.5
         self._supportBorderDistance = 3.0
         self._generateTrussGrid = True
         self._trussWidth = 1.0
-        self._trussAngle = 45
+        self._trussAngle = 45.0
         self._mergeMesh = False
-        self._numSkinMeshSubdivideIterations = int(2)
+        self._numSkinMeshSubdivideIterations = 2
 
-        self._supportTeethHeight = 1.5  # mm
-        self._supportTeethTopLength = 0.1 # mm
-        self._supportTeethBottomLength = 1.5 # mm
-        self._supportTeethBaseInterval = 0.2 # mm
-        self._supportTeethUpperPenetration = 0.2 # mm
+        self._supportTeethHeight = 1.5  # [mm]
+        self._supportTeethTopLength = 0.1  # [mm]
+        self._supportTeethBottomLength = 1.5  # [mm]
+        self._supportTeethBaseInterval = 0.2  # [mm]
+        self._supportTeethUpperPenetration = 0.2 # [mm]
 
         self._useUpperSupportTeeth = True
         self._useLowerSupportTeeth = False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'GridBlockSupport'
 
     @property
@@ -131,7 +132,11 @@ class GridBlockSupport(BlockSupportBase):
         return self._numSkinMeshSubdivideIterations
 
     @numSkinMeshSubdivideIterations.setter
-    def numSkinMeshSubdivideIterations(self, iterations: int):
+    def numSkinMeshSubdivideIterations(self, iterations: int) -> None:
+
+        if iterations < 0:
+            raise ValueError('Number of skin mesh subdivide iterations must be a positive integer or zero')
+
         self._numSkinMeshSubdivideIterations = int(iterations)
 
     @property
@@ -143,7 +148,11 @@ class GridBlockSupport(BlockSupportBase):
         return self._supportWallThickness
 
     @supportWallThickness.setter
-    def supportWallThickness(self, wallThickness: float):
+    def supportWallThickness(self, wallThickness: float) -> None:
+
+        if wallThickness < sys.float_info.epsilon:
+            raise ValueError('The support wall thickness must be a positive value')
+
         self._supportWallThickness = wallThickness
 
     @property
@@ -154,7 +163,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._useUpperSupportTeeth
 
     @useUpperSupportTeeth.setter
-    def useUpperSupportTeeth(self, state: bool):
+    def useUpperSupportTeeth(self, state: bool) -> None:
         self._useUpperSupportTeeth = state
 
     @property
@@ -165,7 +174,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._useLowerSupportTeeth
 
     @useLowerSupportTeeth.setter
-    def useLowerSupportTeeth(self, state: bool):
+    def useLowerSupportTeeth(self, state: bool) -> None:
         self._useLowerSupportTeeth = state
     @property
     def supportTeethHeight(self) -> float:
@@ -175,18 +184,18 @@ class GridBlockSupport(BlockSupportBase):
         return self._supportTeethHeight
 
     @supportTeethHeight.setter
-    def supportTeethHeight(self, teethHeight: float):
+    def supportTeethHeight(self, teethHeight: float) -> None:
         self._supportTeethHeight = teethHeight
 
     @property
-    def supportTeethTopLength(self):
+    def supportTeethTopLength(self) -> float:
         """
         The upper span or length of the perforated support teeth
         """
         return self._supportTeethTopLength
 
     @supportTeethTopLength.setter
-    def supportTeethTopLength(self, topLength: float):
+    def supportTeethTopLength(self, topLength: float) -> None:
         self._supportTeethTopLength = topLength
 
     @property
@@ -197,7 +206,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._supportTeethTopLength
 
     @supportTeethBottomLength.setter
-    def supportTeethBottomLength(self, bottomLength: float):
+    def supportTeethBottomLength(self, bottomLength: float) -> None:
         self._supportTeethBottomLength = bottomLength
 
     @property
@@ -208,7 +217,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._supportTeethBaseInterval
 
     @supportTeethBaseInterval.setter
-    def supportTeethBaseInterval(self, baseInterval: float):
+    def supportTeethBaseInterval(self, baseInterval: float) -> None:
         self._supportTeethBaseInterval = baseInterval
 
     @property
@@ -219,7 +228,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._supportTeethUpperPenetration
 
     @supportTeethUpperPenetration.setter
-    def supportTeethUpperPenetration(self, distance: float):
+    def supportTeethUpperPenetration(self, distance: float) -> None:
         self._supportTeethUpperPenetration = distance
 
     @property
@@ -230,7 +239,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._mergeMesh
 
     @mergeMesh.setter
-    def mergeMesh(self, state: bool):
+    def mergeMesh(self, state: bool) -> None:
         self._mergeMesh = state
 
     @property
@@ -239,7 +248,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._useSupportSkin
 
     @useSupportSkin.setter
-    def useSupportSkin(self, value):
+    def useSupportSkin(self, value) -> None:
         self._useSupportSkin = value
 
     @property
@@ -248,7 +257,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._useSupportBorder
 
     @useSupportBorder.setter
-    def useSupportBorder(self, value: bool):
+    def useSupportBorder(self, value: bool) -> None:
         self._useSupportBorder = value
 
     @property
@@ -259,7 +268,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._trussWidth
 
     @trussWidth.setter
-    def trussWidth(self, width: float):
+    def trussWidth(self, width: float) -> None:
         self._trussWidth = width
 
     @property
@@ -270,7 +279,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._generateTrussGrid
 
     @generateTrussGrid.setter
-    def generateTrussGrid(self, state: bool):
+    def generateTrussGrid(self, state: bool) -> None:
         self._generateTrussGrid = state
 
     @property
@@ -281,7 +290,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._supportBorderDistance
 
     @supportBorderDistance.setter
-    def supportBorderDistance(self, distance: float):
+    def supportBorderDistance(self, distance: float) -> None:
         self._supportBorderDistance = distance
 
     @property
@@ -292,7 +301,7 @@ class GridBlockSupport(BlockSupportBase):
         return self._trussAngle
 
     @trussAngle.setter
-    def trussAngle(self, angle: float):
+    def trussAngle(self, angle: float) -> None:
         self._trussAngle = angle
 
     @property
@@ -303,16 +312,18 @@ class GridBlockSupport(BlockSupportBase):
         return self._gridSpacing
 
     @gridSpacing.setter
-    def gridSpacing(self, spacing: List[float]):
+    def gridSpacing(self, spacing: List[float]) -> None:
         """
         The Grid spacing used for the support structure.
         """
         self._gridSpacing = spacing
 
     @staticmethod
-    def holeGeometry():
+    def holeGeometry() -> shapely.geometry.Polygon:
         """ Depreciated function """
-        return Polygon([[-1.5, 0], [0, 1.], [1.5, 0], [0, -1.0], [-1.5, 0]])
+        warnings.warn('This function is deprecated and will be removed in the future',
+                      DeprecationWarning, stacklevel=2)
+        return shapely.geometry.Polygon([[-1.5, 0], [0, 1.], [1.5, 0], [0, -1.0], [-1.5, 0]])
 
     @staticmethod
     def clipLines(paths: Any, lines: np.ndarray) -> List[np.ndarray]:
@@ -337,8 +348,8 @@ class GridBlockSupport(BlockSupportBase):
 
     @staticmethod
     def generateMeshGrid(poly: shapely.geometry.polygon.Polygon,
-                         hatchSpacing: Optional[float] = 5.0,
-                         hatchAngle: Optional[float] = 45.0) -> np.ndarray:
+                         hatchSpacing: float = 5.0,
+                         hatchAngle: float = 45.0) -> np.ndarray:
         """
         Generates a grid mesh i.e. a series of hatches to fill a polygon region in order to generate a truss network
         used as part of a support truss structure. The mesh grid is offset to create the truss.
@@ -396,7 +407,7 @@ class GridBlockSupport(BlockSupportBase):
         return self.generateSupportSkins()
 
     @property
-    def sliceGeometry(self):
+    def sliceGeometry(self) -> Tuple[trimesh.Trimesh, trimesh.Trimesh]:
         """
         The grid composed of trusses in both the X and Y orientations.
         """
@@ -435,7 +446,7 @@ class GridBlockSupport(BlockSupportBase):
             isectMesh = slicesX + slicesY
 
             if len(isectMesh.faces) > 0:
-                isectMesh = resolveIntersection(isectMesh)
+                isectMesh = trimesh.Trimesh() # resolveIntersection(isectMesh)
 
             isectMesh += supportSkins
         else:
@@ -478,11 +489,11 @@ class GridBlockSupport(BlockSupportBase):
         b = [np.min(by), np.max(by)]
 
         # Create a closed polygon representing the transformed slice geometry
-        bboxPoly = Polygon([[a[0], b[0]],
-                            [a[0], b[1]],
-                            [a[1], b[1]],
-                            [a[1], b[0]],
-                            [a[0], b[0]]])
+        bboxPoly = shapely.geometry.Polygon([[a[0], b[0]],
+                                             [a[0], b[1]],
+                                             [a[1], b[1]],
+                                             [a[1], b[0]],
+                                             [a[0], b[0]]])
 
         return bboxPoly
 
@@ -514,18 +525,18 @@ class GridBlockSupport(BlockSupportBase):
         toothPattern[:, 1] += self._supportTeethUpperPenetration
         return toothPattern
 
-    def generateSliceGeometry(self, section: trimesh.path.Path2D):
+    def generateSliceGeometry(self, section: trimesh.path.Path2D) -> Optional[List[np.ndarray]]:
         """
         Generates a truss grid used as a 2D slice used for generating a section as part of a support structures.
 
         :param section: The polygon section of slice through the geometry
-        :return: A Trimesh Path2D object of the truss geometry
+        :return: The paths of the truss geometry
         """
 
         if section[0].shape[0] == 0:
             return None
 
-        sin_theta = getFaceZProjectionWeight(self._supportVolume, useConnectivity=False)
+        sin_theta = utils.getFaceZProjectionWeight(self._supportVolume, useConnectivity=False)
 
         topIdx = np.argwhere(sin_theta < BlockSupportGenerator._supportSkinSideTolerance)
 
@@ -577,7 +588,7 @@ class GridBlockSupport(BlockSupportBase):
 
                 """
                 The bottom vertex of the path is lower than top indicates (counter-clockwise) when
-                the polygon has its paths correctly sorted internally using pyclipr or Shapely. This orientation 
+                the polygon has its paths correctly sorted internally using pyclipr or Shapely. This orientation
                 gives an indication if the geometry lies at the top or the bottom of the support volume
                 """
                 isccw = seg[-1, 1] < seg[0, 1]
@@ -607,7 +618,7 @@ class GridBlockSupport(BlockSupportBase):
                 teethFinal[:, 0] += dir * patternList[idx, 1]
 
                 """
-                If the number of teeth profiles is beyond the length of the support edge, then exclude the use of a 
+                If the number of teeth profiles is beyond the length of the support edge, then exclude the use of a
                 tooth and use the original edge
                 """
                 if numCycles == 1:
@@ -635,7 +646,7 @@ class GridBlockSupport(BlockSupportBase):
             slicePaths.append(nPathPoly)
 
             """
-            Add additional support to the upper and lower surfaces 
+            Add additional support to the upper and lower surfaces
             """
             if self._supportWallThickness > 1e-5:
 
@@ -704,7 +715,7 @@ class GridBlockSupport(BlockSupportBase):
                 convPolys += poly.geoms
             else:
                 convPolys.append(poly)
-        paths = path2DToPathList(convPolys)
+        paths = geometry.path2DToPathList(convPolys)
 
         pc = pyclipr.ClipperOffset()
         pc.scaleFactor = int(BaseHatcher.CLIPPER_SCALEFACTOR)
@@ -799,15 +810,17 @@ class GridBlockSupport(BlockSupportBase):
 
         return solution
 
-    def generateSliceGeometryDepr(self, section):
+    def generateSliceGeometryDepr(self, section: shapely.geometry.Polygon) -> trimesh.path.Path2D:
         """
         Exists as a reference to how this can be performed using Shapely.Geometry.Polygon Objects
 
         :param section:
         :return:
         """
+        warnings.warn('This function is deprecated and will be removed in the future',
+                      DeprecationWarning, stacklevel=2)
 
-        if not section:
+        if section is None:
             return trimesh.path.Path2D()
 
         polys = section.polygons_closed
@@ -858,20 +871,21 @@ class GridBlockSupport(BlockSupportBase):
         return sectionPath
 
     def generateSupportSkinInfill(self, myPolyVerts: np.ndarray,
-                                  returnPolyNodes: Optional[bool] =False) -> Tuple[np.ndarray, np.ndarray]:
+                                  returnPolyNodes: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generates a standard truss grid infill for a support border boundary  has been previously
         flattened prior to applying a 'wrapping' transformation projecting the 2D skin into the 3D support
 
+        :param returnPolyNodes: If set to True, the function will return the PolyNode tree structure
         :param myPolyVerts: A single boundary of coordinates representing the
         :return: A mesh (vertices, faces) of the triangulated truss support order.
         """
         pc = pyclipr.ClipperOffset()
         pc.scaleFactor = BaseHatcher.CLIPPER_SCALEFACTOR
         # Offset the outer path to provide a clean boundary to work with
-        #paths2 = np.hstack([myPolyVerts, np.arange(len(myPolyVerts)).reshape(-1, 1)])
-        #paths2 = list(map(tuple, paths2))
-        #clipPaths = BaseHatcher.scaleToClipper(paths2)
+        # paths2 = np.hstack([myPolyVerts, np.arange(len(myPolyVerts)).reshape(-1, 1)])
+        # paths2 = list(map(tuple, paths2))
+        # clipPaths = BaseHatcher.scaleToClipper(paths2)
 
         """
         Offset the paths interior
@@ -886,10 +900,10 @@ class GridBlockSupport(BlockSupportBase):
             outerPaths = pc.execute2(10. / BaseHatcher.CLIPPER_SCALEFACTOR)
 
             # Process the paths and create valid path rings to form a polygon for triangulation
-            exterior, interior = sortExteriorInteriorRings(outerPaths, closePolygon=True)
+            exterior, interior = geometry.sortExteriorInteriorRings(outerPaths, closePolygon=True)
 
             # Triangulate the surface for re-mapping the mesh to the boundary
-            vy, fy = triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(2.0))
+            vy, fy = geometry.triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(2.0))
 
             return vy, fy
         else:
@@ -907,10 +921,13 @@ class GridBlockSupport(BlockSupportBase):
         b = [np.min(myPolyVerts[:, 1]), np.max(myPolyVerts[:, 1])]
 
         # Create a closed polygon representing the transformed slice geometry
-        bboxPoly = Polygon([[a[0], b[0]],
-                            [a[0], b[1]],
-                            [a[1], b[1]],
-                            [a[1], b[0]], [a[0], b[0]]])
+        bboxPoly = shapely.geometry.Polygon([
+                                             [a[0], b[0]],
+                                             [a[0], b[1]],
+                                             [a[1], b[1]],
+                                             [a[1], b[0]],
+                                             [a[0], b[0]]
+                                            ])
 
         """
         Generate the mesh grid used for the support trusses and merge the lines together
@@ -987,7 +1004,7 @@ class GridBlockSupport(BlockSupportBase):
 
         return solution
 
-    def generateSupportSkins(self) -> trimesh.Trimesh:
+    def generateSupportSkins(self) -> List[trimesh.Trimesh]:
         """
         Generates the border or boundary wall of a block support structure with a truss structure for perforations for
         material removal.
@@ -1002,7 +1019,7 @@ class GridBlockSupport(BlockSupportBase):
         blockSupportSides = blockSupportMesh.copy()
         blockSupportSides.fix_normals()
         blockSupportSides.merge_vertices(digits_vertex=3)
-        sin_theta = getFaceZProjectionWeight(blockSupportSides, useConnectivity=False)
+        sin_theta = utils.getFaceZProjectionWeight(blockSupportSides, useConnectivity=False)
 
         # First mask removes very small faces
         # Second mask isolates the outside region
@@ -1025,8 +1042,8 @@ class GridBlockSupport(BlockSupportBase):
         if len(supportSurf) > 2:
 
             # Uncomment below to identify issues with support generation
-            #blockSupportSides.show()
-            warnings.warn('Warning: number of isolated curves')
+            # blockSupportSides.show()
+            warnings.warn('Warning: number of isolated curves', stacklevel=2)
             return []
 
         (top, bottom) = (supportSurf[0], supportSurf[1])
@@ -1068,7 +1085,7 @@ class GridBlockSupport(BlockSupportBase):
         if len(pairs) < 1:
 
             # Uncomment to visualise the support if there any issues with the support generation
-            #blockSupportSides.show()
+            # blockSupportSides.show()
             return []
 
         topPaths = topPoly3D.paths
@@ -1084,7 +1101,9 @@ class GridBlockSupport(BlockSupportBase):
 
         for pair in pairs:
 
-            topVerts = trimesh.path.traversal.discretize_path(topPoly3D.entities, topPoly3D.vertices, topPoly3D.paths[pair[0]])
+            topVerts = trimesh.path.traversal.discretize_path(topPoly3D.entities,
+                                                              topPoly3D.vertices,
+                                                              topPoly3D.paths[pair[0]])
             topPoly3Dcpy = topPoly3D.copy()
             topPoly3Dcpy.vertices[:, 2] = 0.0
 
@@ -1183,13 +1202,13 @@ class GridBlockSupport(BlockSupportBase):
                 xPos, idx = np.unique(np.clip(patternList[:, 0], 0, ps.length), return_index=True)
                 teethFinalBottom = ps.sample(xPos)
 
-                #teethFinal = ps.sample(np.clip(patternList[:, 0], 0, ps.length))
+                # teethFinal = ps.sample(np.clip(patternList[:, 0], 0, ps.length))
                 teethFinalBottom[:, 1] += patternList[idx, 1]
 
             """
-            The bottom vertex of the path is lower than top indicates (counter-clockwise) when
-            the polygon has its paths correctly sorted internally using pyclipr or Shapely. This orientation 
-            gives an indication if the geometry lies at the top or the bottom of the support volume
+            The bottom vertex of the path is lower than top indicates (counter-clockwise) when the polygon has its
+            paths correctly sorted internally using pyclipr or Shapely. This orientation gives an indication if the
+            geometry lies at the top or the bottom of the support volume
             """
 
             if self._useUpperSupportTeeth:
@@ -1219,7 +1238,7 @@ class GridBlockSupport(BlockSupportBase):
                 xPos, idx = np.unique(np.clip(patternList[:, 0], 0, ps.length), return_index=True)
                 teethFinalTop = ps.sample(xPos)
 
-                #teethFinal = ps.sample(np.clip(patternList[:, 0], 0, ps.length))
+                # teethFinal = ps.sample(np.clip(patternList[:, 0], 0, ps.length))
                 teethFinalTop[:, 1] += patternList[idx, 1]
 
             vertexList = []
@@ -1237,13 +1256,13 @@ class GridBlockSupport(BlockSupportBase):
             # Use the intersecting boundaries of the support volume instead
             myPolyVerts = np.vstack(vertexList)
 
-            """ 
+            """
             Resample the boundary
             """
             myPolyVerts = trimesh.path.traversal.resample_path(myPolyVerts, step=0.25)
 
             """
-            Add additional support to the upper and lower surfaces 
+            Add additional support to the upper and lower surfaces
             """
             if self._supportWallThickness > 1e-5:
 
@@ -1265,8 +1284,8 @@ class GridBlockSupport(BlockSupportBase):
 
                 bottomPolyVerts2[[0, -1, -2], [1, 1, 1]] = np.min(bottomPolyVerts2[:, 1]) - 10.0
 
-                isectPolyA = shapely.geometry.Polygon(bottomPolyVerts2) # bottom edge
-                isectPolyB = shapely.geometry.Polygon(topPolyVerts2) # top edge
+                isectPolyA = shapely.geometry.Polygon(bottomPolyVerts2)  # bottom edge
+                isectPolyB = shapely.geometry.Polygon(topPolyVerts2)  # top edge
 
                 # Merge the polygon sections together and offset the boundary
                 try:
@@ -1280,7 +1299,7 @@ class GridBlockSupport(BlockSupportBase):
 
                 newPaths2 = []
                 for path in newPaths:
-                    newPaths2.append(np.vstack([path, path[0,:]]))
+                    newPaths2.append(np.vstack([path, path[0, :]]))
 
                 ac = [np.array(pol) for pol in hatchingUtils.poly2Paths(isectPolyC)]
 
@@ -1297,19 +1316,19 @@ class GridBlockSupport(BlockSupportBase):
             """
             Create the polygon and triangulate with triangle library to provide a precise controlled conformal mesh.
             """
-            exterior, interior = sortExteriorInteriorRings(result, closePolygon=True)
+            exterior, interior = geometry.sortExteriorInteriorRings(result, closePolygon=True)
 
             if len(exterior) < 0:
                 import pyslm.visualise
-                result2 = self.generateSupportSkinInfill(myPolyVerts, returnPolyNodes=False)
+                failedResult = self.generateSupportSkinInfill(myPolyVerts, returnPolyNodes=False)
                 handle = pyslm.visualise.plotPolygon([myPolyVerts])
-                pyslm.visualise.plotPolygon(result2, handle)
+                pyslm.visualise.plotPolygon(failedResult, handle=handle)
                 raise Exception('Error: exterior count < 1: Please report bug report')
 
             if len(exterior) > 1:
                 raise Exception('Error: exterior count > 1. Increase the support border distance to resolve this issue. ')
 
-            vy, fy = triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
+            vy, fy = geometry.triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
 
             """
             Create the interpolation or mapping function to go from the 2D polygon to the 3D mesh for the support boundary.
@@ -1326,21 +1345,19 @@ class GridBlockSupport(BlockSupportBase):
 
             vy = np.hstack([vy, np.zeros([len(vy), 1])])
 
-            """
-            We subdivide and discretise the mesh further in-order to provide sufficient discretisiation of the support mesh.
-            This ensures that the mesh correctly conforms to the boundary of the support block volume - especially at sharp
-            apexes or corners.triangulatePo
-            """
+            """We subdivide and discretise the mesh further in-order to provide sufficient discretisiation of the
+            support mesh. This ensures that the mesh correctly conforms to the boundary of the support block volume -
+            especially at sharp apexes or corners"""
             tmpMesh = trimesh.Trimesh(vertices=vy, faces=fy, process=True, validate=True)
             tmpMesh.merge_vertices()
 
             vy, fy = tmpMesh.vertices, tmpMesh.faces
 
             """
-            Subdivide the generated skin mesh to increase the mesh resolution prior to re-mapping the generated 
-            2D polygon back to the conforming 3D skin 
+            Subdivide the generated skin mesh to increase the mesh resolution prior to re-mapping the generated
+            2D polygon back to the conforming 3D skin
             """
-            for i in range(self._numSkinMeshSubdivideIterations):
+            for _ in range(self._numSkinMeshSubdivideIterations):
                 vy, fy = trimesh.remesh.subdivide(vy, fy)
 
             """
@@ -1357,7 +1374,7 @@ class GridBlockSupport(BlockSupportBase):
 
         return boundaryMeshList
 
-    def generateSupportSlices(self):
+    def generateSupportSlices(self) -> Tuple[trimesh.Trimesh, trimesh.Trimesh]:
         """
         Generates the XY Grid of Support truss slice meshes for generating the interior of each support.
 
@@ -1372,7 +1389,6 @@ class GridBlockSupport(BlockSupportBase):
         Note the scanning order begins from zero - boundaries are appended at the end because multiple borders may exist
         """
         scanId = 0
-
 
         # Process the Section X
         for i, sectionX in enumerate(sectionsX):
@@ -1395,8 +1411,8 @@ class GridBlockSupport(BlockSupportBase):
                 idx = 0
 
                 for sect in section.children:
-                    exterior, interior = sortExteriorInteriorRings(sect, closePolygon=True)
-                    vertsx, facesx = triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
+                    exterior, interior = geometry.sortExteriorInteriorRings(sect, closePolygon=True)
+                    vertsx, facesx = geometry.triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
 
                     vx.append(vertsx)
                     fx.append(facesx + idx)
@@ -1407,7 +1423,7 @@ class GridBlockSupport(BlockSupportBase):
 
             else:
                 # Triangulate the polygon
-                vx, fx = triangulatePolygon(section)
+                vx, fx = geometry.triangulatePolygon(section)
 
             if len(fx) == 0:
                 continue
@@ -1431,7 +1447,7 @@ class GridBlockSupport(BlockSupportBase):
         #xSectionMesh = trimesh.util.concatenate(xSectionMeshList)
         xSectionMesh = self.concatenateMeshes(xSectionMeshList)
 
-        # The maximum Id is used for collecting the current scan order
+        # The maximum id is used for collecting the current scan order
         maxId = len(xSectionMeshList)
 
         # Process the Section Y
@@ -1453,8 +1469,10 @@ class GridBlockSupport(BlockSupportBase):
                 idx = 0
                 for sect in section.children:
 
-                    exterior, interior = sortExteriorInteriorRings(sect, closePolygon=True)
-                    vertsy, facesy = triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
+                    exterior, interior = geometry.sortExteriorInteriorRings(sect, closePolygon=True)
+                    vertsy, facesy = geometry.triangulatePolygonFromPaths(exterior[0],
+                                                                          interior,
+                                                                          triangle_args='pa{:.3f}'.format(4.0))
                     vy.append(vertsy)
                     fy.append(facesy + idx)
                     idx += len(vertsy)
@@ -1469,7 +1487,7 @@ class GridBlockSupport(BlockSupportBase):
                 #                                                     triangle_args='pa{:.3f}'.format(4.0))
             else:
                 # Triangulate the polygon
-                vy, fy = triangulatePolygon(section)
+                vy, fy = geometry.triangulatePolygon(section)
 
             if len(fy) == 0:
                 continue
@@ -1480,7 +1498,7 @@ class GridBlockSupport(BlockSupportBase):
 
             # Add the scan order to the mesh so that the hatches can be seperated later during slicing
             secY.face_attributes['order'] = np.ones(len(fy)) * scanId
-            secY.face_attributes['type']  = np.ones(len(fy)) * GridMeshType.SLICE_Y
+            secY.face_attributes['type'] = np.ones(len(fy)) * GridMeshType.SLICE_Y
 
             scanId += 1
 
@@ -1495,8 +1513,13 @@ class GridBlockSupport(BlockSupportBase):
         ySectionMesh = self.concatenateMeshes(ySectionMeshList)
         return xSectionMesh, ySectionMesh
 
-    def concatenateMeshes(self, meshList):
+    def concatenateMeshes(self, meshList: List[trimesh.Trimesh]) -> trimesh.Trimesh:
+        """
+        Utility function which concatenates a list of truss meshes into a single mesh
 
+        :param meshList: A list of meshes to concatenate
+        :return:
+        """
         if len(meshList) < 1:
             return trimesh.Trimesh()
 
@@ -1507,7 +1530,8 @@ class GridBlockSupport(BlockSupportBase):
         newFaces = np.vstack([mesh.faces + idxCumSum[i] for i, mesh in enumerate(meshList)])
 
         faceAttr = {}
-        for i, mesh in enumerate(meshList):
+
+        for mesh in meshList:
             for key, value in mesh.face_attributes.items():
                 if key not in faceAttr:
                     faceAttr[key] = []
@@ -1526,7 +1550,6 @@ class GridBlockSupport(BlockSupportBase):
         from trimesh.exchange.load import load_path
         import trimesh.exchange
 
-        # do a multiplane intersection
         lines, transforms, faces = trimesh.intersections.mesh_multiplane(mesh=volume,
                                                                          plane_normal=plane_normal,
                                                                          plane_origin=plane_origin,
@@ -1535,21 +1558,6 @@ class GridBlockSupport(BlockSupportBase):
         out = zip(lines, transforms, faces)
         return list(out)
 
-        if False:
-
-            # turn the line segments into Path2D objects
-            paths = [None] * len(lines)
-            for i, faces, segments, T in zip(range(len(lines)),
-                                             faces,
-                                             lines,
-                                             transforms):
-                if len(segments) > 0:
-                    paths[i] = load_path(
-                        segments,
-                        metadata={'to_3D': T, 'face_index': faces})
-            return paths
-
-        return lines, transforms, faces
 
     def generateGridSlices(self) -> Tuple[List[trimesh.path.Path2D], List[trimesh.path.Path2D]]:
         """
@@ -1566,8 +1574,7 @@ class GridBlockSupport(BlockSupportBase):
         bz = supportGeom.bounds[:, 2]
 
         # Specify the spacing of the support grid slices
-        spacingX = self._gridSpacing[0]
-        spacingY = self._gridSpacing[1]
+        spacingX, spacingY = self._gridSpacing[0], self._gridSpacing[1]
 
         # Obtain the section through the STL extension using Trimesh Algorithm (Shapely)
         midX = (bx[0] + bx[1]) / 2.0
@@ -1603,6 +1610,7 @@ class GridBlockSupport(BlockSupportBase):
         .. note::
             The scan order is not currently filtered or sorted in a predefined way and will be implemented in the future.
 
+        :param z:  Position to slize the geometry in Z
         :param meshSupports: A list of :class:`trimesh.Trimesh` objects
         :return: A tuple of the internal truss grid and the boundary truss grid slices
         """
@@ -1624,8 +1632,9 @@ class GridBlockSupport(BlockSupportBase):
                 continue
 
             # Seperate the mesh types and process independently for convenience
-            lines, face_index = trimesh.intersections.mesh_plane(mesh=mesh, plane_normal=[0.0, 0, 1.0],
-                                                                 plane_origin=[0, 0, z],
+            lines, face_index = trimesh.intersections.mesh_plane(mesh=mesh,
+                                                                 plane_normal=[0.0, 0.0, 1.0],
+                                                                 plane_origin=[0.0, 0.0, z],
                                                                  return_faces=True)
 
             # Obtain the order and type ids based on the grid
@@ -1636,7 +1645,6 @@ class GridBlockSupport(BlockSupportBase):
             Split orderId into arrays based on their order value which were assigned during their generation.
             The direction can be identified by their type id derived from the metadata stored extracted during slicing
             """
-
             unique, inverse = np.unique(orderId, return_inverse=True)
 
             bins = np.unique(orderId)
@@ -1661,15 +1669,15 @@ class GridBlockSupport(BlockSupportBase):
 
                 if typeId[split[0]] == GridMeshType.SLICE_X.value:
                     # We can assume that the lines are co-linear and can be sorted in ascending order X Value
-                    coords = coords.reshape(-1,2)
-                    coords = coords[np.argsort(coords[:,1]), :].reshape(-1,2,2)
+                    coords = coords.reshape(-1, 2)
+                    coords = coords[np.argsort(coords[:,1]), :].reshape(-1, 2, 2)
                     path = trimesh.util.concatenate([trimesh.load_path(c) for c in coords])
                     # [TODO] the above is not the most efficient way to resolve this
 
                 elif typeId[split[0]] == GridMeshType.SLICE_Y.value:
                     # We can assume that the lines are co-linear and can be sorted in ascending order Y Value
-                    coords = coords.reshape(-1,2)
-                    coords = coords[np.argsort(coords[:,0]), :].reshape(-1,2,2)
+                    coords = coords.reshape(-1, 2)
+                    coords = coords[np.argsort(coords[:,0]), :].reshape(-1, 2, 2)
                     path = trimesh.util.concatenate([trimesh.load_path(c) for c in coords])
 
                 else:
@@ -1734,6 +1742,7 @@ class GridBlockSupport(BlockSupportBase):
 
         return geoms, borderGeoms
 
+
 class GridBlockSupportGenerator(BlockSupportGenerator):
     """
     The GridBlockSupportGenerator class provides common methods used for generating the 'support' structures
@@ -1741,10 +1750,10 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
     provides more efficient scanning of supports of exposure based processes, by minimising exposure jumps.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-        self._gridSpacing = [3, 3]
+        self._gridSpacing = [3.0, 3.0]
 
         self._useSupportSkin = True
         self._useSupportBorder = True
@@ -1753,19 +1762,19 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         self._numSkinMeshSubdivideIterations = 2
 
         # Support teeth parameters
-        self._supportTeethHeight = 1.5  # mm
-        self._supportTeethTopLength = 0.1 # mm
-        self._supportTeethBottomLength = 1.5 # mm
-        self._supportTeethBaseInterval = 0.2 # mm
-        self._supportTeethUpperPenetration = 0.2 # mm
-        self._supportWallThickness = 3.0 # mm
+        self._supportTeethHeight = 1.5  # [mm]
+        self._supportTeethTopLength = 0.1  # [mm]
+        self._supportTeethBottomLength = 1.5  # [mm]
+        self._supportTeethBaseInterval = 0.2  # [mm]
+        self._supportTeethUpperPenetration = 0.2  # [mm]
+        self._supportWallThickness = 3.0  # [mm]
 
         self._mergeMesh = False
-        self._supportBorderDistance = 3.0
-        self._trussWidth = 1.0
-        self._trussAngle = 45
+        self._supportBorderDistance = 3.0  # [mm]
+        self._trussWidth = 1.0 # [mm]
+        self._trussAngle = 45.0  # [deg]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'GridBlockSupportGenerator'
 
     @property
@@ -1776,7 +1785,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._mergeMesh
 
     @mergeMesh.setter
-    def mergeMesh(self, state: bool):
+    def mergeMesh(self, state: bool) -> None:
         self._mergeMesh = state
 
     @property
@@ -1787,7 +1796,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._trussWidth
 
     @trussWidth.setter
-    def trussWidth(self, width: float):
+    def trussWidth(self, width: float) -> None:
         self._trussWidth = width
 
     @property
@@ -1796,33 +1805,34 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._useSupportSkin
 
     @useSupportSkin.setter
-    def useSupportSkin(self, value):
-        self._useSupportSkin = value
+    def useSupportSkin(self, state) -> None:
+        self._useSupportSkin = state
 
     @property
-    def useSupportBorder(self):
+    def useSupportBorder(self) -> bool:
         """ Generates a border around each truss grid """
         return self._useSupportBorder
 
     @useSupportBorder.setter
-    def useSupportBorder(self, value):
-        self._useSupportBorder = value
+    def useSupportBorder(self, state: bool) -> None:
+        self._useSupportBorder = state
 
     @property
-    def useUpperSupportTeeth(self):
+    def useUpperSupportTeeth(self) -> bool:
         return self._useUpperSupportTeeth
 
     @useUpperSupportTeeth.setter
-    def useUpperSupportTeeth(self, value):
-        self._useUpperSupportTeeth = value
+    def useUpperSupportTeeth(self, state: bool) -> None:
+        self._useUpperSupportTeeth = state
 
     @property
-    def useLowerSupportTeeth(self):
+    def useLowerSupportTeeth(self) -> bool:
         return self._useUpperSupportTeeth
 
     @useLowerSupportTeeth.setter
-    def useLowerSupportTeeth(self, value):
-        self._useLowerSupportTeeth = value
+    def useLowerSupportTeeth(self, state: bool) -> None:
+        self._useLowerSupportTeeth = state
+
     @property
     def supportBorderDistance(self) -> float:
         """
@@ -1831,7 +1841,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._supportBorderDistance
 
     @supportBorderDistance.setter
-    def supportBorderDistance(self, distance: float):
+    def supportBorderDistance(self, distance: float) -> None:
         self._supportBorderDistance = distance
 
     @property
@@ -1839,7 +1849,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._supportWallThickness
 
     @supportWallThickness.setter
-    def supportWallThickness(self, wallThickness: float):
+    def supportWallThickness(self, wallThickness: float) -> None:
         self._supportWallThickness = wallThickness
 
     @property
@@ -1848,7 +1858,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._trussAngle
 
     @trussAngle.setter
-    def trussAngle(self, angle: float):
+    def trussAngle(self, angle: float) -> None:
         self._trussAngle = angle
 
     @property
@@ -1857,10 +1867,9 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._gridSpacing
 
     @gridSpacing.setter
-    def gridSpacing(self, spacing: List[float]):
+    def gridSpacing(self, spacing: List[float]) -> None:
         """ The Grid Spacing used for the support structure """
         self._gridSpacing = spacing
-
 
     @property
     def supportTeethHeight(self) -> float:
@@ -1870,18 +1879,18 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._supportTeethHeight
 
     @supportTeethHeight.setter
-    def supportTeethHeight(self, teethHeight: float):
+    def supportTeethHeight(self, teethHeight: float) -> None:
         self._supportTeethHeight = teethHeight
 
     @property
-    def supportTeethTopLength(self):
+    def supportTeethTopLength(self) -> float:
         """
         The upper span or length of the perforated support teeth
         """
         return self._supportTeethTopLength
 
     @supportTeethTopLength.setter
-    def supportTeethTopLength(self, topLength: float):
+    def supportTeethTopLength(self, topLength: float) -> None:
         self._supportTeethTopLength = topLength
 
     @property
@@ -1892,7 +1901,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._supportTeethTopLength
 
     @supportTeethBottomLength.setter
-    def supportTeethBottomLength(self, bottomLength: float):
+    def supportTeethBottomLength(self, bottomLength: float) -> None:
         self._supportTeethBottomLength = bottomLength
 
     @property
@@ -1903,7 +1912,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._supportTeethBaseInterval
 
     @supportTeethBaseInterval.setter
-    def supportTeethBaseInterval(self, baseInterval: float):
+    def supportTeethBaseInterval(self, baseInterval: float) -> None:
         self._supportTeethBaseInterval = baseInterval
 
     @property
@@ -1914,11 +1923,11 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._supportTeethUpperPenetration
 
     @supportTeethUpperPenetration.setter
-    def supportTeethUpperPenetration(self, distance: float):
+    def supportTeethUpperPenetration(self, distance: float) -> None:
         self._supportTeethUpperPenetration = distance
 
     def identifySupportRegions(self, part: Part, overhangAngle: float,
-                               findSelfIntersectingSupport: Optional[bool] = True) -> List[GridBlockSupport]:
+                               findSelfIntersectingSupport: bool = True) -> List[GridBlockSupport]:
         """
         Extracts the overhang mesh and generates block regions given a part and target overhang angle. The algorithm
         uses a combination of boolean operations and ray intersection/projection to discriminate support regions.
@@ -1938,8 +1947,8 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         gridBlocks = []
 
         for block in supportBlocks:
-            gridBlock = GridBlockSupport(block.supportObject,
-                                         block.supportVolume, block.supportSurface, block.intersectsPart)
+            gridBlock = GridBlockSupport(block.supportObject, block.supportVolume,
+                                         block.supportSurface, block.intersectsPart)
 
             # Assign the GridBlock Parameters
             gridBlock.gridSpacing = self._gridSpacing
@@ -1948,23 +1957,22 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
             # Support Teeth Parameters
             gridBlock.supportTeethHeight = self._supportTeethHeight
             gridBlock.supportTeethTopLength = self._supportTeethHeight
-            gridBlock.supportTeethBottomLength     = self._supportTeethBottomLength
-            gridBlock.supportTeethBaseInterval     = self._supportTeethBaseInterval
+            gridBlock.supportTeethBottomLength = self._supportTeethBottomLength
+            gridBlock.supportTeethBaseInterval = self._supportTeethBaseInterval
             gridBlock.supportTeethUpperPenetration = self._supportTeethUpperPenetration
             gridBlock.supportWallThickness = self._supportWallThickness
 
             # Options for generating the truss
-            gridBlock.useSupportSkin        = self._useSupportSkin
-            gridBlock.useSupportBorder      = self._useSupportBorder
+            gridBlock.useSupportSkin = self._useSupportSkin
+            gridBlock.useSupportBorder = self._useSupportBorder
 
-            gridBlock.useLowerSupportTeeth  = self._useLowerSupportTeeth
-            gridBlock.useUpperSupportTeeth  = self._useUpperSupportTeeth
+            gridBlock.useLowerSupportTeeth = self._useLowerSupportTeeth
+            gridBlock.useUpperSupportTeeth = self._useUpperSupportTeeth
 
             gridBlock.supportBorderDistance = self._supportBorderDistance
             gridBlock.trussWidth = self._trussWidth
             gridBlock.trussAngle = self._trussAngle
-            gridBlock.mergeMesh  = self._mergeMesh
-            gridBlock._upperSurface = block._upperSurface
+            gridBlock.mergeMesh = self._mergeMesh
 
             gridBlocks.append(gridBlock)
 

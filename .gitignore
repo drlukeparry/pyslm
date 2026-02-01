@@ -5,6 +5,7 @@ __pycache__/
 *$py.class
 
 .DS_Store
+
 # C extensions
 *.so
 
@@ -26,6 +27,10 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Documentation
+docs/out
+docs/api
 
 # Pycharm Project Information
 .idea/

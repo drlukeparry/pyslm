@@ -1,10 +1,11 @@
-from typing import Dict,Iterable, List, Optional, Tuple, Union
-from warnings import warn
+from typing import Dict, Iterable, List, Tuple, Union
+import warnings
 
 import trimesh.transformations
 import numpy as np
 
 from . import Layer, LayerGeometry, HatchGeometry, ContourGeometry, PointsGeometry, BuildStyle, Model
+
 
 def createLayerDict(layerList: List[Layer]) -> Dict[int, Layer]:
     """
@@ -66,20 +67,20 @@ def transformLayerGeoms(layerGeoms: Union[LayerGeometry, List[LayerGeometry]],
     if not isinstance(layerGeoms, Iterable):
         layerGeoms = [layerGeoms]
 
-    if not(transform.shape == (3,3) or transform.shape == (2,2)):
+    if not(transform.shape == (3, 3) or transform.shape == (2, 2)):
         raise ValueError('Transformation matrix should be 2x2 or 3x3')
 
     # Extract the affine transformation (excluding the translation)
     M = transform[0:2, 0:2]
 
     # Extract the translation vector
-    if transform.shape == (3,3):
+    if transform.shape == (3, 3):
         T = transform[0:2, 2]
     else:
-        T = np.array([0.,0.0])
+        T = np.array([0., 0.0])
 
     for geom in layerGeoms:
-        geom.coords = M.dot(geom.coords.T).T + T.reshape(1,2)
+        geom.coords = M.dot(geom.coords.T).T + T.reshape(1, 2)
 
 
 def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildStyle, None]:
@@ -101,6 +102,7 @@ def getBuildStyleById(models: List[Model], mid: int, bid: int) -> Union[BuildSty
         return bstyle
 
     return None
+
 
 def getLayerById(layers: List[Layer], layerId: int) -> Layer:
     """
@@ -143,24 +145,23 @@ class ModelValidator:
     * References to a correct :class:`Model` via its (:attr:`~BuildStyle.mid`) for each :class:`LayerGeometry` included
     * Ensure there are unique :class:`BuildStyle` entries for each :class:`Model` included
 
-    The key function that can be called is :meth:`validateBuild`, which is recommened to be called before attempting to
+    The key function that can be called is :meth:`validateBuild`, which is recommended to be called before attempting to
     export the layer and model information to a libSLM machine build file translator. Additional sub-functions are also
     available for checking specific objects used to construct the build-file.
     """
 
     @staticmethod
-    def _buildStyleIndex(models: List[Model]):
+    def _buildStyleIndex(models: List[Model]) -> Dict[Tuple[int, int], BuildStyle]:
 
         index = dict()
         for model in models:
             for bstyle in model.buildStyles:
                 index[model.mid, bstyle.bid] = bstyle
 
-                print(bstyle.bid, model.mid)
         return index
 
     @staticmethod
-    def _modelIndex(models: List[Model]):
+    def _modelIndex(models: List[Model]) -> Dict[int, Model]:
 
         index = {}
         for model in models:
@@ -169,11 +170,12 @@ class ModelValidator:
         return index
 
     @staticmethod
-    def validateBuildStyle(bstyle: BuildStyle):
+    def validateBuildStyle(bstyle: BuildStyle) -> bool:
         """
         Validates a single :class:`BuildStyle` ensuring that its individual parameters are not malformed.
 
         :param bstyle: The BuildStyle to validate
+        :return: `True` if the structure is coherent and valid
         :raise Exception: When an invalid BuildStyle is provided
         """
         if bstyle.bid < 1 or not isinstance(bstyle.bid, int):
@@ -206,12 +208,15 @@ class ModelValidator:
         if bstyle.laserId < 1 or not isinstance(bstyle.laserId, int):
             raise Exception("BuildStyle({:d}).laserId must be a positive integer (>0)".format(bstyle.bid))
 
+        return True
+
     @staticmethod
-    def validateModel(model: Model):
+    def validateModel(model: Model) -> bool:
         """
-        Validates a single :class:`Model` ensuring that its individual BuildStyles are not malformed.
+        Validates a single :class:`Model` ensuring that its individual :class:`BuildStyle` are not malformed.
 
         :param model: The `Model` to validate
+        :return: `True` if the structure  of the Model is coherent and valid
         :raise Exception: When an invalid `BuildStyle` is provided
         """
 
@@ -232,15 +237,19 @@ class ModelValidator:
 
             ModelValidator.validateBuildStyle(bstyle)
 
+        return True
+
     @staticmethod
-    def validateBuild(models: List[Model], layers: List[Layer]):
+    def validateBuild(models: List[Model], layers: List[Layer]) -> bool:
         """
         Validates an AM Build which compromises of a list of models and layers
 
         :param models: A list of `Models` used in the build
         :param layers: A list of `Layers` used in the build
         :raise Exception: When an invalid `BuildStyle` is provided
+        :return: `True` if the structures are coherent and valid
         """
+
         # Build the indices for the models and the build styles
         modelIdx = ModelValidator._modelIndex(models)
         bstyleIdx = ModelValidator._buildStyleIndex(models)
@@ -255,7 +264,8 @@ class ModelValidator:
         for layer in layers:
 
             if len(layer.geometry) == 0:
-                warn("Warning: Layer ({:d}) does not contain any layer geometry. It is advised to check this is valid".format(layer.layerId))
+                warnings.warn("Warning: Layer ({:d}) does not contain any layer geometry. It is advised to check this is valid".format(layer.layerId),
+                              stacklevel=2)
 
             for layerGeom in layer.geometry:
                 model = modelIdx.get(layerGeom.mid, None)
@@ -273,7 +283,7 @@ class ModelValidator:
         """ Check to see if all models were assigned to a layer geometry"""
         for model in models:
             if not modelTopLayerIdx.get(model.mid, False):
-                warn("Warning: Model({:s}) was not used in any layer)".format(model.name))
+                warnings.warn(f"Warning: Model({model.name}) was not used in any layer)", stacklevel=2)
 
             if model.topLayerId != modelTopLayerIdx[model.mid]:
                 raise Exception("Top Layer Id {:d} of Model ({:d}) differs in the layers used ({:d})".format(model.topLayerId,
