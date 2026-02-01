@@ -22,7 +22,9 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+    - name: Get tags
+      run: git fetch --tags --force
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -41,7 +43,9 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+    - name: Get tags
+      run: git fetch --tags --force
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -82,7 +86,9 @@ jobs:
             os: ubuntu-latest
             pyversion: '3.13'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+    - name: Get tags
+      run: git fetch --tags --force
     - name: Set up Python ${{ matrix.pyversion }}
       uses: actions/setup-python@v5
       with:
@@ -113,7 +119,9 @@ jobs:
           - os: ubuntu-latest
             pyversion: '3.12'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+    - name: Get tags
+      run: git fetch --tags --force
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -136,15 +144,21 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
+      - name: Install Hatch
+        uses: pypa/hatch@install
+      - name: Install libspatial and pyclipr dependencies
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
       - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -U flit build twine
+          pip install -U flit build twine hatchling
       - name: Create source distribution
         run: |
           python -m build -n -s
@@ -154,19 +168,19 @@ jobs:
       - name: Test sdist
         shell: bash
         run: |
-          rm -rf ./pygfx
+          rm -rf ./pyslm
           pushd $HOME
           pip install $GITHUB_WORKSPACE/dist/*.tar.gz
-          python -c "import pygfx; print(pygfx.__version__)"
+          python -c "import pyslm; print(pyslm.__version__)"
           popd
           # don't run tests, we just want to know if the sdist can be installed
-          pip uninstall -y pygfx
+          pip uninstall -y pyslm
           git reset --hard HEAD
       - name: Twine check
         run: |
           twine check dist/*
       - name: Upload distributions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           path: dist
           name: dist
@@ -177,7 +191,9 @@ jobs:
     needs: [test-builds, release-build]
     if: success() && startsWith(github.ref, 'refs/tags/v')
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+    - name: Get tags
+      run: git fetch --tags --force
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -190,7 +206,7 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.RELEASE_TOKEN }}
         files: |
           dist/*.tar.gz
           dist/*.whl

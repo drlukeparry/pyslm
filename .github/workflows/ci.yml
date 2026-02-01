@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -47,7 +47,7 @@ jobs:
     - name: Install libspatial, pyclipr dependencies
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
     - name: Install dev dependencies
       run: |
         python -m pip install --upgrade pip
@@ -79,7 +79,7 @@ jobs:
             os: ubuntu-latest
             pyversion: '3.13'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python ${{ matrix.pyversion }}
       uses: actions/setup-python@v5
       with:
@@ -88,7 +88,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
     - name: Install package and dev dependencies
       run: |
         python -m pip install --upgrade pip
@@ -105,7 +105,7 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -142,7 +142,7 @@ jobs:
           - os: ubuntu-latest
             pyversion: '3.12'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -150,7 +150,7 @@ jobs:
     - name: Install libspatial and pyclipr dependencies
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
     - name: Install dev dependencies
       run: |
         python -m pip install --upgrade pip
@@ -165,7 +165,7 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -175,7 +175,7 @@ jobs:
       - name: Install libspatial and pyclipr dependencies
         run: |
           sudo apt-get update -y -qq
-          sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential libeigen3-dev
+          sudo apt-get install -qq -y libglu1-mesa libspatialindex6 build-essential
       - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
@@ -201,7 +201,7 @@ jobs:
         run: |
           twine check dist/*
       - name: Upload distributions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           path: dist
           name: dist
