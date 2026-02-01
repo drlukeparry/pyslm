@@ -16,27 +16,6 @@ concurrency:
 
 jobs:
 
-  lint-build:
-    name: Linting
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-    steps:
-    - uses: actions/checkout@v6
-    - name: Get tags
-      run: git fetch --tags --force
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.12
-    - name: Install dependencies
-      run: |
-          python -m pip install --upgrade pip
-          pip install ruff
-    - name: Ruff lint
-      run: |
-          ruff check --output-format=github .
-
   docs-build:
     name: Docs
     runs-on: ubuntu-latest
