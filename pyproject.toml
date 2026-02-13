@@ -33,11 +33,14 @@ dependencies = [
     "networkx",
     "numpy>1.21",
     "pyclipr",
+    "pygfx>=0.15.3",
+    "wgpu>=0.29.0",
+    "rendercanvas>=2.6.0",
+    "fastplotlib",
     "Rtree",
     "scikit-image",
     "scipy",
     "setuptools",
-    "shapely>2.0",
     "shapely>2.1",
     "trimesh>4.0"
 ]
@@ -68,6 +71,10 @@ docs = [
     "furo",
     "triangle",
     "trimesh",
+    "pygfx",
+    "wgpu",
+    "fastplotlib",
+    "rendercanvas"
     "PyQt5"
 ]
 easy = [
@@ -86,12 +93,11 @@ tests = [
 support = [
     "mapbox-earcut",
     "manifold3d",
-    "PyQt5",
     "setuptools",
-    "shapely",
     "shapely>2.1",
     "triangle",
     "trimesh",
+    "wpgu",
 ]
 build = ["build", "hatchling", "requests", "twine"]
 codegen = ["pytest", "numpy", "ruff"]

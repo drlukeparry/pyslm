@@ -11,9 +11,9 @@ import numpy as np
 
 from shapely.geometry import Polygon, MultiPolygon
 
-from .core import Part
-from .geometry import Layer, HatchGeometry, ContourGeometry, PointsGeometry
-from .hatching.utils import getContoursFromShapelyPolygon
+from ..core import Part
+from ..geometry import Layer, HatchGeometry, ContourGeometry, PointsGeometry
+from ..hatching.utils import getContoursFromShapelyPolygon
 
 
 def plotPolygon(polygons: List[Any], zPos: Optional[float] = 0.0,
