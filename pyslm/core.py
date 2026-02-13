@@ -503,6 +503,8 @@ class Part(DocumentObject):
         :return: The vector slice at the given z level
         """
 
+        warnings.warn("This function is deprecated and will be removed in future versions", DeprecationWarning)
+
         if self.geometry is None:
             raise RuntimeError(f"Geometry was not set for Part ({self.name})")
 
@@ -550,7 +552,7 @@ class Part(DocumentObject):
         :return: The vector slice at the given z level
         """
 
-        # warnings.warn("This function is deprecated and will be removed in future versions", DeprecationWarning)
+        warnings.warn("This function is deprecated and will be removed in future versions", DeprecationWarning)
 
         if self.geometry is None:
             raise RuntimeError(f"Geometry was not set for Part ({self.name})")
