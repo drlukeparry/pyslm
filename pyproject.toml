@@ -38,6 +38,7 @@ dependencies = [
     "scipy",
     "setuptools",
     "shapely>2.0",
+    "shapely>2.1",
     "trimesh>4.0"
 ]
 
@@ -67,7 +68,6 @@ docs = [
     "furo",
     "triangle",
     "trimesh",
-    "vispy",
     "PyQt5"
 ]
 easy = [
@@ -89,9 +89,9 @@ support = [
     "PyQt5",
     "setuptools",
     "shapely",
+    "shapely>2.1",
     "triangle",
     "trimesh",
-    "vispy",
 ]
 build = ["build", "hatchling", "requests", "twine"]
 codegen = ["pytest", "numpy", "ruff"]
@@ -122,7 +122,6 @@ include = [
     "pyslm",
     "models",
     "examples"
-
 ]
 
 [tool.pytest.ini_options]
