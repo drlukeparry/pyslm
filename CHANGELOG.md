@@ -5,12 +5,21 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+
+
+### Fixed
+
+
+### Changed
+
+## [0.6.1] - 2026-02-01
+
+### Added
 - Add `pyslm.hatching.utils.getContoursFromShapelyPolygon` [1374dd5373abf4232a91563cdafeb0222e2616d8](https://github.com/drlukeparry/pyslm/commit/1374dd5373abf4232a91563cdafeb0222e2616d8)
 - Pytest Unit Testing Framework [7f5ebceecd27095f478d7fd2d178a55952236c35](https://github.com/drlukeparry/pyslm/commit/7f5ebceecd27095f478d7fd2d178a55952236c35)
 
 ### Fixed
 - Formatting and Linting via Ruff and mypy [c58c38d6cbcad23cc18503d00fc760a7a9c1cbd4](https://github.com/drlukeparry/pyslm/commit/c58c38d6cbcad23cc18503d00fc760a7a9c1cbd4)
-
 
 ### Changed
 - Change build script to use `pyproject.toml` for building PySLM wheels using hatchling (#58) - [cbd78b7950633c5b29db3efe5a246a49d413b280](https://github.com/drlukeparry/pyslm/commit/cbd78b7950633c5b29db3efe5a246a49d413b280)
