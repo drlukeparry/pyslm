@@ -727,12 +727,11 @@ class GridBlockSupport(BlockSupportBase):
             """
 
             # Perform the offseting operation
-            outerPaths = pc.execute(10. / BaseHatcher.CLIPPER_SCALEFACTOR)
-
+            outerPaths = pc.execute(1e-4)
             return outerPaths
 
         else:
-            outerPaths = pc.execute(10. / BaseHatcher.CLIPPER_SCALEFACTOR)
+            outerPaths = pc.execute(1e-4)
 
             # Offset the outer boundary to generate the interior boundary
             pc.clear()
@@ -891,15 +890,9 @@ class GridBlockSupport(BlockSupportBase):
             Only generate the polygon section. This requires processing within pyclipr to process each path
             into the correct order.
             """
-            outerPaths = pc.execute2(10. / BaseHatcher.CLIPPER_SCALEFACTOR)
+            outerPaths = pc.execute(10. / BaseHatcher.CLIPPER_SCALEFACTOR)
+            return outerPaths
 
-            # Process the paths and create valid path rings to form a polygon for triangulation
-            exterior, interior = geometry.sortExteriorInteriorRings(outerPaths, closePolygon=True)
-
-            # Triangulate the surface for re-mapping the mesh to the boundary
-            vy, fy = geometry.triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(2.0))
-
-            return vy, fy
         else:
             outerPaths = pc.execute(10. / BaseHatcher.CLIPPER_SCALEFACTOR)
 
@@ -979,7 +972,7 @@ class GridBlockSupport(BlockSupportBase):
             else:
                 solution = pc2.execute(pyclipr.Intersection, pyclipr.FillRule.NonZero)
 
-        # vy, fy = geometry.triangulatePolygon(bufferPoly)
+        return solution
 
     @staticmethod
     def generateVerticalSteinerPoints(exterior: np.ndarray, interior: List[np.ndarray],
@@ -1045,8 +1038,10 @@ class GridBlockSupport(BlockSupportBase):
         supportSurfCpy = blockSupportSides.split(only_watertight=False)
 
         supportSurf = []
+
         for surf in supportSurfCpy:
-            if surf.area > 5:
+            # Redduced the minimum area fo all supported regions generated
+            if surf.area > 1e-1:
                 supportSurf.append(surf)
 
         if len(supportSurf) < 2:
@@ -1507,10 +1502,20 @@ class GridBlockSupport(BlockSupportBase):
                 idx = 0
                 for sect in section.children:
 
+                    # check if the exterior and interior rings are valid or overlap
                     exterior, interior = geometry.sortExteriorInteriorRings(sect, closePolygon=True)
+
+                    try:
+                        poly = shapely.geometry.Polygon(exterior[0], holes=interior if len(interior) > 0 else None)
+                        if not poly.is_valid:
+                            poly = poly.buffer(0)
+                            continue
+                    except:
+                        continue
+
                     vertsy, facesy = geometry.triangulatePolygonFromPaths(exterior[0],
                                                                           interior,
-                                                                          triangle_args='pa{:.3f}'.format(4.0))
+                                                                          triangle_args='pa{:.3f}'.format(1.0))
                     vy.append(vertsy)
                     fy.append(facesy + idx)
                     idx += len(vertsy)
