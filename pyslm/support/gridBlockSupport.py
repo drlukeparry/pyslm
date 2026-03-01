@@ -1920,6 +1920,23 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
     def supportTeethUpperPenetration(self, distance: float) -> None:
         self._supportTeethUpperPenetration = distance
 
+    @property
+    def numSkinMeshSubdivideIterations(self) -> int:
+        """
+        Number of times to subdivide the exterior skin of the support mesh to increase the resolution to improve the
+        quality of output mesh in order for this to conform with the boundary of the support block volume.
+        The default value is 2.
+        """
+        return self._numSkinMeshSubdivideIterations
+
+    @numSkinMeshSubdivideIterations.setter
+    def numSkinMeshSubdivideIterations(self, iterations: int) -> None:
+
+        if iterations < 0:
+            raise ValueError('Number of skin mesh subdivide iterations must be a positive integer or zero')
+
+        self._numSkinMeshSubdivideIterations = int(iterations)
+
     def identifySupportRegions(self, part: Part, overhangAngle: float,
                                findSelfIntersectingSupport: bool = True) -> List[GridBlockSupport]:
         """
