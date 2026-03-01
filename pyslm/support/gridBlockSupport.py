@@ -1188,7 +1188,19 @@ class GridBlockSupport(BlockSupportBase):
             """
             Form the polygon for the support boundary
             """
-            if self._useLowerSupportTeeth:
+            useLowerSupportTeeth = self._useLowerSupportTeeth
+            useUpperSupportTeeth = self._useUpperSupportTeeth
+
+            """
+            If the height of the lower support teeth is greater than the distance between the top and bottom profiles,
+            then disable the lower support teeth to prevent self-intersecting geometry
+            """
+            minDist = np.min(topPolyVerts[:, 1]) - np.max(bottomPolyVerts[:, 1])
+            if minDist < self._supportTeethHeight:
+                useLowerSupportTeeth = False
+                useUpperSupportTeeth = False
+
+            if useLowerSupportTeeth:
                 # Provide a path interpolator to resample the teeth across the profile
                 ps = trimesh.path.traversal.PathSample(bottomPolyVerts)
 
@@ -1216,7 +1228,7 @@ class GridBlockSupport(BlockSupportBase):
                 teethFinalBottom = ps.sample(xPos)
 
                 # teethFinal = ps.sample(np.clip(patternList[:, 0], 0, ps.length))
-                teethFinalBottom[:, 1] += patternList[idx, 1]
+                teethFinalBottom[:, 1] -= patternList[idx, 1]
 
             """
             The bottom vertex of the path is lower than top indicates (counter-clockwise) when the polygon has its
@@ -1224,7 +1236,7 @@ class GridBlockSupport(BlockSupportBase):
             geometry lies at the top or the bottom of the support volume
             """
 
-            if self._useUpperSupportTeeth:
+            if useUpperSupportTeeth:
 
                 # Provide a path interpolator to resample the teeth across the profile
                 ps = trimesh.path.traversal.PathSample(topPolyVerts)
@@ -1256,12 +1268,12 @@ class GridBlockSupport(BlockSupportBase):
 
             vertexList = []
 
-            if self._useUpperSupportTeeth:
+            if useUpperSupportTeeth:
                 vertexList.append(teethFinalTop)
             else:
                 vertexList.append(topPolyVerts)
 
-            if self._useLowerSupportTeeth:
+            if useLowerSupportTeeth:
                 vertexList.append(teethFinalBottom)
             else:
                 vertexList.append(bottomPolyVerts)
