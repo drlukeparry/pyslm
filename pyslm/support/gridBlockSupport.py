@@ -1101,9 +1101,6 @@ class GridBlockSupport(BlockSupportBase):
             # blockSupportSides.show()
             return []
 
-        topPaths = topPoly3D.paths
-        bottomPaths = bottomPoly3D.paths
-
         if len(topPoly3D.paths) != len(bottomPoly3D.paths):
             blockSupportSides.show()
             # print('numer of paths between top and bottom do not match', len(topPoly3D.paths) , len(bottomPoly3D.paths))
@@ -1282,11 +1279,6 @@ class GridBlockSupport(BlockSupportBase):
             myPolyVerts = np.vstack(vertexList)
 
             """
-            Resample the boundary
-            """
-            myPolyVerts = trimesh.path.traversal.resample_path(myPolyVerts, step=0.25)
-
-            """
             Add additional support to the upper and lower surfaces
             """
             if self._supportWallThickness and self._supportWallThickness > 1e-5:
@@ -1367,8 +1359,14 @@ class GridBlockSupport(BlockSupportBase):
                 #import matplotlib.pyplot as plt
                 #plt.show()
                 raise Exception('Error: exterior count > 1. Increase the support border distance to resolve this issue. ')
+                print('warning: exterior count > 1. Increase the support border distance to resolve this issue. ')
 
-            vy, fy = geometry.triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
+            """
+            Resample the boundary
+            """
+            exterior[0] = np.vstack([exterior[0], exterior[0][0, :]])
+            exterior[0] = trimesh.path.traversal.resample_path(exterior[0], step=0.25)
+
 
             """
             Create the interpolation or mapping function to go from the 2D polygon to the 3D mesh for the support boundary.
