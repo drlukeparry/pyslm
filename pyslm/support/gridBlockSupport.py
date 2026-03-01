@@ -981,22 +981,41 @@ class GridBlockSupport(BlockSupportBase):
 
         # vy, fy = geometry.triangulatePolygon(bufferPoly)
 
-        # Triangulate the polygon - kept as a reference as an alternative
+    @staticmethod
+    def generateVerticalSteinerPoints(exterior: np.ndarray, interior: List[np.ndarray],
+                                      spacingX: Optional[float] = 0.5,
+                                      spacingY: Optional[float] = 1.0) -> np.ndarray:
+        """
+        Generate Steiner points as a regular grid, with non-uniform variation of points
+        distributed in the X and Y axis.
 
-        # pyslm.visualise.plotPolygon(bufferPoly)
-        # simpPolys = pyclipper.SimplifyPolygons(solution)
-        # vy, fy = bufferPoly.triangulate(engine='earcut')
+        :param exterior: Exterior boundary vertices (n x 2)
+        :param interior: List of interior hole boundaries
+        :param spacingX: Horizontal spacing between Steiner points
+        :param spacingY: Vertical spacing between Steiner points
+        :return: Array of Steiner points inside the polygon
+        """
 
-        # poly = Polygon(tuple(map(tuple, exterior[0])), holes=[tuple(map(tuple, ring))for ring in interior])
+        # Create shapely polygon for point-in-polygon test
+        poly = shapely.geometry.Polygon(exterior, holes=interior)
 
-        # vy, fy =  pyslm.support.geometry.triangulateShapelyPolygon(poly, triangle_args='pa{:.3f}'.format(4.0))
-        #vy, fy = pyslm.support.geometry.triangulatePolygonFromPaths(exterior[0], interior,
-        #                                                            triangle_args='pa{:.3f}'.format(4.0))
-        # vy, fy = bufferPoly.triangulate(triangle_args='pa{:.3f}'.format(4.0))
-        # wvy, fy = triangulatePolygon(solution, closed=False)
-        #return vy, fy
+        # Get bounding box
+        bounds = poly.bounds  # (minx, miny, maxx, maxy)
 
-        return solution
+        # Generate grid of candidate points
+        x_coords = np.arange(bounds[0], bounds[2], spacingX)
+        y_coords = np.arange(bounds[1], bounds[3], spacingY)
+
+        steiner_points = []
+
+        # Check each grid point
+        for x in x_coords:
+            for y in y_coords:
+                point = shapely.geometry.Point(x, y)
+                if poly.contains(point):
+                    steiner_points.append([x, y])
+
+        return np.array(steiner_points) if steiner_points else np.array([]).reshape(0, 2)
 
     def generateSupportSkins(self) -> List[trimesh.Trimesh]:
         """
