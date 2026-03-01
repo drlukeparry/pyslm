@@ -1,6 +1,7 @@
 """
 Provides supporting functions to generate geometry for support structures
 """
+
 from typing import List, Optional, Tuple
 import logging
 import collections
@@ -478,6 +479,7 @@ def triangulateShapelyPolygon(polygon: shapely.geometry.Polygon,
     return result['vertices'], result['triangles']
 
 def triangulatePolygonFromPaths(exterior: np.ndarray, interiors: List[np.ndarray],
+                                steiner_points=None,
                                 triangle_args: Optional[str] = None,
                                 **kwargs):
     """
@@ -501,10 +503,13 @@ def triangulatePolygonFromPaths(exterior: np.ndarray, interiors: List[np.ndarray
     # turn the polygon in to vertices, segments, and hole points
     arg = _polygon_to_kwargs2(exterior, interiors)
 
-    # run the triangulation
+    if steiner_points is not None and len(steiner_points) > 0:
+        arg['vertices'] = np.vstack([arg['vertices'], steiner_points])
+
     result = triangulate(arg, triangle_args)
 
     return result['vertices'], result['triangles']
+
 
 
 def _polygon_to_kwargs2(exterior: np.ndarray, interiors:  List[np.ndarray]):
