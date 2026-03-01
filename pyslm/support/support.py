@@ -235,7 +235,7 @@ class BlockSupportBase(SupportStructure):
         blockSupportSides = self._supportVolume.copy()
         sin_theta = utils.getFaceZProjectionWeight(blockSupportSides)
 
-        blockSupportSides.update_faces(sin_theta > (1.0-1e-4))
+        blockSupportSides.updates_faces(sin_theta > (1.0-1e-4))
         blockSupportSides.remove_unreferenced_vertices()
 
         return blockSupportSides
@@ -926,7 +926,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
         # Add padding offset
         verticesIndices += 2
 
-        totalBooleanTime = 0.0
         # Clamp indices to valid range
         verticesIndices[:, 0] = np.clip(verticesIndices[:, 0], 0, heightMapUpper.shape[0] - 1)
         verticesIndices[:, 1] = np.clip(verticesIndices[:, 1], 0, heightMapUpper.shape[1] - 1)
@@ -1112,12 +1111,11 @@ class BlockSupportGenerator(BaseSupportGenerator):
         """
 
         mergedPoly = trimesh.load_path(outline, process=True)
+        mergedPoly.merge_vertices(4)
 
             logging.info('\t - finished generated support height map')
         if useSplineSimplification:
 
-            heightMap = np.pad(heightMap, ((2, 2), (2, 2)), 'constant', constant_values=((1, 1), (1, 1)))
-            heightMapUpper = np.pad(heightMapUpper.T, ((2, 2), (2, 2)), 'constant', constant_values=((1, 1), (1, 1)))
             # round the factor up to the nearest base 10 value
             initial_factor = mergedPoly.area / mergedPoly.length
             logging.debug(f' \t - Spline simplification factor (area/length): {initial_factor}')
