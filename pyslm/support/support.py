@@ -615,8 +615,10 @@ class BlockSupportGenerator(BaseSupportGenerator):
         """ Not implemented """
         raise NotImplementedError('Not Implemented')
 
-    def _identifySelfIntersectionHeightMap(self, subregion: trimesh.Trimesh,
-                                           offsetPoly: trimesh.path.Path2D,
+
+    @staticmethod
+    def _identifySelfIntersectionHeightMap(subregion: trimesh.Trimesh,
+                                           rayProjectionResolution: float,
                                            cutMesh: trimesh.Trimesh,
                                            bbox: np.ndarray) -> Tuple[np.ndarray]:
         """
@@ -626,10 +628,13 @@ class BlockSupportGenerator(BaseSupportGenerator):
         height maps are generated from these ray intersections.
 
         :param subregion: The upper surface (typically overhang surface region)
-        :param offsetPoly: The polygon region defining the support region
+        :param rayProjectionResolution: The ray projection resolution
         :param cutMesh: The lower intersecting surfaces which potentially intersect with the polygon region
         :return: A tuple containing various height maps
         """
+
+        warnings.warn('This function is deprecated and will be removed in the future',
+                      DeprecationWarning, stacklevel=2)
 
         logging.info('\tGenerated support height map (OpenGL Version)')
 
@@ -638,11 +643,18 @@ class BlockSupportGenerator(BaseSupportGenerator):
         bboxCpy[0, 2] -= 1
         bboxCpy[1, 2] += 1
 
-        upperImg = render.projectHeightMap(subregion, self.rayProjectionResolution, False, bboxCpy)
+        if len(subregion.triangles) == 0:
+            raise Exception('Cut mesh has no triangles!')
 
-        # Cut mesh is lower surface
-        lowerImg = render.projectHeightMap(cutMesh, self.rayProjectionResolution, True, bboxCpy)
-        lowerImg = np.flipud(lowerImg)
+        upperImg = render.projectHeightMap(subregion, rayProjectionResolution, False, bboxCpy)
+
+        if len(cutMesh.triangles) == 0:
+            lowerImg = np.zeros(upperImg.shape)
+        else:
+
+            # Cut mesh is lower surface
+            lowerImg = render.projectHeightMap(cutMesh, rayProjectionResolution, True, bboxCpy)
+            lowerImg = np.flipud(lowerImg)
 
         # Generate the difference between upper and lower ray-traced intersections
         heightMap2 = upperImg.copy()

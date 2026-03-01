@@ -81,6 +81,11 @@ class Canvas(app.Canvas):
         self._mesh = None
         self._bbox = None
 
+        self.program = None
+        self._fbo = None  # Initialize to None, create later
+        self._fbo_ready = False  # Track FBO initialization
+        self._program_ready = False
+
         if mesh:
             self.setMesh(mesh)
 
@@ -92,27 +97,24 @@ class Canvas(app.Canvas):
         self._visSize = (meshExtents / self.resolution).flatten()
 
         app.Canvas.__init__(self, 'interactive', show=False, resizable=True, autoswap=False, decorate=False,
-                            size=(self.visSize[0], self.visSize[1]))
+                            vsync=False,
+                            size=(self.visSize[0], self.visSize[1]),
+                            )
 
-        #print('size', self._visSize)
-        #print('dpi', self.dpi)
 
         self.filled = self.filled.astype(np.uint32).flatten()
         self.filled_buf = gloo.IndexBuffer(self.filled)
 
-        vertex_data = np.zeros(self.vertices.shape[0], dtype=[('a_position', np.float32, 3),
+        self.vertex_data = np.zeros(self.vertices.shape[0], dtype=[('a_position', np.float32, 3),
                                                               ('a_color', np.float32, 3)])
 
-        vertex_data['a_position'] = self.vertices.astype(np.float32)
-        vertex_data['a_color'] = self.vertices.astype(np.float32)
-
-        self.program = gloo.Program(vert, frag)
-        self.program.bind(gloo.VertexBuffer(vertex_data))
+        self.vertex_data['a_position'] = self.vertices.astype(np.float32)
+        self.vertex_data['a_color'] = self.vertices.astype(np.float32)
 
         avg = np.mean(self.bbox, axis=0)
 
         if flipDir:
-            self.view = rotate(0, [1, 0, 0])
+            self.view = rotate(0, [-1, 0, 0])
         else:
             self.view = np.dot(np.dot(translate((-avg[0], -avg[1], -avg[2])),
                               rotate(-180, [1,0,0])),
@@ -120,30 +122,64 @@ class Canvas(app.Canvas):
 
 
         self.model = np.eye(4, dtype=np.float32)
-        shape = int(self._visSize[1]), int(self._visSize[0])
+
+        # Store shape for later FBO creation
+        self._fbo_shape = (int(self._visSize[1]), int(self._visSize[0]))
 
         # Create the render texture
-        self._rendertex = gloo.Texture2D((shape + (4,)), format='rgba', internalformat='rgba32f')
-        # self._colorBuffer = gloo.RenderBuffer(self.shape, format='color')
-        self._depthRenderBuffer = gloo.RenderBuffer(shape, format='depth')
-        #self._depthRenderBuffer.resize(shape, format=gloo.gl.GL_DEPTH_COMPONENT16)
+        if False:
+            shape = int(self._visSize[1]), int(self._visSize[0])
+            self._rendertex = gloo.Texture2D((shape + (4,)), format='rgba', internalformat='rgba32f')
+            self._depthRenderBuffer = gloo.RenderBuffer(shape, format='depth')
 
-        # Create FBO, attach the color buffer and depth buffer
-        self._fbo = gloo.FrameBuffer(self._rendertex, self._depthRenderBuffer)
+            # Create FBO, attach the color buffer and depth buffer
+            self._fbo = gloo.FrameBuffer(self._rendertex, self._depthRenderBuffer)
 
         gloo.set_viewport(0, 0, self.physical_size[0], self.physical_size[1])
         gloo.set_viewport(0, 0, self._visSize[0], self._visSize[1])
-        self.projection = ortho(self.bbox[1, 0], self.bbox[0, 0], self.bbox[1, 1], self.bbox[0, 1], 2, 40)
+        self.projection = ortho(self.bbox[1, 0], self.bbox[0, 0], self.bbox[1, 1], self.bbox[0, 1], -1e4, 1e4)
 
-        # Set MVP variables for shaders
-        self.program['u_projection'] = self.projection
-        self.program['u_model'] = self.model
-        self.program['u_view'] = self.view
+        if False:
+
+            # Set MVP variables for shaders
+            self.program['u_projection'] = self.projection
+            self.program['u_model'] = self.model
+            self.program['u_view'] = self.view
 
         gloo.set_clear_color((0.0, 0.0, 0.0, 0.0))
         gloo.set_state('opaque')
 
         self.update()
+
+    def _ensure_fbo(self):
+        """Create FBO when OpenGL context is ready"""
+        if self._fbo_ready:
+            return True
+
+        try:
+            self._rendertex = gloo.Texture2D((self._fbo_shape + (4,)), format='rgba', internalformat='rgba32f')
+            self._depthRenderBuffer = gloo.RenderBuffer(self._fbo_shape, format='depth')
+            self._fbo = gloo.FrameBuffer(self._rendertex, self._depthRenderBuffer)
+
+            # Explicitly activate and validate
+            self._fbo.activate()
+
+            # Check if FBO is complete
+
+            status = gloo.gl.glCheckFramebufferStatus(gloo.gl.GL_FRAMEBUFFER)
+
+            if status != gloo.gl.GL_FRAMEBUFFER_COMPLETE:
+                print(f"FBO incomplete: {status}")
+                self._fbo = None
+                return False
+
+            self._fbo.deactivate()
+            self._fbo_ready = True
+            return True
+        except Exception as e:
+            print(f"Failed to create FBO: {e}")
+            self._fbo = None
+            return False
 
     def on_resize(self, event):
 
@@ -151,19 +187,39 @@ class Canvas(app.Canvas):
 
         gloo.set_viewport(0, 0, self._visSize[0]*2, self._visSize[1]*2)
         self.finalSize = (event.physical_size[0], event.physical_size[1])
-        #print('event physical size', event.physical_size[0], event.physical_size[1])
-        # Zself.projection = ortho(self.box[0, 0], self.box[1, 0], self.box[0, 1], self.box[1, 1], -10, 40)
+
+        """        
         self.projection = ortho(self.bbox[1, 0], self.bbox[0, 0],
                                 self.bbox[1, 1], self.bbox[0, 1],
                                 -self.bbox[1, 2], self.bbox[0, 2])
+                                """
 
         self.projection = ortho(self.bbox[0, 0], self.bbox[1, 0],
                                 self.bbox[0, 1], self.bbox[1, 1],
                                 -1e4,  1e4)
 
-        self.program['u_projection'] = self.projection
+        if self.program:
+            self.program['u_projection'] = self.projection
 
     def on_draw(self, event):
+        # Compile shader program on first draw when context is ready
+        if not self._program_ready:
+            try:
+
+
+                self.program = gloo.Program(vert, frag)
+                self.program.bind(gloo.VertexBuffer(self.vertex_data))
+
+                self.program['u_projection'] = self.projection
+                self.program['u_model'] = self.model
+                self.program['u_view'] = self.view
+
+                self._program_ready = True
+            except Exception as e:
+                print(f"Failed to compile shader: {e}")
+                return
+
+        self._ensure_fbo()
 
         with self._fbo:
             gloo.clear()
@@ -174,9 +230,7 @@ class Canvas(app.Canvas):
             gloo.set_state(blend=True, depth_test=True, polygon_offset_fill=False, cull_face=False)
 
             self.program.draw('triangles', self.filled_buf)
-            # self.rgb = np.copy(self._fbo.read('color')) #_screenshot((0, 0, self.size[0], self.size[1]))  #self._fbo.read('color')
             self.rgb = gloo.read_pixels((0, 0, self._visSize[0], self._visSize[1]), True, out_type='float')
-            #self.rgb = _screenshot((0, 0, *self.physical_size))
 
 
 def projectHeightMap(mesh: trimesh.Trimesh,
@@ -186,7 +240,16 @@ def projectHeightMap(mesh: trimesh.Trimesh,
 
     c = Canvas(mesh, resolution, flipDir, bbox)
 
+    #c.show(visible=True) #previous
     c.show(visible=True)
+
+    # Multiple event cycles to ensure initialization
+    for _ in range(10):
+        c.app.process_events()
+
+    # Manually trigger draw
+    c.update()
+    c.app.process_events()
     c.close()
 
     if c.rgb is None:
