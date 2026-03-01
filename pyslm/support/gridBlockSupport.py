@@ -175,6 +175,7 @@ class GridBlockSupport(BlockSupportBase):
     @useLowerSupportTeeth.setter
     def useLowerSupportTeeth(self, state: bool) -> None:
         self._useLowerSupportTeeth = state
+
     @property
     def supportTeethHeight(self) -> float:
         """
@@ -592,48 +593,44 @@ class GridBlockSupport(BlockSupportBase):
                 isccw = seg[-1, 1] < seg[0, 1]
                 dir = -1.0 if isccw else 1.0
 
-                repPattern = self.toothProfile()
+                if self._useLowerSupportTeeth or self._useUpperSupportTeeth:
 
-                patternLen = repPattern[-1, 0]
+                    """ Generate the tooth profile pattern and repeat across the length of the support edge """
+                    repPattern = self.toothProfile()
 
-                numCycles = int(np.ceil(ps.length / patternLen))
-                patternList = []
+                    patternLen = repPattern[-1, 0]
 
-                for i in range(numCycles):
-                    tPattern = repPattern.copy()
-                    tPattern[:, 0] += patternLen * i
-                    patternList.append(tPattern)
+                    numCycles = int(np.ceil(ps.length / patternLen))
+                    patternList = []
 
-                patternList = np.vstack(patternList)
+                    for i in range(numCycles):
+                        tPattern = repPattern.copy()
+                        tPattern[:, 0] += patternLen * i
+                        patternList.append(tPattern)
 
-                """
-                Clip the interpolate positions. Trimesh PathSampler clips and repeats values, therefore only unique
-                values are selected and used for generating the teeth profile
-                """
-                xPos, idx = np.unique(np.clip(patternList[:, 0], 0, ps.length), return_index=True)
-                teethFinal = ps.sample(xPos)
+                    patternList = np.vstack(patternList)
 
-                teethFinal[:, 0] += dir * patternList[idx, 1]
+                    """
+                    Clip the interpolate positions. Trimesh PathSampler clips and repeats values, therefore only unique
+                    values are selected and used for generating the teeth profile
+                    """
+                    xPos, idx = np.unique(np.clip(patternList[:, 0], 0, ps.length), return_index=True)
+                    teethFinal = ps.sample(xPos)
 
-                """
-                If the number of teeth profiles is beyond the length of the support edge, then exclude the use of a
-                tooth and use the original edge
-                """
-                if numCycles == 1:
-                    teethFinal = seg
+                    teethFinal[:, 0] += dir * patternList[idx, 1]
 
-                # Prevent the generation of lower or upper support teeth
-                if not self._useLowerSupportTeeth and dir > 0:
+                    """
+                    If the number of teeth profiles is beyond the length of the support edge, then exclude the use of a
+                    tooth and use the original edge
+                    """
+                    if numCycles == 1:
+                        teethFinal = seg
+                else:
                     teethFinal = seg
 
                 if dir > 0:
                     lowerPaths.append(teethFinal)
-
-                # Prevent the generation of lower support teeth
-                if not self._useUpperSupportTeeth and dir < 0:
-                    teethFinal = seg
-
-                if dir < 0:
+                elif dir < 0:
                     upperPaths.append(teethFinal)
 
                 newPaths.append(teethFinal)
@@ -1840,7 +1837,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
 
     @property
     def useLowerSupportTeeth(self) -> bool:
-        return self._useUpperSupportTeeth
+        return self._useLowerSupportTeeth
 
     @useLowerSupportTeeth.setter
     def useLowerSupportTeeth(self, state: bool) -> None:
