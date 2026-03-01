@@ -3,9 +3,8 @@ Provides classes and methods for the creation of grid block supports for use typ
 """
 import sys
 from enum import IntEnum
-from typing import Any, Optional, List, Tuple
+from typing import Any, Optional, List, Tuple, Union
 import logging
-
 import warnings
 
 import trimesh
@@ -73,7 +72,7 @@ class GridBlockSupport(BlockSupportBase):
     :attr:`~GridBlockSupport.supportTeethTopLength`, :attr:`~GridBlockSupport.supportTeethBottomLength`,
     :attr:`~GridBlockSupport.supportTeethBaseInterval` and an additional self-penetration distance (
     :attr:`~GridBlockSupport.supportTeethUpperPenetration` and
-    :attr:`~GridBlockSupport.supportTeethLowerPenetration`) to enhance the strength of the support by over- scanning
+    :attr:`~GridBlockSupport.supportTeethLowerPenetration`) to enhance the strength of the support by over-scanning
     material within the solid part internally. The tooth profile is repeated across the upper edge of the intersected
     support volume using an internal overrideable function :meth:`toothProfile`. The generation of support teeth on
     the upper and lower surfaces may be individually toggled by setting
@@ -555,7 +554,6 @@ class GridBlockSupport(BlockSupportBase):
         """
         Multiple polygon intersection may be generated and require processing separately
         """
-
         offsetPaths = []
 
         for path in paths:
@@ -882,10 +880,6 @@ class GridBlockSupport(BlockSupportBase):
         """
         pc = pyclipr.ClipperOffset()
         pc.scaleFactor = BaseHatcher.CLIPPER_SCALEFACTOR
-        # Offset the outer path to provide a clean boundary to work with
-        # paths2 = np.hstack([myPolyVerts, np.arange(len(myPolyVerts)).reshape(-1, 1)])
-        # paths2 = list(map(tuple, paths2))
-        # clipPaths = BaseHatcher.scaleToClipper(paths2)
 
         """
         Offset the paths interior
