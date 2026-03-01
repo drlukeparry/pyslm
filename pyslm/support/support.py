@@ -1009,78 +1009,94 @@ class BlockSupportGenerator(BaseSupportGenerator):
         #ab.show(smooth=False)
         return supportVolume, intersectsPart
 
+    @staticmethod
+    def extrudeTriangulation(vertices: np.ndarray,
+                             faces: np.ndarray,
+                             height:float ,
+                             transform=None, **kwargs) -> trimesh.Trimesh:
+        """
+        Extrude a 2D triangulation into a watertight mesh with metadata for surface identification.
 
+        Returns a mesh with face metadata indicating 'top', 'bottom', or 'side' surfaces.
+        """
+
+        def _cross_2d(a, b):
             """
-            Create an extrusion at the vertical extent of the part and perform self-intersection test
+            Numpy 2.0 depreciated cross products of 2D arrays.
             """
-            extruMesh2Flat = subregion.copy()
-            extruMesh2Flat.vertices[:, 2] = 0.0
+            return a[:, 0] * b[:, 1] - a[:, 1] * b[:, 0]
 
-            extruMesh2 = trimesh.creation.extrude_triangulation(extruMesh2Flat.vertices[:, :2], extruMesh2Flat.faces, 100)
+        vertices = np.asanyarray(vertices, dtype=np.float64)
+        height = float(height)
+        faces = np.asanyarray(faces, dtype=np.int64)
 
-            # Position the upper-surface of the mesh just below the upper surface (1e-2) to avoid self-intersection
-            eMesh2Idx = extruMesh2.vertices[:, 2] > 1.0
-            extruMesh2.vertices[eMesh2Idx, 2] = subregion.vertices[:, 2] - 0.01
-            extruMesh = extruMesh2
-            #extruMesh = extrudeFace(subregion, 0.0)
-            #extruMesh.vertices[:, 2] = extruMesh.vertices[:, 2] - 0.01
+        from trimesh import util, tol, grouping
+        import trimesh.transformations as tf
+        from trimesh.geometry import faces_to_edges
 
-            timeIntersect = time.time()
+        if not util.is_shape(vertices, (-1, 2)):
+            raise ValueError("Vertices must be (n,2)")
+        if not util.is_shape(faces, (-1, 3)):
+            raise ValueError("Faces must be (n,3)")
+        if np.abs(height) < tol.merge:
+            raise ValueError("Height must be nonzero!")
 
-            logging.info('\t - start intersecting mesh')
+        # check the winding of the first few triangles
+        signs = _cross_2d(
+            np.subtract(*vertices[faces[:10, :2].T]), np.subtract(*vertices[faces[:10, 1:].T])
+        )
 
-            bbox = extruMesh.bounds
-            cutMesh = geometry.boolIntersect(part.geometry, extruMesh)
-            logging.info('\t\t - Mesh intersection time using manifold: {:.3f}s'.format(time.time() - timeIntersect))
-            logging.info('\t -  Finished intersecting mesh')
-            totalBooleanTime += time.time() - timeIntersect
+        # make sure the triangulation is aligned with the sign of the height
+        if len(signs) > 0 and np.sign(signs.mean()) != np.sign(height):
+            faces = np.fliplr(faces)
 
-            # Note this a hard tolerance
-            if cutMesh.volume < BlockSupportGenerator._intersectionVolumeTolerance:
+        # stack the (n,3) faces into (3*n, 2) edges
+        edges = faces_to_edges(faces)
+        edges_sorted = np.sort(edges, axis=1)
+        edges_unique = grouping.group_rows(edges_sorted, require_count=1)
 
-                if self._useApproxBasePlateSupport:
-                    """
-                    Create a support structure that extends to the base plate (z=0)
+        # (n, 2, 2) set of line segments
+        boundary = vertices[edges[edges_unique]]
 
-                    NOTE - not currently used - edge smoothing cannot be performed despite this being a
-                    quicker methods, it suffer sever quality issues with jagged edges so should be avoided.
-                    """
-                    logging.info('Creating Approximate Base-Plate Support')
+        # Create vertical faces
+        vertical = np.tile(boundary.reshape((-1, 2)), 2).reshape((-1, 2))
+        vertical = np.column_stack((vertical, np.tile([0, height, 0, height], len(boundary))))
+        vertical_faces = np.tile([3, 1, 2, 2, 1, 0], (len(boundary), 1))
+        vertical_faces += np.arange(len(boundary)).reshape((-1, 1)) * 4
+        vertical_faces = vertical_faces.reshape((-1, 3))
 
-                    extruMesh.visual.face_colors[:, :3] = np.random.randint(254, size=3)
+        # Stack vertices
+        vertices_3D = util.stack_3D(vertices)
 
-                    # Create a support block object
-                    baseSupportBlock = BlockSupportBase(supportObject=part,
-                                                        supportVolume=extruMesh,
-                                                        supportSurface=subregion)
+        # Track face counts for metadata
+        num_bottom = len(faces)
+        num_top = len(faces)
+        num_side = len(vertical_faces)
 
-                    supportBlockRegions.append(baseSupportBlock)
+        faces_seq = [faces[:, ::-1], faces.copy(), vertical_faces]
+        vertices_seq = [vertices_3D, vertices_3D.copy() + [0.0, 0, height], vertical]
 
-                    continue  # No self intersection with the part has taken place with the support
-            elif not findSelfIntersectingSupport:
-                continue
+        # Append sequences
+        vertices, faces = util.append_faces(vertices_seq, faces_seq)
 
-            v0 = np.array([[0., 0., 1.0]])
+        # Create metadata for face types
+        face_metadata = np.empty(len(faces), dtype=object)
+        face_metadata[:num_bottom] = 'bottom'
+        face_metadata[num_bottom:num_bottom + num_top] = 'top'
+        face_metadata[num_bottom + num_top:] = 'side'
 
-            # Identify Support Angles
-            v1 = cutMesh.face_normals
-            theta = np.arccos(np.clip(np.dot(v0, v1.T), -1.0, 1.0))
-            theta = np.degrees(theta).flatten()
+        if transform is not None:
+            vertices = tf.transform_points(vertices, transform)
+            if tf.flips_winding(transform):
+                faces = np.ascontiguousarray(np.fliplr(faces))
 
-            cutMeshUpper = cutMesh.copy()
-            cutMeshUpper.update_faces(theta < 89.95)
-            cutMeshUpper.remove_unreferenced_vertices()
+        # Create mesh with metadata
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces)#, process=False)
+        mesh.metadata['face_type'] = face_metadata
 
-            # Toggle to use full intersecting mesh
-            TOL_OFFSET = 1000
-            cutMeshUpperCpy = cutMeshUpper.copy()
-            cutMeshUpperCpy.vertices[:, 2] += TOL_OFFSET
+        return mesh
 
-            subregionCpy = subregion.copy()
-            subregionCpy.vertices[:, 2] += TOL_OFFSET
 
-            # Use a ray-tracing approach to identify self-intersections. This provides a method to isolate regions that
-            # either are self-intersecting or not.
     def processOutline(self, outline: shapely.geometry.Polygon,
                        rayProjectionResolution: float,
                        useSplineSimplification: Optional[bool] = True) -> List[shapely.geometry.Polygon]:
