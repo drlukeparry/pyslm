@@ -417,7 +417,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
     :class:`BlockSupportBase` that precisely conforms the boundary of the part if there are self-intersections.
     """
 
-    _supportSkinSideTolerance = 1.0 - 1e-3
+    _supportSkinSideTolerance: float = 1.0 - 1e-3
     """
     The support skin side tolerance is used for masking the extrusions side faces when generating the polygon region
     for creating the surrounding support skin.
@@ -426,12 +426,23 @@ class BlockSupportGenerator(BaseSupportGenerator):
     can be extracted.
     """
 
-    _intersectionVolumeTolerance = 50
+    _intersectionVolumeTolerance: float = 1e-3
     """
     An internal tolerances used to determine if the projected volume intersects with the part
     """
 
-    _gaussian_blur_sigma = 1.0
+    _min_ray_projection_resolution: float = 0.02
+    """ 
+    The minimum ray projection resolution used to restrict the minimum size of the framebuffer used for rasterisation,
+    when the auto option is selected.
+    """
+
+    TOL_OFFSET: float = 1000.0
+    """
+    Internal offset used to seperate the upper and lower projection height maps when using the OpenGL rasterisation
+    """
+
+    _gaussian_blur_sigma: float = 1.0
     """
     The internal parameter is used for blurring the calculated depth field to smooth out the boundaries. Care should
     be taken to keep this low as it will artificially offset the boundary of the support
@@ -448,15 +459,15 @@ class BlockSupportGenerator(BaseSupportGenerator):
         self._lowerProjectionOffset = 0.05 # mm
         self._upperProjectionOffset = 0.05 # mm
 
-        self._innerSupportEdgeGap = 0.2  # mm (default = 0.1)
-        self._outerSupportEdgeGap = 0.5  # mm  - offset between part supports and baseplate supports
+        self._innerSupportEdgeGap = 0.1  # mm - offset between adjacent support regions
+        self._outerSupportEdgeGap = 0.1  # mm  - offset between part supports and baseplate supports
         self._simplifyMeshPolygonFactor = 0.5 ## default = 0.5 (used for simplifying the polygon following isocurve extraction
 
-        self._triangulationSpacing = 2.0  # mm (default = 1)
 
+        # Redundant
+        self._triangulationSpacing = 2.0  # mm (default = 1)
         self._overhangAngle = 45.0  # [deg]
 
-        self._useApproxBasePlateSupport = False  #
         self._depthRenderer = None
 
     def __str__(self) -> str:
@@ -474,7 +485,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
         :return: The gradient threshold used.
 
         """
-        return 5.0 * np.tan(np.deg2rad(overhangAngle)) * rayProjectionDistance
+        return 4.0 * np.tan(np.deg2rad(overhangAngle)) * rayProjectionDistance # originally multiplier of 5.0
 
     @property
     def splineSimplificationFactor(self) -> Union[float,str]:
@@ -1113,7 +1124,6 @@ class BlockSupportGenerator(BaseSupportGenerator):
         mergedPoly = trimesh.load_path(outline, process=True)
         mergedPoly.merge_vertices(4)
 
-            logging.info('\t - finished generated support height map')
         if useSplineSimplification:
 
             # round the factor up to the nearest base 10 value
