@@ -230,6 +230,8 @@ def plot(layer: Layer,
 
                 if plot3D:
                     segs = np.column_stack([segs.reshape(-1, 2), np.full(segs.shape[0] * 2, zPos)])
+                else:
+                    segs = np.column_stack([segs.reshape(-1, 2), np.full(segs.shape[0] * 2, 0.0)])
 
 
                 lineColor = '#204a87'
@@ -283,7 +285,7 @@ def plot(layer: Layer,
                     plot_obj[0,0].add_scatter(scatterPoints3D, sizes=5, colors=(0.0,0.0,0.0,1.0))
 
                 else:
-                    plot_obj[0,0].add_(scatterPoints, sizes=5, colors=(0.0,0.0,0.0,1.0))
+                    plot_obj[0,0].add_scatter(scatterPoints, sizes=5, colors=(0.0,0.0,0.0,1.0))
 
 
     if(show):
