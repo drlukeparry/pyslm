@@ -1362,7 +1362,16 @@ class GridBlockSupport(BlockSupportBase):
             exterior[0] = np.vstack([exterior[0], exterior[0][0, :]])
             exterior[0] = trimesh.path.traversal.resample_path(exterior[0], step=0.25)
 
+            """
+            Add Steiner Points:
+            Inclusion of steiner points to regularise the triangulation and improve mesh quality
+            """
+            steiner_pts = GridBlockSupport.generateVerticalSteinerPoints(exterior[0], interior, spacingY=1.0)
 
+            #vy, f§y = geometry.triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
+            vy, fy = geometry.triangulatePolygonFromPaths(exterior[0], interior,
+                                                          steiner_points=steiner_pts,
+                                                          triangle_args='pa{:.3f}'.format(4.0)) #0.3 used
             """
             Create the interpolation or mapping function to go from the 2D polygon to the 3D mesh for the support boundary.
             This is done based on the top most projected curve.
