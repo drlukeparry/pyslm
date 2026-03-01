@@ -1022,17 +1022,53 @@ class GridBlockSupport(BlockSupportBase):
         """
         Extract the top and bottom surfaces of the mesh that are perpendicular to the z direction
         """
-        blockSupportSides = blockSupportMesh.copy()
-        blockSupportSides.fix_normals()
-        blockSupportSides.merge_vertices(digits_vertex=3)
-        sin_theta = utils.getFaceZProjectionWeight(blockSupportSides, useConnectivity=False)
+        if 'face_type' in blockSupportMesh.metadata:
+            logging.info('\t - Manifold: Boolean intersection not used. Resolving metadata for support skin extraction')
+            face_metadata = blockSupportMesh.metadata['face_type']
 
-        # First mask removes very small faces
-        # Second mask isolates the outside region
-        mask = blockSupportSides.area_faces > 1e-6
-        mask2 = sin_theta < BlockSupportGenerator._supportSkinSideTolerance
-        mask3 = np.logical_and(mask, mask2)
-        blockSupportSides.update_faces(mask3)
+            # Extract bottom faces
+            bottom_mask = face_metadata == 'bottom'
+            bottom = blockSupportMesh.copy()
+            bottom.update_faces(bottom_mask)
+
+            # Extract top faces
+            top_mask = face_metadata == 'top'
+            top = blockSupportMesh.copy()
+            top.update_faces(top_mask)
+
+            # Extract side faces for processing if required
+            blockSupportSides = blockSupportMesh.copy()
+
+            new_mask = (face_metadata == 'bottom') | (face_metadata == 'top')
+            blockSupportSides.update_faces(new_mask)
+        else:
+            # Fallback to existing Z-projection method
+            blockSupportSides = blockSupportMesh.copy()
+            blockSupportSides.fix_normals()
+            blockSupportSides.merge_vertices(digits_vertex=3)
+            sin_theta = utils.getFaceZProjectionWeight(blockSupportSides, useConnectivity=False)
+
+            normals = blockSupportSides.face_normals
+            # ensure the normals are normalised
+
+            TOL = 5e-3
+            initialSideMask = np.abs(normals[:, 2]) < TOL
+
+            # Use face adjacency to refine the mask
+            face_adjacency = blockSupportSides.face_adjacency
+
+            # Expand side mask using adjacency - propagate to neighboring faces
+            sideMask = initialSideMask.copy()
+
+            for iteration in range(2):  # Iterate to propagate adjacency
+                for i, (f1, f2) in enumerate(face_adjacency):
+                    # If one face is a side, propagate to adjacent face if it has weak Z-component
+                    if sideMask[f1] and  np.abs(normals[:, 2])[f2] < TOL:
+                        sideMask[f2] = True
+                    elif sideMask[f2] and  np.abs(normals[:, 2])[f1] < TOL:
+                        sideMask[f1] = True
+
+            blockSupportSides.update_faces(~sideMask)
 
         # Split the top and bottom surfaces to a path - guaranteed to be a manifold 2D polygon
         supportSurfCpy = blockSupportSides.split(only_watertight=False)
