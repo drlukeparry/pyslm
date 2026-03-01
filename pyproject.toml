@@ -74,7 +74,7 @@ docs = [
     "pygfx",
     "wgpu",
     "fastplotlib",
-    "rendercanvas"
+    "rendercanvas",
     "PyQt5"
 ]
 easy = [
