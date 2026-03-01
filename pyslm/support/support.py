@@ -13,9 +13,9 @@ except Exception:
     raise Exception("Mapbox earcut is required to use the support.geometry submodule")
 
 try:
-    import vispy
+    import wgpu
 except Exception:
-    raise Exception("Vispy is required to use the support.geometry submodule")
+    raise Exception("Wgpu is required to use the support.geometry submodule")
 
 import abc
 
@@ -422,8 +422,8 @@ class BlockSupportGenerator(BaseSupportGenerator):
     The support skin side tolerance is used for masking the extrusions side faces when generating the polygon region
     for creating the surrounding support skin.
 
-    By masking the regions, the upper and lower surfaces of the extruded
-    volume are separated and their 3D boundaries can be extracted.
+    By masking the regions, the upper and lower surfaces of the extruded volume are separated and their 3D boundaries
+    can be extracted.
     """
 
     _intersectionVolumeTolerance = 50
@@ -457,6 +457,7 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
         self._useApproxBasePlateSupport = False  #
         self._splineSimplificationFactor = 20.0
+        self._depthRenderer = None
 
     def __str__(self) -> str:
         return 'BlockSupportGenerator'
@@ -638,6 +639,82 @@ class BlockSupportGenerator(BaseSupportGenerator):
         heightMap2[mask] = lowerImg[mask]
 
         return heightMap2.T, upperImg, lowerImg
+
+
+    def _identifyOccludedHeightMap(self,
+                                   subregion: trimesh.Trimesh,
+                                   rayProjectionResolution: float,
+                                   partMesh: trimesh.Trimesh,
+                                   bbox: np.ndarray = None) -> Tuple[np.ndarray]:
+        """
+        Optimised version of :meth:`BlockSupportGenerator_identifySelfIntersectionHeightMap` using
+        meth:`render3.LowLevelDepthRenderer`.
+
+        The renderer is stored as an object attribute (self._depthRenderer) and is lazily initialized
+        on first use. For subsequent calls, only the mesh data is updated (fast GPU upload).
+
+        :param subregion: The upper surface (typically overhang surface region)
+        :param rayProjectionResolution: The ray resolution
+        :param part: The lower intersecting surfaces which potentially intersect with the polygon region
+        :param bbox: The bounding box for the region
+        :return: A tuple containing various height maps (heightMap2.T, upperImg, lowerImg)
+
+        """
+        from . import occlusionRenderer
+
+        logging.info('\tGenerated support height map - occluded version (WGPU Version)')
+
+        # Extend the bounding box extents in the Z direction
+        if bbox is None:
+            bboxCpy = subregion.bounds.copy()
+        else:
+            bboxCpy = bbox.copy()
+
+        bboxCpy[0, 2] -= 1
+        bboxCpy[1, 2] += 1
+        #bboxCpy[:,2] += BlockSupportGenerator.TOL_OFFSET
+
+        if len(subregion.triangles) == 0:
+            raise Exception('Subregion mesh has no triangles!')
+
+        # Initialize renderer lazily on first use
+        if self._depthRenderer is None:
+            logging.info('\tInitialising reusable WGPU depth renderer')
+
+            # Initialize renderer once
+            self._depthRenderer = occlusionRenderer.OverhangMaskRenderer(
+                mesh=subregion,
+                overhangMesh=subregion,
+                bbox=subregion.bounds,
+                resolution=rayProjectionResolution,
+                flipDir=True
+            )
+
+
+        # Reuse existing renderer - just update mesh and resolution
+        self._depthRenderer.setMesh(mesh=subregion, overhangMesh=subregion, bbox=subregion.bounds, resolution=rayProjectionResolution)
+        self._depthRenderer.flipDir = True
+
+        # Render upper surface
+        self._depthRenderer.renderWithoutOverhangMask()
+        upperImg = self._depthRenderer.heightMap
+
+        # Update renderer for lower surface (flip direction)
+        self._depthRenderer.setMesh(mesh=partMesh, overhangMesh=subregion, bbox=subregion.bounds, resolution=rayProjectionResolution)
+        self._depthRenderer.flipDir = True
+        self._depthRenderer.renderWithOverhangMask()
+
+        lowerImg = self._depthRenderer.heightMap
+        upperImg = np.flipud(upperImg)
+        lowerImg = np.flipud(lowerImg)
+
+        # Generate the difference between upper and lower ray-traced intersections
+        heightMapDelta = upperImg.copy()
+        mask = lowerImg > 1.01
+        heightMapDelta[mask] = lowerImg[mask]
+
+        return heightMapDelta.T, upperImg, lowerImg
+
 
     def _identifySelfIntersectionHeightMapRayTracing(self, subregion: trimesh.Trimesh,
                                                      offsetPoly: trimesh.path.Path2D,
