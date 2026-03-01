@@ -888,61 +888,127 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
         return simplified
 
+    def projectSupportVolume(self, poly: shapely.geometry.Polygon,
+                             bbox: np.ndarray, rayProjectionRes: float,
+                             heightMapUpper: np.ndarray, heightMapLower: np.ndarray,
+                             findSelfIntersectingSupport: bool = True) -> Union[trimesh.Trimesh, bool]:
+        """
+        Projects the support polygon using sample heights from heightMapUpper and heightMapLower and extrudes the
+        polygon  non-uniformly across the lower and upper height maps to produce a support volume regions.
 
-        :param part: Part for generating support structures for
-        :param overhangAngle: Overhang angle (degrees)
-        :param findSelfIntersectingSupport: Generates supports that intersect with the part
-
-        :return: A list of BlockSupports
+        :param poly: The support region polygon to extrude
+        :param bbox: The bounding box for the polygon region
+        :param rayProjectionRes: The ray projection resolution used for the creation of the height maps
+        :param heightMapUpper: The previously identified height map (upper-surface)
+        :param heightMapLower:The previously identified height map (lower-surface)
+        :return: A Tuple of the trimesh mesh representing the extruded support volume, and a boolean indicating if the support
+                 intersects with the part.
         """
 
-        overhangSubregions = utils.getOverhangMesh(part, overhangAngle, True)
+        meanThickness, minThickness, maxThickness = geometry.calculatePolygonThickness(poly, rayProjectionRes)
 
-        supportBlockRegions = []
+        """
+        Triangulate the polygon into a planar mesh
+        """
+        triangleSpacing = min(meanThickness / 3.0, rayProjectionRes)
+        triangleSpacing = rayProjectionRes
+        logging.info(f"  \t - Projecting Support Volume")
+        logging.info(f"  \t   - Mean Thickness: {meanThickness:.3f} mm")
+        logging.info(f"  \t   - Triangle Spacing {triangleSpacing:.3f}")
+        poly_tri = trimesh.creation.triangulate_polygon(poly,
+                                                        triangle_args='pa{:.3f}'.format(triangleSpacing),
+                                                        engine='triangle')
+
+        # Convert polygon vertices to heightMap indices
+        verticesOffset = poly_tri[0] - bbox[0, :2]
+        verticesIndices = (verticesOffset / rayProjectionRes).astype(np.int32)
+
+        # Add padding offset
+        verticesIndices += 2
 
         totalBooleanTime = 0.0
+        # Clamp indices to valid range
+        verticesIndices[:, 0] = np.clip(verticesIndices[:, 0], 0, heightMapUpper.shape[0] - 1)
+        verticesIndices[:, 1] = np.clip(verticesIndices[:, 1], 0, heightMapUpper.shape[1] - 1)
 
-        """ Process sub-regions"""
-        for subregion in overhangSubregions:
+        # Sample heights from both heightMaps
+        upperHeights = heightMapUpper[verticesIndices[:, 0], verticesIndices[:, 1]] - BlockSupportGenerator.TOL_OFFSET
+        lowerHeights = heightMapLower[verticesIndices[:, 0], verticesIndices[:, 1]] - BlockSupportGenerator.TOL_OFFSET
 
-            logging.info('Processing subregion')
-            try:
-                polygon = SupportStructure.flattenSupportRegion(subregion)
-            except:
-                logging.warning('PySLM: Could not flatten region')
-                continue
 
-            # mergedPoly = trimesh.load_path(outline)
-            # mergedPoly.merge_vertices(1)
-            # mergedPoly = mergedPoly.simplify_spline(self._splineSimplificationFactor)
+        intersectsPart = np.any(lowerHeights > 1e-5)
 
-            # Simplify the polygon to ease simplify extrusion and offset in 2D the support region projection
-            offsetShape = polygon.simplify(self.simplifyPolygonFactor, preserve_topology=False)
-            offsetShape = offsetShape.buffer(-self.outerSupportEdgeGap)
+        if not findSelfIntersectingSupport and intersectsPart:
+            return trimesh.Trimesh(), intersectsPart
 
-            if offsetShape is None or offsetShape.area < self.minimumAreaThreshold:
-                logging.info('\t - Note: skipping shape (area too small)')
-                continue
+        # Create upper surface vertices
+        coords2 = np.column_stack([poly_tri[0], upperHeights + self.upperProjectionOffset])
 
-            if isinstance(offsetShape, shapely.geometry.MultiPolygon):
-                offsetPolyList = []
-                for poly in offsetShape.geoms:
-                    triPath = trimesh.load_path(poly, process=False)  # .simplify_spline(self._splineSimplificationFactor)
-                    if triPath.is_closed and triPath.area > self.minimumAreaThreshold:
+        # Create lower surface vertices
+        coords3 = np.column_stack([poly_tri[0], lowerHeights - self.lowerProjectionOffset])
 
-                        offsetPolyList.append(triPath)
+        # Handle invalid heights (baseplate support case)
+        mask_invalid_lower = lowerHeights < 1e-5
+        if np.any(mask_invalid_lower):
+            coords3[mask_invalid_lower, 2] = 0.0
 
-                if not offsetPolyList:
-                    logging.info('\t - Note: skipping shape - no valid regions identified')
-                    continue
+        mask_invalid_upper = upperHeights < -1
+        if np.any(mask_invalid_upper):
+            coords2[mask_invalid_upper, 2] = 0.0
+            raise Exception('Projections are not matching (Upper Surface) - please report a bug')
 
-                offsetPoly = offsetPolyList[0]
 
-                for poly in offsetPolyList[1:]:
-                    offsetPoly += poly
+        # set the z coordinates for the lower surface
+        coords1 = np.column_stack([poly_tri[0], np.array(0) * np.ones(len(poly_tri[0]))])
 
-            else:
-                offsetPoly = trimesh.load_path(offsetShape)  # .simplify_spline(self._splineSimplificationFactor)
+        # Create the upper surface mesh
+        surf2 = trimesh.Trimesh(vertices=coords1, faces=poly_tri[1], process=True)
+
+        # Perform a simple 2D prismatic extrusion on the mesh
+        supportVolume = BlockSupportGenerator.extrudeTriangulation(surf2.vertices[:, :2], surf2.faces, 100)
+
+        if True:
+            """ Section for coloring the bottom and upper surfaces for visualisation purposes """
+            # Colour-code faces based on metadata['face_type'] (if available).
+            # Initialize default face colours (RGBA)
+            default_color = np.array([200, 200, 200, 255], dtype=np.uint8)
+            supportVolume.visual.face_colors = np.tile(default_color, (len(supportVolume.faces), 1))
+
+            faceType = supportVolume.metadata.get('face_type') if hasattr(supportVolume, 'metadata') else None
+            if faceType is not None:
+                ft = np.array(faceType, dtype=object)
+                # Attempt string labels first, fallback to numeric codes
+                lowerFaces = np.array([], dtype=int)
+                upperFaces = np.array([], dtype=int)
+                try:
+                    lowerFaces = np.where(ft == 'bottom')[0]
+                    upperFaces = np.where(ft == 'top')[0]
+                except Exception:
+                    try:
+                        lowerFaces = np.where(ft == 0)[0]
+                        upperFaces = np.where(ft == 2)[0]
+                    except Exception:
+                        pass
+
+                if lowerFaces.size:
+                    supportVolume.visual.face_colors[lowerFaces, :3] = np.array([255, 128, 0], dtype=np.uint8)  # bottom: orange
+                if upperFaces.size:
+                    supportVolume.visual.face_colors[upperFaces, :3] = np.array([0, 128, 255], dtype=np.uint8)  # top: cyan
+
+        # Identify the upper and lower surfaces based on the prismatic extrusion
+        lowerIdx = supportVolume.vertices[:, 2] < 1
+        upperIdx = supportVolume.vertices[:, 2] > 1
+
+        # Assign the coordinates for the upper and lower surface
+        supportVolume.vertices[lowerIdx] = coords2
+        supportVolume.vertices[upperIdx] = coords3
+
+        supportVolume.fix_normals()
+        supportVolume.merge_vertices()
+
+        #ab.show(smooth=False)
+        return supportVolume, intersectsPart
+
 
             """
             Create an extrusion at the vertical extent of the part and perform self-intersection test
