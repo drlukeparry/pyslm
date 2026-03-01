@@ -443,20 +443,20 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
         self._minimumAreaThreshold = 5.0  # mm^2 (default = 5.0)
         self._rayProjectionResolution = 'auto'  # mm (default = 0.2)
+        self._splineSimplificationFactor = 'auto' # default = auto
 
         self._lowerProjectionOffset = 0.05 # mm
         self._upperProjectionOffset = 0.05 # mm
 
         self._innerSupportEdgeGap = 0.2  # mm (default = 0.1)
         self._outerSupportEdgeGap = 0.5  # mm  - offset between part supports and baseplate supports
+        self._simplifyMeshPolygonFactor = 0.5 ## default = 0.5 (used for simplifying the polygon following isocurve extraction
 
         self._triangulationSpacing = 2.0  # mm (default = 1)
-        self._simplifyPolygonFactor = 0.5
 
         self._overhangAngle = 45.0  # [deg]
 
         self._useApproxBasePlateSupport = False  #
-        self._splineSimplificationFactor = 20.0
         self._depthRenderer = None
 
     def __str__(self) -> str:
@@ -477,14 +477,17 @@ class BlockSupportGenerator(BaseSupportGenerator):
         return 5.0 * np.tan(np.deg2rad(overhangAngle)) * rayProjectionDistance
 
     @property
-    def splineSimplificationFactor(self) -> float:
+    def splineSimplificationFactor(self) -> Union[float,str]:
         """
-        The simplification factor using a spline approximation approach for smoothening the support volume boundary
+        The simplification factor using a spline approximation approach for smoothening the support volume boundary.
+
+        This can either be a float value or the string 'auto' which automatically selects a value based on the
+        polygonal cross-sectional area and perimeter of each region.
         """
         return self._splineSimplificationFactor
 
     @splineSimplificationFactor.setter
-    def splineSimplificationFactor(self, value: float) -> None:
+    def splineSimplificationFactor(self, value: Union[float,str]) -> None:
         self._splineSimplificationFactor = value
 
     @property
@@ -555,17 +558,16 @@ class BlockSupportGenerator(BaseSupportGenerator):
         self._minimumAreaThreshold = areaThresholdValue
 
     @property
-    def simplifyPolygonFactor(self) -> float:
+    def simplifyMeshPolygonFactor(self) -> float:
         """
         The simplification factor used for simplifying the boundary polygon generated from the rasterisation process.
-        This has the effect of reducing the complexity of the extruded support volume generated that is intersected with
-        the part's mesh.
+        It is factor applied in-conjunction with self.rayProjectionResolution when extracting the isocurve from the height map.
         """
-        return self._simplifyPolygonFactor
+        return self._simplifyMeshPolygonFactor
 
-    @simplifyPolygonFactor.setter
-    def simplifyPolygonFactor(self, value: float) -> None:
-        self._simplifyPolygonFactor = value
+    @simplifyMeshPolygonFactor.setter
+    def simplifyMeshPolygonFactor(self, value: float) -> None:
+        self._simplifyMeshPolygonFactor = value
 
     @property
     def triangulationSpacing(self) -> float:
@@ -809,14 +811,71 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
         return heightMap, heightMapUpper, heightMapLower
 
-        """
-        Extracts the overhang mesh and generates block regions given a part and target overhang angle. The algorithm
-        uses a combination of boolean operations and ray intersection/projection to discriminate support regions.
-        If :code:`findSelfIntersectingSupport` is to set :code:`True` (default), the algorithm will process and
-        separate overhang regions that by downward projection self-intersect with the part.
 
-        This provides more refined behavior than simply projected support material downwards into larger support
-        block regions and separates an overhang surface between intersecting and non-intersecting regions.
+    def pointsToSplineEntity(self, points, smooth=None, count=None):
+
+        from scipy.interpolate import splprep
+
+        if count is None:
+            count = len(points)
+        if smooth is None:
+            smooth = 0.002
+
+        points = np.asanyarray(points, dtype=np.float64)
+        closed = np.linalg.norm(points[0] - points[-1]) < 1e-8
+
+        if closed:
+            interp_point = (points[0] + points[-1]) / 2.0
+            #print(points[-1], points[0])
+            #points = np.vstack([points[:-1], interp_point])
+            #points = points[:-1]
+
+
+        knots, control, degree = splprep(points.T, s=smooth)[0]
+
+        control = np.transpose(control)
+        index = np.arange(len(control))
+
+        if closed:
+            control[0] = control[[0, -1]].mean(axis=0)
+            control = control[:-1]
+            index[-1] = index[0]
+
+        entity = trimesh.path.entities.BSpline(points=index,
+                                  knots=knots,
+                                  closed=closed)
+
+        return entity, control
+
+    def simplifySpline(self, path, smooth=None, verbose=False):
+        """
+        Simplify a Path2D object using spline fitting.
+
+        :param path: The path to simplify
+        :param smooth: The smoothness factor used internally by the scipy spline fitting function
+        :param verbose:
+        :return:
+        """
+        newVertices = []
+        newEntities = []
+        scale = path.scale
+
+        for discrete in path.discrete:
+
+            # entities for this path
+            entity, vertices = self.pointsToSplineEntity(discrete, smooth=smooth)
+            # reindex returned control points
+            entity.points += len(newVertices)
+            # save entity and vertices
+            newVertices.extend(vertices)
+            newEntities.append(entity)
+
+        # create the Path2D object for the result
+        simplified = type(path)(entities=newEntities,
+                                vertices=newVertices)
+
+        return simplified
+
 
         :param part: Part for generating support structures for
         :param overhangAngle: Overhang angle (degrees)
@@ -944,76 +1003,87 @@ class BlockSupportGenerator(BaseSupportGenerator):
 
             # Use a ray-tracing approach to identify self-intersections. This provides a method to isolate regions that
             # either are self-intersecting or not.
+    def processOutline(self, outline: shapely.geometry.Polygon,
+                       rayProjectionResolution: float,
+                       useSplineSimplification: Optional[bool] = True) -> List[shapely.geometry.Polygon]:
 
-            logging.info('\t - start generated support height map')
+        """
+        Process the polygon by creating a shapely polygon and offsetting the boundary before creating the support
+        volume region.
 
-            heightMap, heightMapUpper, heightMapLower = self._identifySelfIntersectionHeightMap(subregionCpy, offsetPoly, cutMeshUpperCpy, bbox)
+        :param outline: The identified polygon outline to use.
+        :param rayProjectionResolution: The Ray Projection Resolution used for rasterisation of the support region
+        :param useSplineSimplification:  If `True` (default) spline simplification is applied to the polygon boundary
+        :return:
+        """
 
+        mergedPoly = trimesh.load_path(outline, process=True)
 
             logging.info('\t - finished generated support height map')
+        if useSplineSimplification:
 
             heightMap = np.pad(heightMap, ((2, 2), (2, 2)), 'constant', constant_values=((1, 1), (1, 1)))
             heightMapUpper = np.pad(heightMapUpper.T, ((2, 2), (2, 2)), 'constant', constant_values=((1, 1), (1, 1)))
+            # round the factor up to the nearest base 10 value
+            initial_factor = mergedPoly.area / mergedPoly.length
+            logging.debug(f' \t - Spline simplification factor (area/length): {initial_factor}')
+            factor = 10 ** np.ceil(np.log10(initial_factor))
 
-            vx, vy = np.gradient(heightMap)
-            grads = np.sqrt(vx ** 2 + vy ** 2)
+            # See the disucssion page (https://github.com/scipy/scipy/issues/11916)  regarding auto mode
+            fudge_factor = 1.0
+            factor = fudge_factor * len(mergedPoly.discrete[0]) * rayProjectionResolution ** 2
 
-            grads = scipy.ndimage.filters.gaussian_filter(grads, sigma=BlockSupportGenerator._gaussian_blur_sigma)
+            logging.debug(f'Final spline simplification factor: {factor}')
 
-            """
-            Find the outlines of any regions of the height map which deviate significantly
-            This is used to separate both self-intersecting supports and those which are simply connected
-            to the base-plate.
-            """
-            gradThreshold = self.gradThreshold(self.rayProjectionResolution, self.overhangAngle)
+            # mergedPoly = self.simplify_spline(mergedPoly,factor)
+            if self._splineSimplificationFactor == 'auto':
+                mergedPoly = self.simplifySpline(mergedPoly, smooth=factor)
+            elif self._splineSimplificationFactor is not None:
+                mergedPoly = mergedPoly.simplify_spline(self._splineSimplificationFactor)
 
-            outlines = skimage.measure.find_contours(grads, gradThreshold, mask=heightMap > (TOL_OFFSET-1))
+        try:
+            outPolygons = mergedPoly.polygons_full
 
-            # Transform the outlines from image to global coordinates system
-            outlinesTrans = []
-            for outline in outlines:
-                outlinesTrans.append(outline * self.rayProjectionResolution + bbox[0, :2])
+        except:
+            return []
+            raise Exception('Issued occurred processing outline for support - please submit a bug report')
 
-            # Convert outlines into closed polygons
-            outlinePolygons = hatchingUtils.pathsToClosedPolygons(outlinesTrans)
+        if not mergedPoly.is_closed or len(outPolygons) == 0 or outPolygons[0] is None:
+            return []
 
-            polygons = []
+        if len(outPolygons) > 1:
+            raise Exception('MultiPolygon error please submit a bug report')
 
-            # Process the outlines found from the contours
-            for outline in outlinePolygons:
+        # Simplify the polygon boundary
+        processedBoundaries = []
+        for poly in outPolygons:
 
-                """
-                Process the polygon by creating a shapely polygon and offsetting the boundary
-                """
-                mergedPoly = trimesh.load_path(outline)
-                mergedPoly.merge_vertices(4)
+            simplifiedPoly = poly.simplify(self.simplifyMeshPolygonFactor * rayProjectionResolution, preserve_topology=True)
 
-                if self._splineSimplificationFactor is not None:
-                    mergedPoly = mergedPoly.simplify_spline(self._splineSimplificationFactor)
-
-                try:
-                    outPolygons = mergedPoly.polygons_full
-                except:
-                    import pyslm.visualise
-                    pyslm.visualise.plotPolygon(outline)
-                    raise Exception('Incompatible Shapely version used or other issue detected - please submit a bug report')
-
-                if not mergedPoly.is_closed or len(outPolygons) == 0 or outPolygons[0] is None:
-                    continue
-
-                if len(outPolygons) > 1:
-                    raise Exception('MultiPolygon error please submit a bug report')
-
-                bufferPolyA = mergedPoly.polygons_full[0].simplify(self.simplifyPolygonFactor*self.rayProjectionResolution)
-
-                bufferPoly = bufferPolyA.buffer(-self.innerSupportEdgeGap)
-
-                if isinstance(bufferPoly, shapely.geometry.MultiPolygon):
-                    polygons += bufferPoly.geoms
+            if isinstance(self.innerSupportEdgeGap, str):
+                if self.innerSupportEdgeGap == 'auto':
+                    innerSupportEdgeGap = 2.0 * rayProjectionResolution
                 else:
-                    polygons.append(bufferPoly)
+                    raise ValueError('innerSupportEdgeGap string value not recognised')
+            else:
+                innerSupportEdgeGap = self.innerSupportEdgeGap
 
-            for bufferPoly in polygons:
+
+            bufferPoly = simplifiedPoly.buffer(-innerSupportEdgeGap)
+
+            if isinstance(bufferPoly, shapely.geometry.MultiPolygon):
+                processedBoundaries += bufferPoly.geoms
+            else:
+                processedBoundaries.append(bufferPoly)
+
+        polygons = []
+        for poly in processedBoundaries:
+            if poly.area > self.minimumAreaThreshold:
+                polygons.append(poly)
+
+        return polygons
+
+
     def identifySupportRegions(self, part: Part,
                                overhangAngle: float,
                                findSelfIntersectingSupport: bool = True) -> List[BlockSupportBase]:
