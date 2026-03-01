@@ -157,7 +157,7 @@ def getApproximateSupportArea(part: Part, overhangAngle: float, projected: bool 
     """
     overhangMesh = getOverhangMesh(part, overhangAngle)
 
-    zHeights = overhangMesh.triangles_center[:,2]
+    # zHeights = overhangMesh.triangles_center[:,2]
 
     # Use the projected area by flattening the support faces
     if projected:

@@ -13,6 +13,8 @@ import trimesh
 from trimesh import grouping
 
 import shapely.geometry
+import skimage.morphology
+import skimage.transform
 
 # Triangulation Libraries
 from mapbox_earcut import triangulate_float32
@@ -324,9 +326,9 @@ def boolIntersect(meshA: trimesh.Trimesh, meshB: trimesh.Trimesh) -> trimesh.Tri
         the underlying manifold3D Library can correctly perform the operation. The resultant mesh is processed natively
         using Trimesh to merge coincident vertices and remove degenerate faces.
 
-      :param meshA: Mesh A
-      :param meshB: Mesh B
-      :return: The Boolean intersection between Mesh A and Mesh B.
+    :param meshA: Mesh A
+    :param meshB: Mesh B
+    :return: The Boolean intersection between Mesh A and Mesh B.
       """
     #vertsOut, facesOut = pycork.intersection(meshA.vertices, meshA.faces, meshB.vertices, meshB.faces)
 
@@ -794,3 +796,34 @@ def generatePolygonBoundingBox(bbox: np.ndarray) -> shapely.geometry.Polygon:
                                                  [a[0], b[0]]])
 
     return bboxPoly
+
+def calculatePolygonThickness(polygon: shapely.geometry.Polygon,
+                              resolution: float) -> Tuple[float, float, float]:
+    """
+    Calculates the thickness of a polygon by determining the minimum distance between the exterior and interior
+    rings of the polygon.
+
+    :param polygon: The polygon to calculate the thickness for
+    :return: A tuple of the thickness statistics (mean, min, max)
+    """
+
+    # Convert bufferPoly (shapely polygon) to a trimesh Path2D
+    poly_path = trimesh.load_path(polygon)
+
+    # Rasterise the polygon to create a binary image using inbuilt method. Not efficient but
+    bounds = poly_path.bounds
+    image = np.array(poly_path.rasterize(resolution, bounds[0, :]))
+
+    # Calculate the medial axis (skeleton) and distance transform
+    skeleton, distance = skimage.morphology.medial_axis(image, return_distance=True)
+
+    # The distance values on the skeleton represent half the local thickness
+    thicknessMap = distance * 2 * resolution
+
+    # Get statistics about thickness
+    skeletonThickness = thicknessMap[skeleton]
+    meanThickness = np.mean(skeletonThickness)
+    minThickness = np.min(skeletonThickness)
+    maxThickness = np.max(skeletonThickness)
+
+    return meanThickness, minThickness, maxThickness
