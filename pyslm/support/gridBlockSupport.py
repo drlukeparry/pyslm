@@ -151,8 +151,8 @@ class GridBlockSupport(BlockSupportBase):
 
         if wallThickness < sys.float_info.epsilon:
             raise ValueError('The support wall thickness must be a positive value')
-
-        self._supportWallThickness = wallThickness
+        else:
+            self._supportWallThickness = wallThickness
 
     @property
     def useUpperSupportTeeth(self) -> bool:
@@ -269,6 +269,10 @@ class GridBlockSupport(BlockSupportBase):
 
     @trussWidth.setter
     def trussWidth(self, width: float) -> None:
+
+        if width < sys.float_info.epsilon:
+            raise ValueError('The truss width must be a positive value')
+
         self._trussWidth = width
 
     @property
@@ -643,8 +647,7 @@ class GridBlockSupport(BlockSupportBase):
             """
             Add additional support to the upper and lower surfaces
             """
-            if self._supportWallThickness > 1e-5:
-
+            if self._supportWallThickness  and self._supportWallThickness > 1e-5:
                 if len(upperPaths) == 0 or len(lowerPaths) == 0:
                     continue
 
@@ -768,7 +771,7 @@ class GridBlockSupport(BlockSupportBase):
 
         solution = pc2.execute(pyclipr.Intersection, pyclipr.FillRule.NonZero, returnOpenPaths=False)
 
-        if self._supportWallThickness > 1e-5:
+        if self._supportWallThickness  and self._supportWallThickness > 1e-5:
 
             pc2.clear()
             pc2.addPaths(solution, pyclipr.Clip)
@@ -1274,7 +1277,7 @@ class GridBlockSupport(BlockSupportBase):
             """
             Add additional support to the upper and lower surfaces
             """
-            if self._supportWallThickness > 1e-5:
+            if self._supportWallThickness and self._supportWallThickness > 1e-5:
 
                 infillSolution = self.generateSupportSkinInfill(myPolyVerts, returnPolyNodes=False)
 
@@ -1302,6 +1305,12 @@ class GridBlockSupport(BlockSupportBase):
                     offsetWalls = isectPolyB.union(isectPolyA).buffer(self._supportWallThickness)
                     isectPolyC = offsetWalls.intersection(shapely.geometry.Polygon(myPolyVerts))
                 except:
+                    import matplotlib.pyplot as plt
+                    import pyslm.visualise
+
+                    fig,ax = pyslm.visualise.plotPolygon([myPolyVerts]); fig.show()
+                    plt.show()
+                    blockSupportSides.show()
                     raise Exception('Error: please share a bug report')
 
                 paths = [np.array(path) for path in infillSolution]
@@ -1311,7 +1320,12 @@ class GridBlockSupport(BlockSupportBase):
                 for path in newPaths:
                     newPaths2.append(np.vstack([path, path[0, :]]))
 
-                ac = [np.array(pol) for pol in hatchingUtils.poly2Paths(isectPolyC)]
+                try:
+                    ac = [np.array(pol) for pol in hatchingUtils.poly2Paths(isectPolyC)]
+                except:
+                    import pyslm.visualise
+                    fig, ax = pyslm.visualise.plotPolygon([myPolyVerts]); fig.show()
+                    self.supportVolume.show()
 
                 pc = pyclipr.Clipper()
                 pc.addPaths(ac, pyclipr.Clip)
@@ -1336,6 +1350,10 @@ class GridBlockSupport(BlockSupportBase):
                 raise Exception('Error: exterior count < 1: Please report bug report')
 
             if len(exterior) > 1:
+                import pyslm.visualise
+                #pyslm.visualise.plotPolygon(exterior)
+                #import matplotlib.pyplot as plt
+                #plt.show()
                 raise Exception('Error: exterior count > 1. Increase the support border distance to resolve this issue. ')
 
             vy, fy = geometry.triangulatePolygonFromPaths(exterior[0], interior, triangle_args='pa{:.3f}'.format(4.0))
@@ -1859,7 +1877,7 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
         return self._supportWallThickness
 
     @supportWallThickness.setter
-    def supportWallThickness(self, wallThickness: float) -> None:
+    def supportWallThickness(self, wallThickness: Union[float, bool]) -> None:
         self._supportWallThickness = wallThickness
 
     @property
@@ -1997,8 +2015,12 @@ class GridBlockSupportGenerator(BlockSupportGenerator):
             gridBlock.useUpperSupportTeeth = self._useUpperSupportTeeth
 
             gridBlock.supportBorderDistance = self._supportBorderDistance
+
+            # Grid Truss Parameters
             gridBlock.trussWidth = self._trussWidth
             gridBlock.trussAngle = self._trussAngle
+
+            # Redundant
             gridBlock.mergeMesh = self._mergeMesh
 
             gridBlocks.append(gridBlock)
